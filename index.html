@@ -1,0 +1,1019 @@
+<title>Last Furnace</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Big+Shoulders+Display:wght@600;800&display=swap">
+<style>
+/* Layout: sticky supply bar over a framed outpost scene, then two working columns (people | buildings) that stack on phones */
+:root {
+  --bg: #e8eef3;
+  --surface: #f6f9fb;
+  --bar: #f6f9fb;
+  --ink: #13202c;
+  --muted: #556777;
+  --line: #cfd8e1;
+  --track: #dbe3ea;
+  --ember: #bb4714;
+  --on-ember: #ffffff;
+  --ice: #2a6a99;
+  --good: #2b7a4b; --good-bg: #dcefe3;
+  --warn: #8f6210; --warn-bg: #f4e8cc;
+  --bad: #b0281f;  --bad-bg: #f6dcd9;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c141c; --surface: #131e29; --bar: #101923; --ink: #e3ebf1; --muted: #8b9eb0;
+    --line: #243444; --track: #223142; --ember: #ff8b4d; --on-ember: #1d0e05; --ice: #80c3ec;
+    --good: #5ccb8b; --good-bg: #15301f; --warn: #e6b450; --warn-bg: #33280f; --bad: #ff7366; --bad-bg: #3a1714;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c141c; --surface: #131e29; --bar: #101923; --ink: #e3ebf1; --muted: #8b9eb0;
+  --line: #243444; --track: #223142; --ember: #ff8b4d; --on-ember: #1d0e05; --ice: #80c3ec;
+  --good: #5ccb8b; --good-bg: #15301f; --warn: #e6b450; --warn-bg: #33280f; --bad: #ff7366; --bad-bg: #3a1714;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--bar);
+}
+.gutter {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+p { margin: 0; }
+h2 {
+  font-family: var(--display); font-weight: 800; font-size: 1.3rem; line-height: 1.1;
+  text-transform: uppercase; letter-spacing: .05em; margin: 0 0 10px;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  text-wrap: balance;
+}
+h2 .meta { font-family: var(--body); font-weight: 500; font-size: .85rem; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.k { display: block; font-size: .7rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.small { display: block; font-size: .8rem; color: var(--muted); }
+
+/* Supply bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bar); border-bottom: 1px solid var(--line); }
+.bar-inner { max-width: 1080px; margin: 0 auto; padding-block: 10px; display: grid; gap: 6px; }
+.bar-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 1.4rem; letter-spacing: .05em; text-transform: uppercase; line-height: 1; }
+.brand span { color: var(--ember); }
+.clock { font-size: .85rem; color: var(--muted); white-space: nowrap; }
+.clock b { color: var(--ink); font-weight: 600; }
+.res-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.res { min-width: 0; }
+.res .n { display: block; font-family: var(--display); font-weight: 800; font-size: 1.55rem; line-height: 1.05; }
+.res .r { font-size: .75rem; color: var(--muted); }
+.res .r.up { color: var(--good); }
+.res .r.down { color: var(--bad); }
+.res.empty .n { color: var(--bad); }
+
+/* Page */
+main.wrap { max-width: 1080px; margin: 0 auto; padding-block: 16px 48px; display: grid; gap: 20px; }
+
+/* Scene */
+.scene { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.scene canvas { display: block; width: 100%; height: clamp(200px, 34vw, 300px); background: #1e3048; }
+.alert {
+  position: absolute; top: 10px; left: 10px; right: 10px;
+  padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: .9rem;
+  background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad);
+}
+.readout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 12px 14px; border-top: 1px solid var(--line); }
+.readout > div { min-width: 0; }
+@media (max-width: 600px) {
+  .readout { grid-template-columns: 1fr 1fr; }
+  .furnace-ctl { grid-column: 1 / -1; }
+}
+.temp { font-family: var(--display); font-weight: 800; font-size: 2.1rem; line-height: 1; }
+.temp.cold { color: var(--ice); }
+.pill { display: inline-block; vertical-align: 6px; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+.pill.warm { background: var(--good-bg); color: var(--good); }
+.pill.chilly { background: var(--warn-bg); color: var(--warn); }
+.pill.freezing, .pill.deadly { background: var(--bad-bg); color: var(--bad); }
+.seg { display: flex; margin: 4px 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button {
+  flex: 1; min-width: 0; padding: 9px 6px; border: 0; border-right: 1px solid var(--line);
+  background: transparent; color: var(--ink); font: 600 .88rem var(--body); cursor: pointer;
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ember); color: var(--on-ember); }
+.seg button[data-mode="0"][aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.hint { padding: 0 14px 14px; font-size: .85rem; color: var(--muted); max-width: 70ch; }
+
+/* Columns and panels */
+.cols { display: grid; gap: 20px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 820px) { .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.col { display: grid; gap: 20px; min-width: 0; }
+@media (max-width: 819px) {
+  .col { display: contents; }
+  section[aria-labelledby="hSurv"]  { order: 1; }
+  section[aria-labelledby="hBuild"] { order: 2; }
+  section[aria-labelledby="hExp"]   { order: 3; }
+  section[aria-labelledby="hGoals"] { order: 4; }
+  section[aria-labelledby="hLog"]   { order: 5; }
+}
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px 16px; min-width: 0; }
+.panel .body { color: var(--muted); font-size: .9rem; margin-bottom: 12px; max-width: 65ch; }
+.status { font-size: .9rem; margin-bottom: 4px; }
+.status .idle { color: var(--warn); font-weight: 600; }
+.status .sick { color: var(--bad); font-weight: 600; }
+
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 11px 0; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.row .name { font-weight: 600; }
+.row .sub { font-size: .82rem; color: var(--muted); }
+.lv { font-family: var(--display); font-weight: 800; color: var(--ember); margin-left: 8px; letter-spacing: .03em; }
+.cost { font-size: .82rem; color: var(--muted); }
+.cost .short { color: var(--bad); font-weight: 600; }
+.cost .why { display: block; color: var(--warn); }
+
+.stepper { display: flex; align-items: center; gap: 6px; }
+.stepper button {
+  width: 36px; height: 36px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); font: 600 1.15rem/1 var(--body); cursor: pointer;
+}
+.stepper button:disabled { opacity: .4; cursor: not-allowed; }
+.stepper .cnt { min-width: 3.4em; text-align: center; font-weight: 600; }
+
+.btn {
+  border: 0; border-radius: 6px; padding: 9px 14px; cursor: pointer; white-space: nowrap;
+  background: var(--ember); color: var(--on-ember); font: 600 .9rem var(--body);
+}
+.btn:disabled { background: var(--track); color: var(--muted); cursor: not-allowed; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+
+.track { height: 6px; background: var(--track); border-radius: 3px; overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--ember); transition: width .2s linear; }
+.queue { display: grid; gap: 6px; padding: 10px 12px; margin-bottom: 4px; border-radius: 6px; background: var(--bg); font-size: .88rem; }
+.exp { display: grid; gap: 8px; }
+.exp-idle { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+
+.quests { list-style: none; margin: 0; padding: 0; }
+.quests .reward { font-size: .82rem; color: var(--muted); }
+.quests .prog { font-size: .82rem; color: var(--muted); white-space: nowrap; }
+.quests .done-note { color: var(--muted); font-size: .9rem; }
+
+.log { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow-y: auto; font-size: .86rem; }
+.log li { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 8px; padding: 6px 0 6px 10px; border-left: 3px solid var(--line); margin-bottom: 4px; }
+.log li.good { border-left-color: var(--good); }
+.log li.warn { border-left-color: var(--warn); }
+.log li.bad  { border-left-color: var(--bad); }
+.log .when { color: var(--muted); }
+.foot { margin-top: 12px; display: flex; justify-content: flex-end; }
+
+.over {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+}
+.over-box { max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 22px; display: grid; gap: 14px; }
+.over-box h2 { font-size: 1.8rem; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
+
+<header class="bar">
+  <div class="bar-inner gutter">
+    <div class="bar-top">
+      <div class="brand">Last <span>Furnace</span></div>
+      <div class="clock" id="clock"></div>
+    </div>
+    <div class="res-row" id="resRow"></div>
+  </div>
+</header>
+
+<main class="wrap gutter">
+  <section class="scene" aria-label="Your outpost">
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="alert" id="alert" role="status" hidden></div>
+    <div class="readout">
+      <div>
+        <span class="k">Outside</span>
+        <span class="temp cold" id="tOut"></span>
+        <span class="small" id="tOutNote"></span>
+      </div>
+      <div>
+        <span class="k">Inside</span>
+        <span class="temp" id="tIn"></span><span class="pill" id="comfort"></span>
+        <span class="small" id="tInNote"></span>
+      </div>
+      <div class="furnace-ctl">
+        <span class="k">Furnace</span>
+        <div class="seg" role="group" aria-label="Furnace mode">
+          <button type="button" id="mode0" data-act="mode" data-mode="0">Off</button>
+          <button type="button" id="mode1" data-act="mode" data-mode="1">Burn</button>
+          <button type="button" id="mode2" data-act="mode" data-mode="2">Overdrive</button>
+        </div>
+        <span class="small" id="burnNote"></span>
+      </div>
+    </div>
+    <p class="hint">Keep the inside at 5°C or warmer. Warm survivors stay healthy, the sick get better, and new people find you. The furnace burns coal and everyone eats meat.</p>
+  </section>
+
+  <div class="cols">
+    <div class="col">
+      <section class="panel" aria-labelledby="hSurv">
+        <h2 id="hSurv">Survivors <span class="meta" id="popMeta"></span></h2>
+        <p class="status" id="popLine"></p>
+        <div id="jobs"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="hExp">
+        <h2 id="hExp">Expedition</h2>
+        <p class="body">Send 2 idle survivors into the whiteout for 30 seconds. It costs 15 meat. Scouts bring back wood and coal, sometimes iron, and sometimes another survivor.</p>
+        <div class="exp">
+          <div id="expRun" hidden>
+            <div class="small" id="expText"></div>
+            <div class="track"><div class="fill" id="expFill"></div></div>
+          </div>
+          <div class="exp-idle" id="expIdle">
+            <button type="button" class="btn" id="expBtn" data-act="expedition">Send scouts</button>
+            <span class="small" id="expWhy"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="hGoals">
+        <h2 id="hGoals">Goals <span class="meta" id="goalMeta"></span></h2>
+        <ul class="quests" id="quests"></ul>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" aria-labelledby="hBuild">
+        <h2 id="hBuild">Buildings</h2>
+        <div class="queue">
+          <span id="queueText"></span>
+          <div class="track" id="queueTrack"><div class="fill" id="queueFill"></div></div>
+        </div>
+        <div id="buildings"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="hLog">
+        <h2 id="hLog">Outpost log</h2>
+        <ol class="log" id="log"></ol>
+        <div class="foot"><button type="button" class="btn ghost" id="restartBtn" data-act="restart">Start over</button></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<div class="over" id="over" hidden>
+  <div class="over-box" role="dialog" aria-modal="true" aria-labelledby="overHead">
+    <h2 id="overHead">The furnace went cold</h2>
+    <p id="overText"></p>
+    <button type="button" class="btn" data-act="newgame">Light a new furnace</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Rules ----------
+  const KEY = 'last-furnace-v1';
+  const DAY_LEN = 60;     // real seconds per in-game day
+  const EAT = 0.08;       // meat eaten per survivor per second
+  const MAX_LV = 10;
+  const RES = ['wood', 'coal', 'meat', 'iron'];
+  const RES_NAME = { wood: 'Wood', coal: 'Coal', meat: 'Meat', iron: 'Iron' };
+  const RATE = { wood: 0.6, coal: 0.4, meat: 0.5, iron: 0.2 };
+  const JOBS = [
+    { id: 'wood', label: 'Woodcutters', one: 'woodcutter', b: 'sawmill' },
+    { id: 'coal', label: 'Coal miners', one: 'coal miner', b: 'coalmine' },
+    { id: 'meat', label: 'Hunters', one: 'hunter', b: 'lodge' },
+    { id: 'iron', label: 'Iron miners', one: 'iron miner', b: 'ironmine' },
+  ];
+  const B = {
+    furnace:   { name: 'Furnace',        base: { wood: 60, coal: 30 } },
+    shelter:   { name: 'Shelter',        base: { wood: 45 } },
+    sawmill:   { name: 'Sawmill',        base: { wood: 35 } },
+    coalmine:  { name: 'Coal Mine',      base: { wood: 50 } },
+    lodge:     { name: "Hunter's Lodge", base: { wood: 40 } },
+    ironmine:  { name: 'Iron Mine',      base: { wood: 90, coal: 40 }, needs: 2 },
+    infirmary: { name: 'Infirmary',      base: { wood: 120, coal: 60 }, needs: 3 },
+  };
+  const ORDER = Object.keys(B);
+
+  const heat = L => 10 + 6 * (L - 1);
+  const burn = L => 0.3 + 0.15 * (L - 1);
+  const capOf = L => 4 + 3 * L;
+  const slots = L => (L > 0 ? 1 + 2 * L : 0);
+  const perWorker = (job, L) => RATE[job] * (1 + 0.5 * (L - 1));
+  const buildTime = L => Math.round(4 * Math.pow(L, 1.6));
+
+  function cost(id, L) {
+    const m = Math.pow(1.7, L - 1), c = {};
+    for (const r in B[id].base) c[r] = Math.round(B[id].base[r] * m);
+    if (L >= 3) c.iron = Math.round(8 * Math.pow(1.7, L - 3));
+    return c;
+  }
+
+  const QUESTS = [
+    { id: 'q1',  text: 'Put 2 survivors to work in the Coal Mine', done: () => S.jobs.coal >= 2, prog: () => `${Math.min(S.jobs.coal, 2)}/2`, reward: { wood: 40 } },
+    { id: 'q2',  text: 'Upgrade the Furnace to Lv 2', done: () => S.lv.furnace >= 2, reward: { wood: 80, coal: 40 } },
+    { id: 'q3',  text: 'Upgrade the Shelter to Lv 2', done: () => S.lv.shelter >= 2, reward: { meat: 50 } },
+    { id: 'q4',  text: 'Build the Iron Mine', done: () => S.lv.ironmine >= 1, reward: { coal: 60 } },
+    { id: 'q5',  text: 'Bring scouts home from an expedition', done: () => S.stats.expeditions >= 1, reward: { iron: 15 } },
+    { id: 'q6',  text: 'Grow the outpost to 10 survivors', done: () => S.pop >= 10, prog: () => `${Math.min(S.pop, 10)}/10`, reward: { wood: 120, meat: 60 } },
+    { id: 'q7',  text: 'Survive a blizzard', done: () => S.stats.blizzards >= 1, reward: { iron: 30 } },
+    { id: 'q8',  text: 'Upgrade the Furnace to Lv 3', done: () => S.lv.furnace >= 3, reward: { wood: 250, coal: 120 } },
+    { id: 'q9',  text: 'Build the Infirmary', done: () => S.lv.infirmary >= 1, reward: { meat: 120 } },
+    { id: 'q10', text: 'Reach Day 10', done: () => day() >= 10, prog: () => `Day ${Math.min(day(), 10)}/10`, reward: { iron: 60 } },
+    { id: 'q11', text: 'Grow the outpost to 20 survivors', done: () => S.pop >= 20, prog: () => `${Math.min(S.pop, 20)}/20`, reward: { wood: 500, coal: 250 } },
+    { id: 'q12', text: 'Upgrade the Furnace to Lv 5', done: () => S.lv.furnace >= 5, reward: { iron: 150 } },
+  ];
+
+  function newGame() {
+    return {
+      v: 1,
+      t: (8 / 24) * DAY_LEN,      // start at 08:00 on day 1
+      res: { wood: 120, coal: 40, meat: 60, iron: 0 },
+      lv: { furnace: 1, shelter: 1, sawmill: 1, coalmine: 1, lodge: 1, ironmine: 0, infirmary: 0 },
+      pop: 5, sick: 0,
+      jobs: { wood: 2, coal: 1, meat: 1, iron: 0 },
+      mode: 1,                    // 0 off, 1 burn, 2 overdrive
+      queue: null,                // { id, to, left, total }
+      exp: null,                  // { left, total, scouts }
+      blizzard: null,             // { start, end, warned, hit }
+      timers: { cold: 0, freeze: 0, starve: 0, recover: 0, arrive: 0 },
+      stats: { expeditions: 0, blizzards: 0, maxPop: 5 },
+      claimed: [],
+      log: [],
+      over: false,
+      savedAt: Date.now(),
+    };
+  }
+
+  let S;
+  let logDirty = true, questSig = '';
+
+  // ---------- Derived state ----------
+  const day = () => Math.floor(S.t / DAY_LEN) + 1;
+  const hour = () => ((S.t % DAY_LEN) / DAY_LEN) * 24;
+  const isNight = () => { const h = hour(); return h < 6 || h >= 20; };
+  const inBlizzard = () => !!S.blizzard && S.t >= S.blizzard.start && S.t < S.blizzard.end;
+  const baseTemp = d => Math.max(-60, -8 - 2 * (d - 1));
+  const outsideTemp = () => baseTemp(day()) - (isNight() ? 6 : 0) - (inBlizzard() ? 18 : 0);
+  const furnaceHeat = () => (S.mode === 0 ? 0 : heat(S.lv.furnace) * (S.mode === 2 ? 1.5 : 1));
+  const insideTemp = () => outsideTemp() + furnaceHeat();
+  const burnRate = () => (S.mode === 0 ? 0 : burn(S.lv.furnace) * (S.mode === 2 ? 2 : 1));
+  const away = () => (S.exp ? S.exp.scouts : 0);
+  const assigned = () => S.jobs.wood + S.jobs.coal + S.jobs.meat + S.jobs.iron;
+  const idle = () => S.pop - S.sick - assigned() - away();
+
+  function comfort(T) {
+    if (T >= 5)   return { id: 'warm',     label: 'Warm',        eff: 1,   note: 'Survivors heal and new ones arrive' };
+    if (T >= -5)  return { id: 'chilly',   label: 'Chilly',      eff: 0.8, note: 'Work slows to 80%' };
+    if (T >= -20) return { id: 'freezing', label: 'Freezing',    eff: 0.5, note: 'Survivors are getting frostbite' };
+    return               { id: 'deadly',   label: 'Deadly cold', eff: 0.3, note: 'The sick may not survive this' };
+  }
+
+  function rates() {
+    const eff = comfort(insideTemp()).eff * (S.res.meat <= 0 ? 0.5 : 1);
+    const r = { wood: 0, coal: 0, meat: 0, iron: 0 };
+    for (const j of JOBS) {
+      const L = S.lv[j.b];
+      if (L > 0) r[j.id] += S.jobs[j.id] * perWorker(j.id, L) * eff;
+    }
+    r.coal -= burnRate();
+    r.meat -= S.pop * EAT;
+    return r;
+  }
+
+  // ---------- Helpers ----------
+  const $ = id => document.getElementById(id);
+  const rnd = (a, b) => Math.round(a + Math.random() * (b - a));
+  const fmtN = n => Math.floor(n).toLocaleString('en-US');
+  const fmtR = n => (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(1) + '/s';
+  const fmtT = T => (Math.round(T) < 0 ? '−' : '') + Math.abs(Math.round(T)) + '°C';
+  const fmtList = c => Object.entries(c).filter(([, v]) => v >= 1).map(([k, v]) => `${fmtN(v)} ${k}`).join(', ');
+  function fmtDur(s) {
+    s = Math.max(0, Math.ceil(s));
+    if (s >= 3600) return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+    if (s >= 60) return `${Math.floor(s / 60)}m ${s % 60}s`;
+    return `${s}s`;
+  }
+  function clockOf(h) {
+    const hh = Math.floor(h), mm = Math.floor(((h - hh) * 60) / 10) * 10;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+  }
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function log(msg, kind = 'info') {
+    S.log.unshift({ d: day(), h: hour(), msg, kind });
+    if (S.log.length > 40) S.log.length = 40;
+    logDirty = true;
+  }
+
+  // ---------- Simulation ----------
+  function makeSick(reason) {
+    if (S.pop - S.sick - away() <= 0) return;
+    S.sick++;
+    if (idle() < 0) {
+      const busiest = JOBS.map(j => j.id).sort((a, b) => S.jobs[b] - S.jobs[a])[0];
+      S.jobs[busiest]--;
+    }
+    log(`A survivor ${reason} and can't work.`, 'bad');
+  }
+
+  function loseSurvivor() {
+    S.pop--; S.sick--;
+    log('A sick survivor did not make it through the cold.', 'bad');
+  }
+
+  function onNewDay() {
+    const d = day();
+    log(`Day ${d} begins. Outside it is ${fmtT(baseTemp(d))} and falling.`);
+    if (!S.blizzard && d >= 3 && (d === 3 || Math.random() < 0.4)) {
+      const start = (d - 1) * DAY_LEN + DAY_LEN * (0.3 + Math.random() * 0.4);
+      S.blizzard = { start, end: start + 25, warned: false, hit: false };
+    }
+  }
+
+  function finishExpedition() {
+    const F = S.lv.furnace;
+    const loot = { wood: rnd(40, 110) * F, coal: rnd(20, 60) * F };
+    if (F >= 2) loot.iron = rnd(4, 14) * F;
+    S.exp = null;
+    S.stats.expeditions++;
+    for (const k in loot) S.res[k] += loot[k];
+    let msg = `Scouts came back with ${fmtList(loot)}.`;
+    if (Math.random() < 0.35 && S.pop < capOf(S.lv.shelter)) {
+      S.pop++;
+      msg += ' They found a survivor in the snow.';
+    }
+    log(msg, 'good');
+    if (Math.random() < 0.15) makeSick('came back from scouting with frostbite');
+  }
+
+  function tick(dt) {
+    if (S.over) return;
+    const prevDay = day();
+    S.t += dt;
+    if (day() !== prevDay) onNewDay();
+
+    const r = rates();
+    for (const k of RES) S.res[k] = Math.max(0, S.res[k] + r[k] * dt);
+    if (S.mode > 0 && S.res.coal <= 0) {
+      S.mode = 0;
+      log('The furnace ran out of coal and went cold. Put more people in the Coal Mine.', 'bad');
+    }
+
+    if (S.queue) {
+      S.queue.left -= dt;
+      if (S.queue.left <= 0) {
+        S.lv[S.queue.id] = S.queue.to;
+        log(`${B[S.queue.id].name} reached Lv ${S.queue.to}.`, 'good');
+        S.queue = null;
+      }
+    }
+
+    if (S.exp) {
+      S.exp.left -= dt;
+      if (S.exp.left <= 0) finishExpedition();
+    }
+
+    if (S.blizzard) {
+      const until = S.blizzard.start - S.t;
+      if (!S.blizzard.warned && until <= 15 && until > 0) {
+        S.blizzard.warned = true;
+        log('Blizzard warning. A storm hits in 15 seconds.', 'warn');
+      }
+      if (!S.blizzard.hit && S.t >= S.blizzard.start) {
+        S.blizzard.hit = true;
+        log('The blizzard has hit the outpost.', 'bad');
+      }
+      if (S.t >= S.blizzard.end) {
+        S.blizzard = null;
+        S.stats.blizzards++;
+        log('The blizzard has passed.', 'good');
+      }
+    }
+
+    const T = insideTemp(), c = comfort(T), tm = S.timers;
+    if (c.id === 'freezing' || c.id === 'deadly') {
+      tm.cold += dt;
+      if (tm.cold >= (c.id === 'deadly' ? 6 : 12)) { tm.cold = 0; makeSick('got frostbite'); }
+    } else tm.cold = 0;
+
+    if (c.id === 'deadly' && S.sick > 0) {
+      tm.freeze += dt;
+      if (tm.freeze >= 20) { tm.freeze = 0; loseSurvivor(); }
+    } else tm.freeze = 0;
+
+    if (S.res.meat <= 0) {
+      tm.starve += dt;
+      if (tm.starve >= 15) { tm.starve = 0; makeSick('is weak from hunger'); }
+    } else tm.starve = 0;
+
+    if (c.id === 'warm' && S.sick > 0 && S.res.meat > 0) {
+      tm.recover += dt;
+      if (tm.recover >= 25 / (1 + 0.5 * S.lv.infirmary)) {
+        tm.recover = 0; S.sick--;
+        log('A sick survivor got better by the furnace.', 'good');
+      }
+    } else tm.recover = 0;
+
+    tm.arrive += dt;
+    if (tm.arrive >= 30) {
+      tm.arrive = 0;
+      if (S.pop < capOf(S.lv.shelter) && T >= 0 && S.res.meat > 10) {
+        S.pop++;
+        log('A survivor followed your smoke to the outpost.', 'good');
+      }
+    }
+    S.stats.maxPop = Math.max(S.stats.maxPop, S.pop);
+
+    if (S.pop <= 0) {
+      S.over = true;
+      log(`The outpost fell on Day ${day()}.`, 'bad');
+      save();
+    }
+  }
+
+  // ---------- Player actions ----------
+  function buildStatus(id) {
+    const L = S.lv[id], b = B[id];
+    if (L >= MAX_LV) return { ok: false, why: 'Max level' };
+    if (b.needs && L === 0 && S.lv.furnace < b.needs) return { ok: false, why: `Unlocks at Furnace Lv ${b.needs}` };
+    const c = cost(id, L + 1);
+    if (id !== 'furnace' && L >= S.lv.furnace) return { ok: false, c, why: `Upgrade the Furnace to Lv ${L + 1} first` };
+    if (S.queue) return { ok: false, c, why: 'Your builder is busy', soft: true };
+    for (const k in c) if (S.res[k] < c[k]) return { ok: false, c, soft: true };
+    return { ok: true, c };
+  }
+
+  function upgrade(id) {
+    const st = buildStatus(id);
+    if (!st.ok) return;
+    for (const k in st.c) S.res[k] -= st.c[k];
+    const to = S.lv[id] + 1, total = buildTime(to);
+    S.queue = { id, to, left: total, total };
+    log(`Your builder started on the ${B[id].name} (Lv ${to}).`);
+  }
+
+  function assign(job, d) {
+    const j = JOBS.find(x => x.id === job), L = S.lv[j.b];
+    if (d > 0 && idle() > 0 && S.jobs[job] < slots(L)) S.jobs[job]++;
+    if (d < 0 && S.jobs[job] > 0) S.jobs[job]--;
+  }
+
+  function setMode(m) {
+    if (m > 0 && S.res.coal < 1) { log('There is no coal to burn. Put survivors in the Coal Mine.', 'warn'); return; }
+    if (m !== S.mode) log(m === 0 ? 'You let the furnace go out.' : m === 2 ? 'Furnace in Overdrive: 50% more heat, double the coal.' : 'The furnace is burning.');
+    S.mode = m;
+  }
+
+  function expStatus() {
+    if (S.exp) return { ok: false };
+    if (idle() < 2) return { ok: false, why: `You need 2 idle survivors (you have ${Math.max(0, idle())})` };
+    if (S.res.meat < 15) return { ok: false, why: 'You need 15 meat' };
+    return { ok: true };
+  }
+
+  function sendScouts() {
+    if (!expStatus().ok) return;
+    S.res.meat -= 15;
+    S.exp = { left: 30, total: 30, scouts: 2 };
+    log('Two scouts set out into the whiteout.');
+  }
+
+  function claim(qid) {
+    const q = QUESTS.find(x => x.id === qid);
+    if (!q || S.claimed.includes(qid) || !q.done()) return;
+    S.claimed.push(qid);
+    for (const k in q.reward) S.res[k] += q.reward[k];
+    log(`Goal done: ${q.text}. You got ${fmtList(q.reward)}.`, 'good');
+  }
+
+  function intro() {
+    log('The cold came fast. Five survivors made it to the last working furnace.');
+    log('Give the idle survivor a job, keep coal coming, and upgrade the Furnace before the nights get colder.');
+  }
+
+  function newRun() {
+    S = newGame();
+    intro();
+    questSig = '';
+    logDirty = true;
+    save();
+    render();
+  }
+
+  let restartArmed = 0;
+  function restart(btn) {
+    if (Date.now() - restartArmed < 3000) {
+      restartArmed = 0;
+      btn.textContent = 'Start over';
+      newRun();
+      return;
+    }
+    restartArmed = Date.now();
+    btn.textContent = 'Tap again to erase this outpost';
+    setTimeout(() => { if (Date.now() - restartArmed >= 2900) btn.textContent = 'Start over'; }, 3000);
+  }
+
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-act]');
+    if (!el || el.disabled) return;
+    const a = el.dataset.act;
+    if (S.over && a !== 'newgame') return;
+    if (a === 'mode') setMode(+el.dataset.mode);
+    else if (a === 'job') assign(el.dataset.job, +el.dataset.d);
+    else if (a === 'upgrade') upgrade(el.dataset.b);
+    else if (a === 'expedition') sendScouts();
+    else if (a === 'claim') claim(el.dataset.q);
+    else if (a === 'restart') { restart(el); return; }
+    else if (a === 'newgame') { newRun(); return; }
+    render();
+  });
+
+  // ---------- Saving ----------
+  function save() {
+    try { S.savedAt = Date.now(); localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ }
+  }
+  function loadSaved() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      return obj && obj.v === 1 ? obj : null;
+    } catch (e) { return null; }
+  }
+  function offlineGains() {
+    const gone = Math.min(4 * 3600, (Date.now() - (S.savedAt || Date.now())) / 1000);
+    if (gone < 30 || S.over) return;
+    const got = {};
+    for (const j of JOBS) {
+      const L = S.lv[j.b];
+      if (L > 0 && S.jobs[j.id] > 0) {
+        got[j.id] = S.jobs[j.id] * perWorker(j.id, L) * 0.5 * gone;
+        S.res[j.id] += got[j.id];
+      }
+    }
+    if (S.queue) S.queue.left = Math.max(0.01, S.queue.left - gone);
+    if (S.exp) S.exp.left = Math.max(0.01, S.exp.left - gone);
+    log(`You were away for ${fmtDur(gone)}. Your workers gathered ${fmtList(got) || 'nothing'} at half speed, and the cold waited for you.`, 'good');
+  }
+
+  // ---------- Interface ----------
+  const resEls = {};
+  function buildDOM() {
+    $('resRow').innerHTML = RES.map(k =>
+      `<div class="res" id="res-${k}"><span class="k">${RES_NAME[k]}</span><span class="n"></span><span class="r"></span></div>`).join('');
+    for (const k of RES) {
+      const box = $('res-' + k);
+      resEls[k] = { box, n: box.querySelector('.n'), r: box.querySelector('.r') };
+    }
+    $('jobs').innerHTML = JOBS.map(j => `
+      <div class="row" id="job-${j.id}">
+        <div><div class="name">${j.label}</div><div class="sub"></div></div>
+        <div class="stepper">
+          <button type="button" data-act="job" data-job="${j.id}" data-d="-1" aria-label="Take one ${j.one} off the job">−</button>
+          <span class="cnt"></span>
+          <button type="button" data-act="job" data-job="${j.id}" data-d="1" aria-label="Add one ${j.one}">+</button>
+        </div>
+      </div>`).join('');
+    $('buildings').innerHTML = ORDER.map(id => `
+      <div class="row" id="b-${id}">
+        <div><div class="name">${B[id].name}<span class="lv"></span></div><div class="sub"></div><div class="cost"></div></div>
+        <button type="button" class="btn" data-act="upgrade" data-b="${id}"></button>
+      </div>`).join('');
+  }
+
+  function render() {
+    const r = rates();
+
+    for (const k of RES) {
+      const el = resEls[k];
+      el.n.textContent = fmtN(S.res[k]);
+      el.r.textContent = fmtR(r[k]);
+      el.r.className = 'r' + (r[k] > 0.005 ? ' up' : r[k] < -0.005 ? ' down' : '');
+      el.box.classList.toggle('empty', (k === 'coal' || k === 'meat') && S.res[k] < 1);
+    }
+    $('clock').innerHTML = `<b>Day ${day()}</b> · ${clockOf(hour())}${isNight() ? ' · Night' : ''}`;
+
+    const To = outsideTemp(), Ti = insideTemp(), c = comfort(Ti);
+    $('tOut').textContent = fmtT(To);
+    $('tOutNote').textContent = (inBlizzard() ? 'Blizzard' : isNight() ? 'Night is 6° colder' : 'Daytime') + ' · colder each day';
+    $('tIn').textContent = fmtT(Ti);
+    $('tIn').classList.toggle('cold', Ti < 0);
+    $('comfort').textContent = c.label;
+    $('comfort').className = 'pill ' + c.id;
+    $('tInNote').textContent = c.note;
+    for (let m = 0; m < 3; m++) $('mode' + m).setAttribute('aria-pressed', String(S.mode === m));
+    let burnNote = S.mode === 0 ? 'Cold. Tap Burn to light it.' : `Burning ${burnRate().toFixed(2)} coal/s`;
+    if (S.mode > 0 && r.coal < 0) burnNote += ` · coal lasts ${fmtDur(S.res.coal / -r.coal)}`;
+    $('burnNote').textContent = burnNote;
+
+    const alert = $('alert');
+    if (S.blizzard && inBlizzard()) {
+      alert.textContent = `Blizzard: ${Math.ceil(S.blizzard.end - S.t)}s left. Outside is 18° colder.`;
+      alert.hidden = false;
+    } else if (S.blizzard && S.blizzard.warned && S.t < S.blizzard.start) {
+      alert.textContent = `Blizzard in ${Math.ceil(S.blizzard.start - S.t)}s. Switch to Overdrive if you have the coal.`;
+      alert.hidden = false;
+    } else alert.hidden = true;
+
+    // Survivors
+    const nIdle = idle();
+    $('popMeta').textContent = `${S.pop} of ${capOf(S.lv.shelter)} beds`;
+    const parts = [`${assigned()} working`];
+    parts.push(nIdle > 0 ? `<span class="idle">${nIdle} idle, give them a job</span>` : '0 idle');
+    if (S.sick) parts.push(`<span class="sick">${S.sick} sick</span>`);
+    if (away()) parts.push(`${away()} scouting`);
+    $('popLine').innerHTML = parts.join(' · ');
+    for (const j of JOBS) {
+      const row = $('job-' + j.id), L = S.lv[j.b];
+      row.querySelector('.sub').textContent = L > 0
+        ? `${B[j.b].name} Lv ${L} · ${perWorker(j.id, L).toFixed(2)} ${j.id}/s each`
+        : `Build the ${B[j.b].name} to unlock`;
+      row.querySelector('.cnt').textContent = `${S.jobs[j.id]}/${slots(L)}`;
+      const [minus, plus] = row.querySelectorAll('button');
+      minus.disabled = S.jobs[j.id] <= 0;
+      plus.disabled = nIdle <= 0 || S.jobs[j.id] >= slots(L);
+    }
+
+    // Expedition
+    const es = expStatus();
+    $('expRun').hidden = !S.exp;
+    $('expIdle').hidden = !!S.exp;
+    if (S.exp) {
+      $('expText').textContent = `Scouts are out in the snow · back in ${fmtDur(S.exp.left)}`;
+      $('expFill').style.width = `${(1 - S.exp.left / S.exp.total) * 100}%`;
+    } else {
+      $('expBtn').disabled = !es.ok;
+      $('expWhy').textContent = es.why || '';
+    }
+
+    // Buildings
+    if (S.queue) {
+      $('queueText').textContent = `Building ${B[S.queue.id].name} Lv ${S.queue.to} · ${fmtDur(S.queue.left)} left`;
+      $('queueFill').style.width = `${(1 - S.queue.left / S.queue.total) * 100}%`;
+      $('queueTrack').hidden = false;
+    } else {
+      $('queueText').textContent = 'Your builder is free. Pick something to build.';
+      $('queueTrack').hidden = true;
+    }
+    for (const id of ORDER) {
+      const row = $('b-' + id), L = S.lv[id], st = buildStatus(id);
+      row.querySelector('.lv').textContent = L > 0 ? `Lv ${L}` : '';
+      row.querySelector('.sub').textContent = effectText(id, L);
+      let html = '';
+      if (st.c) {
+        const items = Object.entries(st.c).map(([k, v]) =>
+          S.res[k] < v ? `<span class="short">${fmtN(v)} ${k}</span>` : `${fmtN(v)} ${k}`);
+        html = `${L > 0 ? `Lv ${L + 1}` : 'Build'}: ${items.join(', ')} · ${fmtDur(buildTime(L + 1))}`;
+      }
+      if (st.why && !st.soft) html += `<span class="why">${esc(st.why)}</span>`;
+      row.querySelector('.cost').innerHTML = html;
+      const btn = row.querySelector('button');
+      btn.textContent = L > 0 ? 'Upgrade' : 'Build';
+      btn.disabled = !st.ok;
+    }
+
+    // Goals
+    const open = QUESTS.filter(q => !S.claimed.includes(q.id));
+    const shown = open.slice(0, 3);
+    $('goalMeta').textContent = `${S.claimed.length} of ${QUESTS.length} done`;
+    const sig = shown.map(q => q.id + (q.done() ? '1' : '0')).join(',');
+    if (sig !== questSig) {
+      questSig = sig;
+      $('quests').innerHTML = shown.length ? shown.map(q => `
+        <li class="row">
+          <div><div class="name">${esc(q.text)}</div><div class="reward">Reward: ${fmtList(q.reward)}</div></div>
+          ${q.done()
+            ? `<button type="button" class="btn" data-act="claim" data-q="${q.id}">Claim</button>`
+            : `<span class="prog" data-prog="${q.id}"></span>`}
+        </li>`).join('') : '<li class="done-note">You finished every goal. Keep the furnace alive as long as you can.</li>';
+    }
+    for (const el of $('quests').querySelectorAll('[data-prog]')) {
+      const q = QUESTS.find(x => x.id === el.dataset.prog);
+      el.textContent = q.prog ? q.prog() : 'Not yet';
+    }
+
+    if (logDirty) {
+      logDirty = false;
+      $('log').innerHTML = S.log.map(e =>
+        `<li class="${e.kind}"><span class="when">D${e.d} ${clockOf(e.h)}</span><span>${esc(e.msg)}</span></li>`).join('');
+    }
+
+    $('over').hidden = !S.over;
+    if (S.over) $('overText').textContent =
+      `Your outpost lasted until Day ${day()} and sheltered up to ${S.stats.maxPop} survivors at once. A bigger furnace and more coal miners will carry you further.`;
+  }
+
+  function effectText(id, L) {
+    if (id === 'furnace') return `Heats the outpost by ${heat(L)}°C and burns ${burn(L).toFixed(2)} coal/s.`;
+    if (id === 'shelter') return `Beds for ${capOf(L)} survivors.`;
+    if (id === 'infirmary') return L ? `Sick survivors heal ${(1 + 0.5 * L).toFixed(1)}× faster.` : 'Helps sick survivors heal faster.';
+    if (id === 'ironmine' && !L) return 'Digs iron. Every Lv 3+ upgrade needs it.';
+    const j = JOBS.find(x => x.b === id);
+    return `Room for ${slots(L)} ${j.label.toLowerCase()} · ${perWorker(j.id, L).toFixed(2)} ${j.id}/s each.`;
+  }
+
+  // ---------- Scene ----------
+  const cv = $('scene'), g = cv.getContext('2d');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let W = 0, H = 0;
+  const newFlake = anywhere => ({ x: Math.random(), y: anywhere ? Math.random() : -0.03, r: 0.6 + Math.random() * 1.7, v: 0.04 + Math.random() * 0.07, w: Math.random() * 6.28 });
+  const flakes = Array.from({ length: 280 }, () => newFlake(true));
+
+  function sizeCanvas() {
+    const rect = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = rect.width; H = rect.height;
+    cv.width = Math.max(1, Math.round(W * dpr));
+    cv.height = Math.max(1, Math.round(H * dpr));
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  if ('ResizeObserver' in window) new ResizeObserver(sizeCanvas).observe(cv);
+  else window.addEventListener('resize', sizeCanvas);
+
+  const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+  const groundAt = (x, base) => base + Math.sin(x * 0.011 + 0.2) * 5 + Math.sin(x * 0.03 + 0.4) * 2;
+
+  function hill(base, amp, freq, color, ph) {
+    g.fillStyle = rgb(color);
+    g.beginPath(); g.moveTo(0, H);
+    for (let x = 0; x <= W + 8; x += 8) g.lineTo(x, base + Math.sin(x * freq + ph) * amp + Math.sin(x * freq * 2.7 + ph * 2) * amp * 0.4);
+    g.lineTo(W, H); g.closePath(); g.fill();
+  }
+
+  function hut(x, y, w, dl, lit) {
+    const h = w * 0.62, peak = y - h - w * 0.45;
+    g.fillStyle = rgb(mix([40, 44, 52], [96, 78, 62], dl));
+    g.fillRect(x - w / 2, y - h, w, h);
+    g.fillStyle = rgb(mix([56, 62, 74], [124, 100, 80], dl));
+    g.beginPath(); g.moveTo(x - w / 2 - 4, y - h); g.lineTo(x, peak); g.lineTo(x + w / 2 + 4, y - h); g.closePath(); g.fill();
+    g.fillStyle = rgb(mix([150, 166, 190], [246, 249, 251], dl));
+    g.beginPath(); g.moveTo(x - w / 2 - 4, y - h); g.lineTo(x, peak); g.lineTo(x + w / 2 + 4, y - h);
+    g.lineTo(x + w / 2, y - h + 3); g.lineTo(x, peak + 5); g.lineTo(x - w / 2, y - h + 3); g.closePath(); g.fill();
+    g.fillStyle = lit ? 'rgba(255,190,110,0.95)' : rgb(mix([24, 28, 36], [62, 52, 46], dl));
+    g.fillRect(x - w * 0.12, y - h * 0.64, w * 0.24, h * 0.3);
+  }
+
+  function tower(x, y, F, on, dl, time) {
+    const w = 46 + F * 2.4, h = 58 + F * 3.4;
+    const iron = rgb(mix([34, 40, 50], [70, 78, 90], dl)), ironHi = rgb(mix([54, 62, 74], [106, 116, 130], dl));
+    g.fillStyle = rgb(mix([46, 50, 58], [112, 114, 120], dl));
+    g.fillRect(x - w * 0.75, y - 10, w * 1.5, 12);
+    g.fillStyle = iron;
+    g.beginPath(); g.moveTo(x - w / 2, y - 8); g.lineTo(x - w * 0.34, y - h); g.lineTo(x + w * 0.34, y - h); g.lineTo(x + w / 2, y - 8); g.closePath(); g.fill();
+    const bands = Math.min(F, 5);
+    g.fillStyle = ironHi;
+    for (let i = 1; i <= bands; i++) {
+      const yy = y - 8 - (h - 8) * i / (bands + 1);
+      const half = w / 2 - (w / 2 - w * 0.34) * ((y - 8 - yy) / (h - 8));
+      g.fillRect(x - half, yy - 1.5, half * 2, 3);
+    }
+    g.fillStyle = iron; g.fillRect(x - w * 0.14, y - h - 16, w * 0.28, 18);
+    g.fillStyle = ironHi; g.fillRect(x - w * 0.18, y - h - 19, w * 0.36, 4);
+    g.fillStyle = rgb(mix([150, 166, 190], [246, 249, 251], dl));
+    g.fillRect(x - w * 0.36, y - h - 2, w * 0.72, 3);
+    g.fillRect(x - w * 0.18, y - h - 21, w * 0.36, 2.5);
+    const dw = w * 0.36, dh = h * 0.32, dx = x - dw / 2, dy = y - 12 - dh;
+    if (on) {
+      const fl = reduce.matches ? 1 : 0.85 + 0.15 * Math.sin(time / 90);
+      const fg = g.createLinearGradient(0, dy, 0, dy + dh);
+      fg.addColorStop(0, `rgb(255,${Math.round(205 * fl)},90)`);
+      fg.addColorStop(1, 'rgb(228,78,28)');
+      g.fillStyle = fg;
+    } else g.fillStyle = 'rgb(18,20,24)';
+    g.beginPath(); g.moveTo(dx, dy + dh); g.lineTo(dx, dy + dw / 2); g.arc(dx + dw / 2, dy + dw / 2, dw / 2, Math.PI, 0); g.lineTo(dx + dw, dy + dh); g.closePath(); g.fill();
+    return y - h - 19;
+  }
+
+  function draw(time, dt) {
+    if (!W || !S) return;
+    const h = hour();
+    const dl = Math.max(0, Math.sin(((h - 6) / 12) * Math.PI));
+    const storm = inBlizzard();
+    const still = reduce.matches;
+
+    let top = mix([10, 20, 38], [128, 168, 200], dl), bot = mix([30, 48, 76], [212, 226, 237], dl);
+    if (storm) { top = mix(top, [168, 180, 192], 0.65); bot = mix(bot, [204, 212, 220], 0.65); }
+    const sky = g.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, rgb(top)); sky.addColorStop(1, rgb(bot));
+    g.fillStyle = sky; g.fillRect(0, 0, W, H);
+
+    const dusk = Math.max(0, 1 - Math.abs(h - 6.5) / 1.5) + Math.max(0, 1 - Math.abs(h - 18.5) / 1.5);
+    if (dusk > 0 && !storm) {
+      const dg = g.createLinearGradient(0, H * 0.2, 0, H * 0.8);
+      dg.addColorStop(0, 'rgba(255,170,120,0)');
+      dg.addColorStop(1, `rgba(255,150,100,${0.35 * dusk})`);
+      g.fillStyle = dg; g.fillRect(0, 0, W, H);
+    }
+    if (dl < 0.15 && !storm) {
+      g.fillStyle = `rgba(255,255,255,${0.6 * (1 - dl / 0.15)})`;
+      for (let i = 0; i < 46; i++) g.fillRect(((i * 97.31) % 100) / 100 * W, ((i * 53.77) % 100) / 100 * H * 0.45, 1.3, 1.3);
+    }
+
+    const groundY = H * 0.8;
+    hill(H * 0.62, 16, 0.006, mix([66, 84, 112], [192, 207, 222], dl), 1.3);
+    hill(groundY, 5, 0.011, mix([94, 114, 144], [238, 243, 247], dl), 0.2);
+
+    const on = S.mode > 0, F = S.lv.furnace, fx = W / 2, fy = groundAt(fx, groundY);
+    if (on) {
+      const flick = still ? 1 : 0.92 + 0.08 * Math.sin(time / 130) * Math.sin(time / 370);
+      const R = (70 + 12 * F) * (S.mode === 2 ? 1.3 : 1) * flick;
+      const gl = g.createRadialGradient(fx, fy - 30, 4, fx, fy - 30, R * 1.6);
+      gl.addColorStop(0, 'rgba(255,170,90,0.55)');
+      gl.addColorStop(0.45, 'rgba(255,130,60,0.2)');
+      gl.addColorStop(1, 'rgba(255,120,50,0)');
+      g.fillStyle = gl; g.fillRect(0, 0, W, H);
+    }
+
+    const huts = Math.min(12, S.lv.shelter + 2), lit = on && insideTemp() >= 0;
+    for (let i = huts - 1; i >= 0; i--) {
+      const side = i % 2 ? 1 : -1, k = Math.floor(i / 2);
+      const x = fx + side * (74 + k * 50);
+      hut(x, groundAt(x, groundY) + 2, 26 * (1 - k * 0.06), dl, lit);
+    }
+
+    const chimney = tower(fx, fy, F, on, dl, time);
+
+    if (on && !still) {
+      for (let i = 0; i < 6; i++) {
+        const p = ((time / 1000) * (S.mode === 2 ? 0.4 : 0.25) + i / 6) % 1;
+        g.fillStyle = `rgba(190,196,204,${0.4 * (1 - p)})`;
+        g.beginPath();
+        g.arc(fx + Math.sin(p * 6 + i) * 5 + p * (storm ? 60 : 22), chimney - p * 70, 4 + p * 12, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+
+    const n = storm ? 280 : 90, wind = storm ? 0.32 : 0.03, speed = storm ? 2.2 : 1;
+    g.fillStyle = 'rgba(255,255,255,0.85)';
+    for (let i = 0; i < n; i++) {
+      const f = flakes[i];
+      if (!still) {
+        f.y += f.v * speed * dt;
+        f.x += (wind + Math.sin(time / 900 + f.w) * 0.01) * speed * dt;
+        if (f.y > 1.03) Object.assign(f, newFlake(false));
+        if (f.x > 1.02) f.x -= 1.04;
+        if (f.x < -0.02) f.x += 1.04;
+      }
+      g.beginPath(); g.arc(f.x * W, f.y * H, f.r, 0, Math.PI * 2); g.fill();
+    }
+  }
+
+  // ---------- Boot ----------
+  let started = false;
+  function start(data) {
+    if (started) return;
+    started = true;
+    let loaded = null, fromStore = false;
+    if (data && data.state && data.state.v === 1) loaded = data.state;
+    else { loaded = loadSaved(); fromStore = !!loaded; }
+    S = loaded ? Object.assign(newGame(), loaded) : newGame();
+    if (!loaded) intro();
+    else if (fromStore) offlineGains();
+
+    buildDOM();
+    sizeCanvas();
+    render();
+
+    let last = performance.now();
+    setInterval(() => {
+      const now = performance.now(), dt = Math.min(1, (now - last) / 1000);
+      last = now;
+      tick(dt);
+      render();
+    }, 200);
+    setInterval(save, 5000);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+    window.addEventListener('pagehide', save);
+
+    let lastF = performance.now();
+    const frame = now => {
+      const dt = Math.min(0.1, (now - lastF) / 1000);
+      lastF = now;
+      draw(now, dt);
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
+
+  try { window.claude?.hot?.snapshot?.(() => ({ state: S })); } catch (e) { /* no live-update hook */ }
+  const hot = window.claude?.hot;
+  if (hot?.ready) hot.ready(start);
+  else start(hot?.data ?? {});
+})();
+</script>
