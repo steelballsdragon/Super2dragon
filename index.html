@@ -1099,6 +1099,7 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
   border-top-color: var(--ice-2);
   border-bottom-width: 0;
 }
+.city-bui.has-timer .city-bubble { margin-top: -18px; }
 .city-bubble svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 1px var(--black-a40)); }
 .city-bubble.is-full { border-color: var(--gold-2); box-shadow: 0 0 0 3px var(--ember-glow), 0 4px 10px var(--black-a40); }
 .city-bubble.is-full::after { border-top-color: var(--gold-2); }
@@ -4329,7 +4330,7 @@ function openReward(job) {
   const prevFocus = document.activeElement;
   const wrap = document.createElement('div');
   wrap.className = 'reward-wrap';
-  wrap.style.zIndex = '600';
+  wrap.style.zIndex = String(Math.max(600, ++zTop));
   wrap.innerHTML = `<div class="sheet-scrim"></div><section class="reward-card" role="dialog" aria-modal="true" aria-labelledby="reward-title" tabindex="-1"><div class="reward-rays" aria-hidden="true"></div><h2 class="reward-title" id="reward-title"></h2><div class="reward-grid">${Game.rewardsHtml(job.rewards)}</div><button type="button" class="btn gold wide reward-ok">OK</button></section>`;
   wrap.querySelector('.reward-title').textContent = job.title;
   let closed = false;
@@ -5064,6 +5065,13 @@ function computeEnv(now, lit) {
   ENV.bzLeft = now >= c.wx.start && now < c.wx.end ? (c.wx.end - now) / 1000 : 0;
   return ENV;
 }
+// coldest the inside gets during the coming (or current) blizzard in this Furnace mode: night low minus the storm
+function blizzardLow(mode) {
+  const c = C();
+  return -23 - (c.wx.drop || 12) + (c.noCoal ? 0 : heatOf(lvl('furnace') || 1, mode));
+}
+// warn only when the storm would actually push the city below freezing
+function blizzardThreat() { return blizzardLow(C().mode) < 0; }
 function refreshEnv() {
   if (!Game.S) return ENV;
   const c = C();
@@ -5137,7 +5145,7 @@ function stepWeather(now, quiet) {
   if (!w.warned && now >= w.start - 45e3 && now < w.end) {
     w.warned = true;
     if (!quiet) {
-      Game.toast(now < w.start ? 'A blizzard is coming. Keep the Furnace hot.' : 'A blizzard has hit the city.', 'bad');
+      if (blizzardThreat()) Game.toast(now < w.start ? 'A blizzard is coming. Keep the Furnace hot.' : 'A blizzard has hit the city.', 'bad');
       Game.emit('city:blizzard', { start: w.start, end: w.end });
     }
   }
@@ -6437,10 +6445,13 @@ const View = (() => {
       ui.dataset.b = id;
       ui.style.cssText = `left:${d.x}px;top:${d.y}px;z-index:${Math.round(d.y)}`;
       const plateY = id === 'furnace' ? 30 : Math.round(down * 0.55);
+      // timer chip and collect bubble sit on the building itself, low enough to stay off the labels of buildings behind
+      const timerY = id === 'furnace' ? Math.round(up * 0.62) : Math.round(Math.min(up * 0.3, 30));
+      const bubbleY = Math.round(Math.min(up * 0.55, 46));
       ui.innerHTML = `<div class="city-plate" style="top:${plateY}px"><span class="city-plate-lv"></span><span class="city-plate-name">${esc(d.name)}</span></div>
         <span class="city-up" style="left:${Math.round(w * 0.3)}px;top:${-Math.round(up * 0.72)}px" hidden>${Game.icon('arrow_up', 22)}</span>
-        <button type="button" class="city-timer" style="top:${-up - 4}px" hidden><span class="city-timer-ico">${Game.icon('hammer', 16)}</span><span class="city-timer-t"></span><span class="city-timer-bar"><i></i></span></button>
-        <button type="button" class="city-bubble" style="top:${-up + 6}px" hidden>${PRODUCERS[id] ? Game.icon(PRODUCERS[id], 24) : ''}</button>
+        <button type="button" class="city-timer" style="top:${-timerY}px" hidden><span class="city-timer-ico">${Game.icon('hammer', 16)}</span><span class="city-timer-t"></span><span class="city-timer-bar"><i></i></span></button>
+        <button type="button" class="city-bubble" style="top:${-bubbleY}px" hidden>${PRODUCERS[id] ? Game.icon(PRODUCERS[id], 24) : ''}</button>
         <div class="city-tap" style="top:${-Math.round(up * (id === 'furnace' ? 0.42 : 0.5))}px" hidden aria-hidden="true"><span class="city-tap-t">Tap</span>${Game.icon('city_down', 22)}</div>`;
       const timer = ui.querySelector('.city-timer');
       timer.addEventListener('click', () => onTimerTap(id));
@@ -6837,7 +6848,12 @@ const View = (() => {
     if (!v.root || Game.screen?.() !== 'city' || document.hidden) return;
     const animate = v.running && !Game.reducedMotion;
     const moving = v.camT || v.inertia;
-    if (animate || moving || v.dirty) drawFrame(now);
+    if (animate || moving || v.dirty) {
+      try { drawFrame(now); } catch (e) {
+        console.warn('[city] frame skipped', e);
+        try { v.ctx?.setTransform(1, 0, 0, 1, 0, 0); v.ctx?.restore(); } catch (e2) { /* nothing saved */ }
+      }
+    }
     if (animate || v.camT || v.inertia) v.raf = requestAnimationFrame(loop);
   }
 
@@ -6928,7 +6944,8 @@ const View = (() => {
       const f = v.fx[i];
       const age = (now - f.t0) / 1000;
       if (age > 1.4 || !motion) { if (age > 1.4) v.fx.splice(i, 1); continue; }
-      const kk = age / 1.4;
+      if (age < 0) continue;
+      const kk = clamp(age / 1.4, 0, 1);
       ctx.save();
       ctx.translate(f.x, f.y);
       ctx.scale(1, 0.5);
@@ -7066,7 +7083,11 @@ const View = (() => {
     // alert
     let alert = '';
     let showOver = false;
-    if (env.bzLeft > 0) { alert = `Blizzard: ${fmtT(env.bzLeft)} left`; showOver = c.mode !== 'over'; } else if (env.warnIn > 0 && env.warnIn <= 45) { alert = `Blizzard in ${fmtT(env.warnIn)}`; showOver = c.mode !== 'over'; } else if (c.noCoal) alert = 'Out of Coal. Collect from the Coal Mine.';
+    const storm = env.bzLeft > 0 || (env.warnIn > 0 && env.warnIn <= 45);
+    if (storm && blizzardThreat()) {
+      alert = env.bzLeft > 0 ? `Blizzard: ${fmtT(env.bzLeft)} left` : `Blizzard in ${fmtT(env.warnIn)}`;
+      showOver = c.mode !== 'over';
+    } else if (c.noCoal) alert = 'Out of Coal. Collect from the Coal Mine.';
     else if (c.hungry) alert = 'Out of Meat. Survivors are hungry.';
     e.alert.hidden = !alert;
     if (alert) Game.setText(e.alertT, alert);
@@ -7110,6 +7131,7 @@ const View = (() => {
         Game.setText(bs.plate.querySelector('.city-plate-name'), L < 1 && unlocked ? 'Build ' + B[id].name : B[id].name);
         bs.up.hidden = !up;
         bs.timer.hidden = !t;
+        bs.ui.classList.toggle('has-timer', !!t);
         bs.timer.classList.toggle('is-free', !!free);
         bs.bubble.hidden = !bubble;
         bs.bubble.classList.toggle('is-full', isFull);
@@ -7638,13 +7660,17 @@ function survivorsSheet() {
       Game.setText(q('food'), c.hungry ? `Out of Meat. Output ${Math.round(HUNGRY_EFF * 100)}% and survivors fall sick.` : `Fed. Survivors eat ${fmt(Math.round(eatPerHour()))} Meat per hour.`);
       const full = p.total >= popCap();
       const comfy = env.comfort === 'warm' || env.comfort === 'chilly';
+      const jobless = idle();
       let arr;
-      if (full) arr = 'The Shelter is full. Upgrade it to take in more survivors.';
+      // idle survivors matter more than room for new ones: more people would only add to the idle count
+      if (jobless > 0 && freeSlots() <= 0) arr = `${jobless} ${jobless === 1 ? 'survivor has' : 'survivors have'} no job. Upgrade resource buildings for more worker slots.`;
+      else if (jobless > 0) arr = `${jobless} ${jobless === 1 ? 'survivor has' : 'survivors have'} no job. Tap Auto-assign or add workers below.`;
+      else if (full) arr = 'The Shelter is full. Upgrade it to take in more survivors.';
       else if (!comfy) arr = 'Too cold for newcomers. Warm the city to attract survivors.';
       else if (c.hungry) arr = 'No food for newcomers.';
       else arr = `Next survivor in about ${fmtT(Math.max(1, arrivalNeed(p.total) - p.arr))}.`;
       Game.setText(q('arrive'), arr);
-      bodyEl.querySelector('[data-go="shelter"]').hidden = !full;
+      bodyEl.querySelector('[data-go="shelter"]').hidden = !full || jobless > 0;
       const inf = lvl('infirmary');
       Game.setText(q('heal'), inf > 0 ? `Infirmary heals 1 every ${healSecAt(inf)}s.` : isUnlocked('infirmary') ? 'Build the Infirmary to heal the sick faster.' : `Sick survivors heal slowly while warm and fed. The Infirmary opens at Furnace Lv ${B.infirmary.unlock}.`);
       bodyEl.querySelector('[data-go="infirmary"]').hidden = !(inf < 1 && isUnlocked('infirmary'));
@@ -8438,10 +8464,11 @@ function claimIdle() {
 }
 
 // ================================================================ recruitment
+const oddsPct = (r, k) => ODDS.find(o => o.rarity === r && o.kind === k)?.pct ?? 0;
 function freeReady() { return Game.now() >= num(mil().recruit.freeAt); }
 function freeIn() { return Math.max(0, Math.ceil((num(mil().recruit.freeAt) - Game.now()) / 1000)); }
 function pityLeft() { return Math.max(1, PITY_AT - int(mil().recruit.pity)); }
-function rollOne(rng) {
+function rollOne(rng, epicFloor) {
   const R = mil().recruit;
   let res = null;
   if (int(R.total) === 0) res = { rarity: 'epic', kind: 'hero', rule: 'first' };
@@ -8454,6 +8481,11 @@ function rollOne(rng) {
       if (r < acc) { res = { rarity: o.rarity, kind: o.kind }; break; }
     }
     if (!res) res = { rarity: 'rare', kind: 'shards' };
+    // 10x guarantee: a Rare result becomes Epic, keeping the published Epic hero-to-shards split
+    if (epicFloor && res.rarity === 'rare') {
+      const hero = oddsPct('epic', 'hero'), all = hero + oddsPct('epic', 'shards');
+      res = { rarity: 'epic', kind: rng() * all < hero ? 'hero' : 'shards', rule: 'ten' };
+    }
   }
   const pool = HEROES.filter(h => h.rarity === res.rarity);
   res.heroId = pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))].id;
@@ -8491,7 +8523,8 @@ function recruit(n, pay) {
   const rng = typeof Game.mil?._rng === 'function' ? Game.mil._rng : Math.random;
   const results = [];
   for (let i = 0; i < n; i++) {
-    const r = rollOne(rng);
+    const last = n === 10 && i === n - 1;
+    const r = rollOne(rng, last && !results.some(x => x.rarity !== 'rare'));
     applyPull(r);
     results.push(r);
   }
@@ -8669,6 +8702,7 @@ function updateRoster(view) {
 function recruitSkeleton() {
   const total = ODDS.reduce((t, o) => t + o.pct, 0);
   const byRarity = r => ODDS.filter(o => o.rarity === r).reduce((t, o) => t + o.pct, 0);
+  const oddsOf = (r, k) => ODDS.find(o => o.rarity === r && o.kind === k)?.pct ?? 0;
   const pct = v => `${+v.toFixed(3)}%`;
   const rows = ODDS.map(o => `<tr><td><span class="mil-odot rarity-${o.rarity}"></span>${RARITIES[o.rarity].name} ${o.kind === 'hero' ? 'hero' : `shards x${SHARDS_PER_PULL}`}</td><td class="num">${pct(o.pct)}</td></tr>`).join('');
   const pool = RARITY_ORDER.map(r => {
@@ -8685,7 +8719,7 @@ function recruitSkeleton() {
       </div>
       <div class="mil-rbanner-text">
         <h2 class="mil-rbanner-title">Advanced Recruitment</h2>
-        <p class="mil-rbanner-sub">Legendary heroes ${pct(byRarity('legendary'))}. Epic ${pct(byRarity('epic'))}.</p>
+        <p class="mil-rbanner-sub">Legendary hero ${pct(oddsOf('legendary', 'hero'))}, guaranteed within ${PITY_AT} pulls. Epic hero ${pct(oddsOf('epic', 'hero'))}.</p>
       </div>
     </section>
     <div class="mil-pity card">
@@ -8709,6 +8743,7 @@ function recruitSkeleton() {
         <li>Every hero of the same rarity is equally likely.</li>
         <li>Pity: if ${PITY_AT - 1} pulls in a row bring no Legendary hero, pull ${PITY_AT} is a Legendary hero. The counter resets whenever you get one, and Legendary shards do not reset it.</li>
         <li>Your very first recruit is always an Epic hero.</li>
+        <li>Every 10x recruit includes at least one Epic or Legendary result. If the first nine are all Rare, the tenth is Epic (hero or shards, in the same ${oddsPct('epic', 'hero')} to ${oddsPct('epic', 'shards')} split as the table).</li>
         <li>A hero you already own turns into ${DUPE_SHARDS} of their shards. Shards add stars, and ${UNLOCK_SHARDS} shards unlock a hero you do not own yet.</li>
       </ul>
     </div>
@@ -9166,10 +9201,10 @@ function openReveal(results, n) {
     timers.forEach(clearTimeout);
     cards.forEach(c => c.classList.add('is-flipped'));
     const fresh = results.filter(r => r.isNew).map(r => HERO[r.heroId]);
-    const shardN = results.filter(r => !r.isNew).length;
+    const shardN = results.filter(r => !r.isNew).reduce((t, r) => t + (r.shards || 0), 0);
     const parts = [];
     if (fresh.length) parts.push(`New ${fresh.length === 1 ? 'hero' : 'heroes'}: <b>${fresh.map(h => `<span class="rarity-${h.rarity} rarity-text">${esc(h.name)}</span>`).join(', ')}</b>`);
-    if (shardN) parts.push(`${shardN} shard ${shardN === 1 ? 'drop' : 'drops'}`);
+    if (shardN) parts.push(`+${shardN} ${shardN === 1 ? 'shard' : 'shards'}`);
     parts.push(`Legendary hero within ${pityLeft()} ${pityLeft() === 1 ? 'pull' : 'pulls'}`);
     const sum = body.querySelector('.mil-rsum');
     sum.innerHTML = parts.map(x => `<span>${x}</span>`).join('<span class="mil-dotsep" aria-hidden="true"></span>');
@@ -10226,7 +10261,8 @@ const priceOf = p => {
   try { s = provider?.priceString?.(p.id) || null; } catch (e) { s = null; }
   return s || usd(p.usd);
 };
-const vipPtsFor = p => Math.round(p.usd * VIP_PER_USD);
+// list prices end in .99, so points are counted per started dollar: $4.99 gives 500, enough for VIP 3
+const vipPtsFor = p => Math.ceil(p.usd - 1e-9) * VIP_PER_USD;
 
 function contentsOf(p) {
   switch (p.kind) {
@@ -11542,14 +11578,24 @@ const DAILY = [
   { id: 'collect', key: 'collect', n: 5, pts: 10, icon: 'wood', text: 'Collect resources 5 times', go: goCollect },
   { id: 'train', key: 'trainStart', n: 20, pts: 15, icon: 'troop_infantry', text: 'Train 20 troops', go: 'heroes:troops' },
   { id: 'recruit', key: 'recruit', n: 1, pts: 20, icon: 'ticket', text: 'Recruit 1 hero', go: 'heroes:recruit' },
-  { id: 'battle', key: 'battle', n: 3, pts: 10, icon: 'sword', text: 'Fight 3 battles', go: 'explore' },
+  { id: 'battle', key: 'battle', n: 3, pts: 10, icon: 'sword', text: 'Fight 3 battles', go: 'explore', needsStage: true },
   { id: 'idle', key: 'idle', n: 1, pts: 10, icon: 'chest', text: 'Claim idle rewards', go: 'explore:idle' },
   { id: 'speedup', key: 'speedup', n: 1, pts: 10, icon: 'speedup', text: 'Use a speedup', go: goSpeedup },
-  { id: 'stage', key: 'clear', n: 1, pts: 15, icon: 'map', text: 'Clear a new stage', go: 'explore' },
+  { id: 'stage', key: 'clear', n: 1, pts: 15, icon: 'map', text: 'Clear a new stage', go: 'explore', needsStage: true },
   { id: 'herolv', key: 'heroLv', n: 1, pts: 10, icon: 'xp', text: 'Level up a hero', go: goHero },
   { id: 'login', key: 'login', n: 1, pts: 10, icon: 'calendar', text: "Claim today's login reward", go: 'events:login' },
 ];
 const MAX_POINTS = 100;
+// once every Explore stage is cleared, the battle missions cannot be done, so they drop off the list
+// (the other missions still add up to more than MAX_POINTS)
+function stagesLeft() {
+  const max = Game.mil?.MAX_STAGE;
+  return !max || (Game.mil?.highestStage?.() ?? 0) < max;
+}
+function dailyList() {
+  const claimed = P()?.daily?.claimed || {};
+  return DAILY.filter(m => !m.needsStage || stagesLeft() || claimed[m.id]);
+}
 const CHESTS = [
   { at: 20, rarity: 'common', rw: R({ gems: 10, speedup_1m: 3, crate_wood: 1 }) },
   { at: 40, rarity: 'rare', rw: R({ gems: 20, xp_book: 2, crate_meat: 1 }) },
@@ -12046,7 +12092,7 @@ function claimables() {
     if (chapterComplete()) chN++;
   }
   let dN = 0;
-  for (const m of DAILY) if (missionState(m) === 'ready') dN++;
+  for (const m of dailyList()) if (missionState(m) === 'ready') dN++;
   for (const x of CHESTS) if (chestState(x) === 'ready') dN++;
   const lN = loginReady() ? 1 : 0;
   return { chapter: chN, daily: dN, login: lN, total: chN + dN + lN };
@@ -12083,11 +12129,11 @@ function bannerModel() {
     return { kind: 'chest', id: 'chest', kicker, text: 'Chapter complete. Open the chest', cur: 1, n: 1, claim: true, icon: 'chest' };
   }
   const kicker = `Daily missions · ${activity()}/${MAX_POINTS}`;
-  const readyM = DAILY.find(m => missionState(m) === 'ready');
+  const readyM = dailyList().find(m => missionState(m) === 'ready');
   if (readyM) return { kind: 'mission', id: readyM.id, kicker, text: readyM.text, cur: readyM.n, n: readyM.n, claim: true, icon: readyM.icon };
   const chest = CHESTS.find(x => chestState(x) === 'ready');
   if (chest) return { kind: 'dchest', id: String(chest.at), kicker, text: `Activity chest ${chest.at} is ready`, cur: 1, n: 1, claim: true, icon: 'chest' };
-  const openM = DAILY.find(m => missionState(m) === 'open');
+  const openM = dailyList().find(m => missionState(m) === 'open');
   if (openM) return { kind: 'mission', id: openM.id, kicker, text: openM.text, cur: Math.min(openM.n, dailyCount(openM.key)), n: openM.n, claim: false, icon: openM.icon, go: openM.go };
   return { kind: 'daydone', id: 'done', kicker, text: 'All daily missions done. New ones after the reset', cur: 1, n: 1, claim: false, icon: 'check', view: true };
 }
@@ -12304,14 +12350,14 @@ function updateChapterView(view) {
 // ---------- daily view
 function dailySig() {
   const d = P().daily;
-  return `${d.day}:${DAILY.map(m => missionState(m)[0]).join('')}:${CHESTS.map(c => chestState(c)[0]).join('')}`;
+  return `${d.day}:${dailyList().map(m => missionState(m)[0]).join('')}:${CHESTS.map(c => chestState(c)[0]).join('')}`;
 }
 function renderDailyView(view) {
-  const order = DAILY.map((m, i) => ({ m, i })).sort((a, b) => {
+  const order = dailyList().map((m, i) => ({ m, i })).sort((a, b) => {
     const r = { ready: 0, open: 1, claimed: 2 };
     return r[missionState(a.m)] - r[missionState(b.m)] || a.i - b.i;
   }).map(x => x.m);
-  const readyN = DAILY.filter(m => missionState(m) === 'ready').length;
+  const readyN = dailyList().filter(m => missionState(m) === 'ready').length;
   view.innerHTML = `<section class="panel prog-act">
       <div class="prog-act-head">
         <div>
@@ -12350,7 +12396,7 @@ function updateDailyView(view) {
   const bar = view.querySelector('.prog-act-bar .bar');
   const w = ((pts / MAX_POINTS) * 100).toFixed(1) + '%';
   if (bar.style.width !== w) bar.style.width = w;
-  for (const m of DAILY) {
+  for (const m of dailyList()) {
     const row = view.querySelector(`[data-mission="${m.id}"]`);
     if (!row) continue;
     const cur = missionState(m) === 'open' ? Math.min(m.n, dailyCount(m.key)) : m.n;
@@ -12674,7 +12720,7 @@ Game.prog = {
     };
   },
   current: () => bannerModel(),
-  daily: () => ({ points: activity(), max: MAX_POINTS, missions: DAILY.map(m => ({ id: m.id, text: m.text, cur: Math.min(m.n, dailyCount(m.key)), n: m.n, pts: m.pts, state: missionState(m) })) }),
+  daily: () => ({ points: activity(), max: MAX_POINTS, missions: dailyList().map(m => ({ id: m.id, text: m.text, cur: Math.min(m.n, dailyCount(m.key)), n: m.n, pts: m.pts, state: missionState(m) })) }),
   loginReady: () => loginReady(),
   claimTask,
   claimChapterChest,

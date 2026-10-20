@@ -305,14 +305,24 @@ const DAILY = [
   { id: 'collect', key: 'collect', n: 5, pts: 10, icon: 'wood', text: 'Collect resources 5 times', go: goCollect },
   { id: 'train', key: 'trainStart', n: 20, pts: 15, icon: 'troop_infantry', text: 'Train 20 troops', go: 'heroes:troops' },
   { id: 'recruit', key: 'recruit', n: 1, pts: 20, icon: 'ticket', text: 'Recruit 1 hero', go: 'heroes:recruit' },
-  { id: 'battle', key: 'battle', n: 3, pts: 10, icon: 'sword', text: 'Fight 3 battles', go: 'explore' },
+  { id: 'battle', key: 'battle', n: 3, pts: 10, icon: 'sword', text: 'Fight 3 battles', go: 'explore', needsStage: true },
   { id: 'idle', key: 'idle', n: 1, pts: 10, icon: 'chest', text: 'Claim idle rewards', go: 'explore:idle' },
   { id: 'speedup', key: 'speedup', n: 1, pts: 10, icon: 'speedup', text: 'Use a speedup', go: goSpeedup },
-  { id: 'stage', key: 'clear', n: 1, pts: 15, icon: 'map', text: 'Clear a new stage', go: 'explore' },
+  { id: 'stage', key: 'clear', n: 1, pts: 15, icon: 'map', text: 'Clear a new stage', go: 'explore', needsStage: true },
   { id: 'herolv', key: 'heroLv', n: 1, pts: 10, icon: 'xp', text: 'Level up a hero', go: goHero },
   { id: 'login', key: 'login', n: 1, pts: 10, icon: 'calendar', text: "Claim today's login reward", go: 'events:login' },
 ];
 const MAX_POINTS = 100;
+// once every Explore stage is cleared, the battle missions cannot be done, so they drop off the list
+// (the other missions still add up to more than MAX_POINTS)
+function stagesLeft() {
+  const max = Game.mil?.MAX_STAGE;
+  return !max || (Game.mil?.highestStage?.() ?? 0) < max;
+}
+function dailyList() {
+  const claimed = P()?.daily?.claimed || {};
+  return DAILY.filter(m => !m.needsStage || stagesLeft() || claimed[m.id]);
+}
 const CHESTS = [
   { at: 20, rarity: 'common', rw: R({ gems: 10, speedup_1m: 3, crate_wood: 1 }) },
   { at: 40, rarity: 'rare', rw: R({ gems: 20, xp_book: 2, crate_meat: 1 }) },
@@ -809,7 +819,7 @@ function claimables() {
     if (chapterComplete()) chN++;
   }
   let dN = 0;
-  for (const m of DAILY) if (missionState(m) === 'ready') dN++;
+  for (const m of dailyList()) if (missionState(m) === 'ready') dN++;
   for (const x of CHESTS) if (chestState(x) === 'ready') dN++;
   const lN = loginReady() ? 1 : 0;
   return { chapter: chN, daily: dN, login: lN, total: chN + dN + lN };
@@ -846,11 +856,11 @@ function bannerModel() {
     return { kind: 'chest', id: 'chest', kicker, text: 'Chapter complete. Open the chest', cur: 1, n: 1, claim: true, icon: 'chest' };
   }
   const kicker = `Daily missions · ${activity()}/${MAX_POINTS}`;
-  const readyM = DAILY.find(m => missionState(m) === 'ready');
+  const readyM = dailyList().find(m => missionState(m) === 'ready');
   if (readyM) return { kind: 'mission', id: readyM.id, kicker, text: readyM.text, cur: readyM.n, n: readyM.n, claim: true, icon: readyM.icon };
   const chest = CHESTS.find(x => chestState(x) === 'ready');
   if (chest) return { kind: 'dchest', id: String(chest.at), kicker, text: `Activity chest ${chest.at} is ready`, cur: 1, n: 1, claim: true, icon: 'chest' };
-  const openM = DAILY.find(m => missionState(m) === 'open');
+  const openM = dailyList().find(m => missionState(m) === 'open');
   if (openM) return { kind: 'mission', id: openM.id, kicker, text: openM.text, cur: Math.min(openM.n, dailyCount(openM.key)), n: openM.n, claim: false, icon: openM.icon, go: openM.go };
   return { kind: 'daydone', id: 'done', kicker, text: 'All daily missions done. New ones after the reset', cur: 1, n: 1, claim: false, icon: 'check', view: true };
 }
@@ -1067,14 +1077,14 @@ function updateChapterView(view) {
 // ---------- daily view
 function dailySig() {
   const d = P().daily;
-  return `${d.day}:${DAILY.map(m => missionState(m)[0]).join('')}:${CHESTS.map(c => chestState(c)[0]).join('')}`;
+  return `${d.day}:${dailyList().map(m => missionState(m)[0]).join('')}:${CHESTS.map(c => chestState(c)[0]).join('')}`;
 }
 function renderDailyView(view) {
-  const order = DAILY.map((m, i) => ({ m, i })).sort((a, b) => {
+  const order = dailyList().map((m, i) => ({ m, i })).sort((a, b) => {
     const r = { ready: 0, open: 1, claimed: 2 };
     return r[missionState(a.m)] - r[missionState(b.m)] || a.i - b.i;
   }).map(x => x.m);
-  const readyN = DAILY.filter(m => missionState(m) === 'ready').length;
+  const readyN = dailyList().filter(m => missionState(m) === 'ready').length;
   view.innerHTML = `<section class="panel prog-act">
       <div class="prog-act-head">
         <div>
@@ -1113,7 +1123,7 @@ function updateDailyView(view) {
   const bar = view.querySelector('.prog-act-bar .bar');
   const w = ((pts / MAX_POINTS) * 100).toFixed(1) + '%';
   if (bar.style.width !== w) bar.style.width = w;
-  for (const m of DAILY) {
+  for (const m of dailyList()) {
     const row = view.querySelector(`[data-mission="${m.id}"]`);
     if (!row) continue;
     const cur = missionState(m) === 'open' ? Math.min(m.n, dailyCount(m.key)) : m.n;
@@ -1437,7 +1447,7 @@ Game.prog = {
     };
   },
   current: () => bannerModel(),
-  daily: () => ({ points: activity(), max: MAX_POINTS, missions: DAILY.map(m => ({ id: m.id, text: m.text, cur: Math.min(m.n, dailyCount(m.key)), n: m.n, pts: m.pts, state: missionState(m) })) }),
+  daily: () => ({ points: activity(), max: MAX_POINTS, missions: dailyList().map(m => ({ id: m.id, text: m.text, cur: Math.min(m.n, dailyCount(m.key)), n: m.n, pts: m.pts, state: missionState(m) })) }),
   loginReady: () => loginReady(),
   claimTask,
   claimChapterChest,

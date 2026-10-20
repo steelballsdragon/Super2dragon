@@ -157,6 +157,7 @@
   border-top-color: var(--ice-2);
   border-bottom-width: 0;
 }
+.city-bui.has-timer .city-bubble { margin-top: -18px; }
 .city-bubble svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 1px var(--black-a40)); }
 .city-bubble.is-full { border-color: var(--gold-2); box-shadow: 0 0 0 3px var(--ember-glow), 0 4px 10px var(--black-a40); }
 .city-bubble.is-full::after { border-top-color: var(--gold-2); }

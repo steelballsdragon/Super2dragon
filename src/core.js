@@ -958,7 +958,7 @@ function openReward(job) {
   const prevFocus = document.activeElement;
   const wrap = document.createElement('div');
   wrap.className = 'reward-wrap';
-  wrap.style.zIndex = '600';
+  wrap.style.zIndex = String(Math.max(600, ++zTop));
   wrap.innerHTML = `<div class="sheet-scrim"></div><section class="reward-card" role="dialog" aria-modal="true" aria-labelledby="reward-title" tabindex="-1"><div class="reward-rays" aria-hidden="true"></div><h2 class="reward-title" id="reward-title"></h2><div class="reward-grid">${Game.rewardsHtml(job.rewards)}</div><button type="button" class="btn gold wide reward-ok">OK</button></section>`;
   wrap.querySelector('.reward-title').textContent = job.title;
   let closed = false;

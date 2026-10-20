@@ -337,7 +337,8 @@ const priceOf = p => {
   try { s = provider?.priceString?.(p.id) || null; } catch (e) { s = null; }
   return s || usd(p.usd);
 };
-const vipPtsFor = p => Math.round(p.usd * VIP_PER_USD);
+// list prices end in .99, so points are counted per started dollar: $4.99 gives 500, enough for VIP 3
+const vipPtsFor = p => Math.ceil(p.usd - 1e-9) * VIP_PER_USD;
 
 function contentsOf(p) {
   switch (p.kind) {

@@ -671,10 +671,11 @@ function claimIdle() {
 }
 
 // ================================================================ recruitment
+const oddsPct = (r, k) => ODDS.find(o => o.rarity === r && o.kind === k)?.pct ?? 0;
 function freeReady() { return Game.now() >= num(mil().recruit.freeAt); }
 function freeIn() { return Math.max(0, Math.ceil((num(mil().recruit.freeAt) - Game.now()) / 1000)); }
 function pityLeft() { return Math.max(1, PITY_AT - int(mil().recruit.pity)); }
-function rollOne(rng) {
+function rollOne(rng, epicFloor) {
   const R = mil().recruit;
   let res = null;
   if (int(R.total) === 0) res = { rarity: 'epic', kind: 'hero', rule: 'first' };
@@ -687,6 +688,11 @@ function rollOne(rng) {
       if (r < acc) { res = { rarity: o.rarity, kind: o.kind }; break; }
     }
     if (!res) res = { rarity: 'rare', kind: 'shards' };
+    // 10x guarantee: a Rare result becomes Epic, keeping the published Epic hero-to-shards split
+    if (epicFloor && res.rarity === 'rare') {
+      const hero = oddsPct('epic', 'hero'), all = hero + oddsPct('epic', 'shards');
+      res = { rarity: 'epic', kind: rng() * all < hero ? 'hero' : 'shards', rule: 'ten' };
+    }
   }
   const pool = HEROES.filter(h => h.rarity === res.rarity);
   res.heroId = pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))].id;
@@ -724,7 +730,8 @@ function recruit(n, pay) {
   const rng = typeof Game.mil?._rng === 'function' ? Game.mil._rng : Math.random;
   const results = [];
   for (let i = 0; i < n; i++) {
-    const r = rollOne(rng);
+    const last = n === 10 && i === n - 1;
+    const r = rollOne(rng, last && !results.some(x => x.rarity !== 'rare'));
     applyPull(r);
     results.push(r);
   }
@@ -902,6 +909,7 @@ function updateRoster(view) {
 function recruitSkeleton() {
   const total = ODDS.reduce((t, o) => t + o.pct, 0);
   const byRarity = r => ODDS.filter(o => o.rarity === r).reduce((t, o) => t + o.pct, 0);
+  const oddsOf = (r, k) => ODDS.find(o => o.rarity === r && o.kind === k)?.pct ?? 0;
   const pct = v => `${+v.toFixed(3)}%`;
   const rows = ODDS.map(o => `<tr><td><span class="mil-odot rarity-${o.rarity}"></span>${RARITIES[o.rarity].name} ${o.kind === 'hero' ? 'hero' : `shards x${SHARDS_PER_PULL}`}</td><td class="num">${pct(o.pct)}</td></tr>`).join('');
   const pool = RARITY_ORDER.map(r => {
@@ -918,7 +926,7 @@ function recruitSkeleton() {
       </div>
       <div class="mil-rbanner-text">
         <h2 class="mil-rbanner-title">Advanced Recruitment</h2>
-        <p class="mil-rbanner-sub">Legendary heroes ${pct(byRarity('legendary'))}. Epic ${pct(byRarity('epic'))}.</p>
+        <p class="mil-rbanner-sub">Legendary hero ${pct(oddsOf('legendary', 'hero'))}, guaranteed within ${PITY_AT} pulls. Epic hero ${pct(oddsOf('epic', 'hero'))}.</p>
       </div>
     </section>
     <div class="mil-pity card">
@@ -942,6 +950,7 @@ function recruitSkeleton() {
         <li>Every hero of the same rarity is equally likely.</li>
         <li>Pity: if ${PITY_AT - 1} pulls in a row bring no Legendary hero, pull ${PITY_AT} is a Legendary hero. The counter resets whenever you get one, and Legendary shards do not reset it.</li>
         <li>Your very first recruit is always an Epic hero.</li>
+        <li>Every 10x recruit includes at least one Epic or Legendary result. If the first nine are all Rare, the tenth is Epic (hero or shards, in the same ${oddsPct('epic', 'hero')} to ${oddsPct('epic', 'shards')} split as the table).</li>
         <li>A hero you already own turns into ${DUPE_SHARDS} of their shards. Shards add stars, and ${UNLOCK_SHARDS} shards unlock a hero you do not own yet.</li>
       </ul>
     </div>
@@ -1399,10 +1408,10 @@ function openReveal(results, n) {
     timers.forEach(clearTimeout);
     cards.forEach(c => c.classList.add('is-flipped'));
     const fresh = results.filter(r => r.isNew).map(r => HERO[r.heroId]);
-    const shardN = results.filter(r => !r.isNew).length;
+    const shardN = results.filter(r => !r.isNew).reduce((t, r) => t + (r.shards || 0), 0);
     const parts = [];
     if (fresh.length) parts.push(`New ${fresh.length === 1 ? 'hero' : 'heroes'}: <b>${fresh.map(h => `<span class="rarity-${h.rarity} rarity-text">${esc(h.name)}</span>`).join(', ')}</b>`);
-    if (shardN) parts.push(`${shardN} shard ${shardN === 1 ? 'drop' : 'drops'}`);
+    if (shardN) parts.push(`+${shardN} ${shardN === 1 ? 'shard' : 'shards'}`);
     parts.push(`Legendary hero within ${pityLeft()} ${pityLeft() === 1 ? 'pull' : 'pulls'}`);
     const sum = body.querySelector('.mil-rsum');
     sum.innerHTML = parts.map(x => `<span>${x}</span>`).join('<span class="mil-dotsep" aria-hidden="true"></span>');

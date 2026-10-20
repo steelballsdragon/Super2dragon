@@ -222,6 +222,13 @@ function computeEnv(now, lit) {
   ENV.bzLeft = now >= c.wx.start && now < c.wx.end ? (c.wx.end - now) / 1000 : 0;
   return ENV;
 }
+// coldest the inside gets during the coming (or current) blizzard in this Furnace mode: night low minus the storm
+function blizzardLow(mode) {
+  const c = C();
+  return -23 - (c.wx.drop || 12) + (c.noCoal ? 0 : heatOf(lvl('furnace') || 1, mode));
+}
+// warn only when the storm would actually push the city below freezing
+function blizzardThreat() { return blizzardLow(C().mode) < 0; }
 function refreshEnv() {
   if (!Game.S) return ENV;
   const c = C();
@@ -295,7 +302,7 @@ function stepWeather(now, quiet) {
   if (!w.warned && now >= w.start - 45e3 && now < w.end) {
     w.warned = true;
     if (!quiet) {
-      Game.toast(now < w.start ? 'A blizzard is coming. Keep the Furnace hot.' : 'A blizzard has hit the city.', 'bad');
+      if (blizzardThreat()) Game.toast(now < w.start ? 'A blizzard is coming. Keep the Furnace hot.' : 'A blizzard has hit the city.', 'bad');
       Game.emit('city:blizzard', { start: w.start, end: w.end });
     }
   }
@@ -1595,10 +1602,13 @@ const View = (() => {
       ui.dataset.b = id;
       ui.style.cssText = `left:${d.x}px;top:${d.y}px;z-index:${Math.round(d.y)}`;
       const plateY = id === 'furnace' ? 30 : Math.round(down * 0.55);
+      // timer chip and collect bubble sit on the building itself, low enough to stay off the labels of buildings behind
+      const timerY = id === 'furnace' ? Math.round(up * 0.62) : Math.round(Math.min(up * 0.3, 30));
+      const bubbleY = Math.round(Math.min(up * 0.55, 46));
       ui.innerHTML = `<div class="city-plate" style="top:${plateY}px"><span class="city-plate-lv"></span><span class="city-plate-name">${esc(d.name)}</span></div>
         <span class="city-up" style="left:${Math.round(w * 0.3)}px;top:${-Math.round(up * 0.72)}px" hidden>${Game.icon('arrow_up', 22)}</span>
-        <button type="button" class="city-timer" style="top:${-up - 4}px" hidden><span class="city-timer-ico">${Game.icon('hammer', 16)}</span><span class="city-timer-t"></span><span class="city-timer-bar"><i></i></span></button>
-        <button type="button" class="city-bubble" style="top:${-up + 6}px" hidden>${PRODUCERS[id] ? Game.icon(PRODUCERS[id], 24) : ''}</button>
+        <button type="button" class="city-timer" style="top:${-timerY}px" hidden><span class="city-timer-ico">${Game.icon('hammer', 16)}</span><span class="city-timer-t"></span><span class="city-timer-bar"><i></i></span></button>
+        <button type="button" class="city-bubble" style="top:${-bubbleY}px" hidden>${PRODUCERS[id] ? Game.icon(PRODUCERS[id], 24) : ''}</button>
         <div class="city-tap" style="top:${-Math.round(up * (id === 'furnace' ? 0.42 : 0.5))}px" hidden aria-hidden="true"><span class="city-tap-t">Tap</span>${Game.icon('city_down', 22)}</div>`;
       const timer = ui.querySelector('.city-timer');
       timer.addEventListener('click', () => onTimerTap(id));
@@ -1995,7 +2005,12 @@ const View = (() => {
     if (!v.root || Game.screen?.() !== 'city' || document.hidden) return;
     const animate = v.running && !Game.reducedMotion;
     const moving = v.camT || v.inertia;
-    if (animate || moving || v.dirty) drawFrame(now);
+    if (animate || moving || v.dirty) {
+      try { drawFrame(now); } catch (e) {
+        console.warn('[city] frame skipped', e);
+        try { v.ctx?.setTransform(1, 0, 0, 1, 0, 0); v.ctx?.restore(); } catch (e2) { /* nothing saved */ }
+      }
+    }
     if (animate || v.camT || v.inertia) v.raf = requestAnimationFrame(loop);
   }
 
@@ -2086,7 +2101,8 @@ const View = (() => {
       const f = v.fx[i];
       const age = (now - f.t0) / 1000;
       if (age > 1.4 || !motion) { if (age > 1.4) v.fx.splice(i, 1); continue; }
-      const kk = age / 1.4;
+      if (age < 0) continue;
+      const kk = clamp(age / 1.4, 0, 1);
       ctx.save();
       ctx.translate(f.x, f.y);
       ctx.scale(1, 0.5);
@@ -2224,7 +2240,11 @@ const View = (() => {
     // alert
     let alert = '';
     let showOver = false;
-    if (env.bzLeft > 0) { alert = `Blizzard: ${fmtT(env.bzLeft)} left`; showOver = c.mode !== 'over'; } else if (env.warnIn > 0 && env.warnIn <= 45) { alert = `Blizzard in ${fmtT(env.warnIn)}`; showOver = c.mode !== 'over'; } else if (c.noCoal) alert = 'Out of Coal. Collect from the Coal Mine.';
+    const storm = env.bzLeft > 0 || (env.warnIn > 0 && env.warnIn <= 45);
+    if (storm && blizzardThreat()) {
+      alert = env.bzLeft > 0 ? `Blizzard: ${fmtT(env.bzLeft)} left` : `Blizzard in ${fmtT(env.warnIn)}`;
+      showOver = c.mode !== 'over';
+    } else if (c.noCoal) alert = 'Out of Coal. Collect from the Coal Mine.';
     else if (c.hungry) alert = 'Out of Meat. Survivors are hungry.';
     e.alert.hidden = !alert;
     if (alert) Game.setText(e.alertT, alert);
@@ -2268,6 +2288,7 @@ const View = (() => {
         Game.setText(bs.plate.querySelector('.city-plate-name'), L < 1 && unlocked ? 'Build ' + B[id].name : B[id].name);
         bs.up.hidden = !up;
         bs.timer.hidden = !t;
+        bs.ui.classList.toggle('has-timer', !!t);
         bs.timer.classList.toggle('is-free', !!free);
         bs.bubble.hidden = !bubble;
         bs.bubble.classList.toggle('is-full', isFull);
@@ -2796,13 +2817,17 @@ function survivorsSheet() {
       Game.setText(q('food'), c.hungry ? `Out of Meat. Output ${Math.round(HUNGRY_EFF * 100)}% and survivors fall sick.` : `Fed. Survivors eat ${fmt(Math.round(eatPerHour()))} Meat per hour.`);
       const full = p.total >= popCap();
       const comfy = env.comfort === 'warm' || env.comfort === 'chilly';
+      const jobless = idle();
       let arr;
-      if (full) arr = 'The Shelter is full. Upgrade it to take in more survivors.';
+      // idle survivors matter more than room for new ones: more people would only add to the idle count
+      if (jobless > 0 && freeSlots() <= 0) arr = `${jobless} ${jobless === 1 ? 'survivor has' : 'survivors have'} no job. Upgrade resource buildings for more worker slots.`;
+      else if (jobless > 0) arr = `${jobless} ${jobless === 1 ? 'survivor has' : 'survivors have'} no job. Tap Auto-assign or add workers below.`;
+      else if (full) arr = 'The Shelter is full. Upgrade it to take in more survivors.';
       else if (!comfy) arr = 'Too cold for newcomers. Warm the city to attract survivors.';
       else if (c.hungry) arr = 'No food for newcomers.';
       else arr = `Next survivor in about ${fmtT(Math.max(1, arrivalNeed(p.total) - p.arr))}.`;
       Game.setText(q('arrive'), arr);
-      bodyEl.querySelector('[data-go="shelter"]').hidden = !full;
+      bodyEl.querySelector('[data-go="shelter"]').hidden = !full || jobless > 0;
       const inf = lvl('infirmary');
       Game.setText(q('heal'), inf > 0 ? `Infirmary heals 1 every ${healSecAt(inf)}s.` : isUnlocked('infirmary') ? 'Build the Infirmary to heal the sick faster.' : `Sick survivors heal slowly while warm and fed. The Infirmary opens at Furnace Lv ${B.infirmary.unlock}.`);
       bodyEl.querySelector('[data-go="infirmary"]').hidden = !(inf < 1 && isUnlocked('infirmary'));
