@@ -641,6 +641,12 @@ Game.registerNav = (prefix, fn) => {
   if (prefix && typeof fn === 'function') navs.set(String(prefix), fn);
 };
 Game.screen = () => currentScreen;
+// Landscape: screens fill the right side and the HUD, tabs and screen tools dock in a left panel.
+// core.css uses the same media query; modules move their tools into Game.sideSlot() on 'layout:changed'.
+const LANDSCAPE_MQ = typeof matchMedia === 'function' ? matchMedia('(orientation: landscape) and (min-width: 640px)') : null;
+Game.isLandscape = () => !!LANDSCAPE_MQ?.matches;
+Game.sideSlot = () => document.getElementById('side-slot');
+LANDSCAPE_MQ?.addEventListener?.('change', () => Game.emit('layout:changed', { landscape: Game.isLandscape() }));
 
 function tabScreens() {
   return [...screens.values()].filter(r => r.def.tab).sort((a, b) => num(a.def.tab.order ?? 99) - num(b.def.tab.order ?? 99));

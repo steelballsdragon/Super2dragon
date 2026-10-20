@@ -513,3 +513,36 @@
 .city-wrow { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; }
 .city-wrow-txt { min-width: 0; }
 .city-wrow-rate { font-size: 12.5px; margin-top: 2px; }
+
+/* landscape dock: the map controls sit in core's left panel instead of over the town */
+.city-dock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  padding-block: 10px 12px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: 12px;
+}
+.city-dock .city-top,
+.city-dock .city-left,
+.city-dock .city-side,
+.city-dock .city-bottom { pointer-events: auto; }
+.city-dock .city-bottom { padding-bottom: 0; }
+.city-dock .city-left { grid-template-columns: repeat(2, minmax(0, 1fr)); justify-items: stretch; }
+.city-dock .city-builder { min-width: 0; }
+.city-dock .city-side { justify-content: flex-start; }
+.city-dock.is-away .city-top,
+.city-dock.is-away .city-left { display: none; }
+.city-dock > * { min-width: 0; }
+/* the panel is narrower than a phone screen: tighter temperature row and survivor counts without their words */
+.city-dock .city-temp { padding: 6px 8px 6px; }
+.city-dock .city-t-row { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.25fr) minmax(0, 1fr); gap: 4px; }
+.city-dock .city-t-cell { gap: 4px; }
+.city-dock .city-t-ico svg { width: 15px; height: 15px; }
+.city-dock .city-t-lbl { font-size: 9px; letter-spacing: 0.05em; }
+.city-dock .city-t-val { font-size: 15px; gap: 3px; }
+.city-dock .city-comfort { font-size: 10px; padding: 1px 4px; }
+.city-dock .city-mode > button { padding: 3px 8px; font-size: 12px; }
+.city-dock .city-pop { gap: 6px; padding: 0 7px 0 5px; font-size: 14px; }
+.city-dock .city-pop-w { display: none; }
+.city-dock .city-auto { margin-bottom: 0; padding-inline: 8px; font-size: 12px; }

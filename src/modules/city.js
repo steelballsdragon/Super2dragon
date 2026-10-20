@@ -391,6 +391,8 @@ function tick(dt, now) {
     t += step * 1000;
     simulate(step, t, false);
   }
+  // the landscape dock shows shortcut buttons on every tab, but the city screen update only runs on the City tab
+  if (Game.isLandscape?.() && Game.screen?.() !== 'city' && View.mounted()) View.updateSideBadges();
 }
 function offline(sec) {
   if (!Game.S || !(sec > 0)) return;
@@ -1468,9 +1470,10 @@ const View = (() => {
   }
   function freeArea() {
     const r = v.root.getBoundingClientRect();
-    const top = v.els.top ? v.els.top.getBoundingClientRect().bottom - r.top : 0;
+    const onMap = el => el && v.root.contains(el);
+    const top = onMap(v.els.top) ? v.els.top.getBoundingClientRect().bottom - r.top : 0;
     let bot = v.vh;
-    if (v.els.bottom && !v.els.banner.hidden && v.els.banner.childElementCount) bot = v.els.bottom.getBoundingClientRect().top - r.top;
+    if (onMap(v.els.bottom) && !v.els.banner.hidden && v.els.banner.childElementCount) bot = v.els.bottom.getBoundingClientRect().top - r.top;
     return { top: clamp(top, 0, v.vh * 0.5), bot: clamp(bot, v.vh * 0.5, v.vh) };
   }
   function camFor(wx, wy) {
@@ -1580,6 +1583,7 @@ const View = (() => {
       new ResizeObserver(() => layoutSide()).observe(v.els.side.parentElement);
     } else window.addEventListener('resize', () => { resize(); layoutSide(); });
     resize();
+    applyLayout();
   }
 
   function buildWorldDom() {
@@ -1706,7 +1710,9 @@ const View = (() => {
     const first = !v.vw;
     v.vw = w; v.vh = h;
     v.dpr = Math.min(2, window.devicePixelRatio || 1);
-    v.s = clamp(w / 446, 0.8, 1.2);
+    v.s = Game.isLandscape?.()
+      ? Math.max(clamp(Math.min(w / 446, h / 560), 0.7, 1.2), w / WORLD_W, h / WORLD_H)
+      : clamp(w / 446, 0.8, 1.2);
     v.canvas.width = Math.round(w * v.dpr);
     v.canvas.height = Math.round(h * v.dpr);
     v.canvas.style.width = w + 'px';
@@ -2251,16 +2257,7 @@ const View = (() => {
     e.alertBtn.hidden = !showOver;
     // builders
     updateBuilders();
-    // side buttons badges
-    for (const [id, def] of v.sideDefs) {
-      const dot = e.side.querySelector(`[data-side="${CSS.escape(id)}"] .badge-dot`);
-      if (!dot) continue;
-      let n = 0;
-      try { n = Number(def.badge?.()) || 0; } catch (err) { n = 0; }
-      dot.hidden = !(n > 0);
-      dot.classList.toggle('has-count', n > 1);
-      Game.setText(dot, n > 1 ? (n > 99 ? '99+' : String(n)) : '');
-    }
+    updateSideBadges();
     // building overlays
     const hl = currentHighlight();
     let full = 0;
@@ -2366,6 +2363,46 @@ const View = (() => {
     renderSide();
   }
   // Fit the side buttons above the banner: as many rows as fit, then more columns to the left.
+  function updateSideBadges() {
+    const e = v.els;
+    if (!e?.side) return;
+    for (const [id, def] of v.sideDefs) {
+      const dot = e.side.querySelector(`[data-side="${CSS.escape(id)}"] .badge-dot`);
+      if (!dot) continue;
+      let n = 0;
+      try { n = Number(def.badge?.()) || 0; } catch (err) { n = 0; }
+      dot.hidden = !(n > 0);
+      dot.classList.toggle('has-count', n > 1);
+      Game.setText(dot, n > 1 ? (n > 99 ? '99+' : String(n)) : '');
+    }
+  }
+  // Landscape: the temperature and survivor panel, quest banner, builders and shortcut buttons leave the map and
+  // dock in core's left panel. Comment markers remember where each part goes back in portrait.
+  function applyLayout() {
+    const slot = Game.sideSlot?.();
+    if (!v.root || !slot) return;
+    const parts = [v.els.top, v.els.bottom, v.els.left, v.els.side].filter(Boolean);
+    if (!v.dock) {
+      v.dock = document.createElement('div');
+      v.dock.className = 'city-dock';
+      v.homes = parts.map(el => { const mark = document.createComment('city-dock'); el.parentNode.insertBefore(mark, el); return mark; });
+    }
+    const land = !!Game.isLandscape?.();
+    if (land && v.dock.parentNode !== slot) {
+      parts.forEach(el => v.dock.appendChild(el));
+      slot.appendChild(v.dock);
+    } else if (!land && v.dock.parentNode) {
+      parts.forEach((el, i) => v.homes[i].parentNode.insertBefore(el, v.homes[i].nextSibling));
+      v.dock.remove();
+    }
+    // away from the City tab only the quest banner and shortcut buttons stay in the panel
+    v.dock.classList.toggle('is-away', Game.screen?.() !== 'city');
+    updateSideBadges();
+    resize();
+    // a rotation changes the view's shape and scale, so frame the town again
+    if (v.landState !== undefined && v.landState !== land) { homeCamera(); applyWorldTransform(); requestDraw(); }
+    v.landState = land;
+  }
   function layoutSide() {
     // the row wraps on its own (flex-wrap in city.css); this only clears grid sizes older builds set inline
     const el = v.els.side;
@@ -2437,6 +2474,7 @@ const View = (() => {
 
   return {
     mount, update, start, stop, requestDraw, focus, addSide, removeSide, setBanner, onCollect, onLevelUp, onArrival, offlineNote,
+    applyLayout, updateSideBadges,
     get v() { return v; },
     setHighlight(id) { v.highlight = id && B[id] ? id : null; requestDraw(); },
     mounted: () => !!v.root,
@@ -2871,6 +2909,10 @@ Game.registerModule({
   offline,
   power: cityPower,
 });
+
+// landscape dock follows rotation and the active tab; its shortcut badges keep updating on other tabs
+Game.on('layout:changed', () => { if (View.mounted()) View.applyLayout(); });
+Game.on('screen:shown', () => { if (View.mounted()) View.applyLayout(); });
 
 Game.registerScreen('city', {
   tab: { label: 'City', icon: 'city', order: 1 },

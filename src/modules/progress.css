@@ -492,3 +492,8 @@
   .prog-dchest.is-ready .tile svg,
   .prog-day.is-ready .tile { animation: none !important; }
 }
+
+/* in a narrow landscape side panel the progress bar carries the count, so the icon and number make room for the text */
+@container side (max-width: 300px) {
+  .prog-banner-ico, .prog-banner-num { display: none; }
+}

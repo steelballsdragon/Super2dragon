@@ -945,6 +945,51 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
   .reward-rays { animation: none !important; }
 }
 
+/* ---------- landscape: the town (or screen) fills the right, everything else docks in a left panel.
+   Same query as Game.isLandscape() in core.js. */
+.side-slot { display: none; }
+@media (orientation: landscape) and (min-width: 640px) {
+  :root { --side-w: clamp(280px, 30vw, 360px); }
+  .app {
+    max-width: none;
+    display: grid;
+    grid-template-columns: var(--side-w) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "hud main" "slot main" "tabs main";
+    box-shadow: none;
+  }
+  .hud { grid-area: hud; border-right: 1px solid var(--line); box-shadow: none; }
+  .hud-inner { padding-right: 16px; }
+  .hud-res { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .side-slot {
+    grid-area: slot;
+    display: block;
+    container: side / inline-size;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--panel-3) transparent;
+    background: linear-gradient(180deg, var(--bg-2), var(--bg));
+    border-right: 1px solid var(--line);
+  }
+  .screens { grid-area: main; }
+  .tabbar { grid-area: tabs; border-right: 1px solid var(--line); box-shadow: none; }
+  .tabbar-inner { padding-right: 12px; padding-block: 4px 5px; }
+  .tab { min-height: 48px; padding: 4px 2px; font-size: 12px; gap: 2px; }
+  .tab-icon { width: 28px; height: 26px; }
+  /* screen content stays a readable column in the wide area */
+  .screen:not(.full-bleed) {
+    padding-left: max(16px, calc((100% - 720px) / 2));
+    padding-right: max(16px, env(safe-area-inset-right, 0px), calc((100% - 720px) / 2));
+  }
+  /* sheets and toasts open over the main area, the scrim still covers everything */
+  .sheet-wrap { align-items: center; padding-left: var(--side-w); }
+  .sheet { width: min(560px, 100%); }
+  .toast-host { top: 10px; left: var(--side-w); }
+}
+
 /* ===== modules/city.css ===== */
 /* Last Furnace city module (owner: city agent): the town view, its overlay chrome and the building sheets. */
 
@@ -1461,6 +1506,39 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 .city-wrow { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; }
 .city-wrow-txt { min-width: 0; }
 .city-wrow-rate { font-size: 12.5px; margin-top: 2px; }
+
+/* landscape dock: the map controls sit in core's left panel instead of over the town */
+.city-dock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  padding-block: 10px 12px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: 12px;
+}
+.city-dock .city-top,
+.city-dock .city-left,
+.city-dock .city-side,
+.city-dock .city-bottom { pointer-events: auto; }
+.city-dock .city-bottom { padding-bottom: 0; }
+.city-dock .city-left { grid-template-columns: repeat(2, minmax(0, 1fr)); justify-items: stretch; }
+.city-dock .city-builder { min-width: 0; }
+.city-dock .city-side { justify-content: flex-start; }
+.city-dock.is-away .city-top,
+.city-dock.is-away .city-left { display: none; }
+.city-dock > * { min-width: 0; }
+/* the panel is narrower than a phone screen: tighter temperature row and survivor counts without their words */
+.city-dock .city-temp { padding: 6px 8px 6px; }
+.city-dock .city-t-row { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.25fr) minmax(0, 1fr); gap: 4px; }
+.city-dock .city-t-cell { gap: 4px; }
+.city-dock .city-t-ico svg { width: 15px; height: 15px; }
+.city-dock .city-t-lbl { font-size: 9px; letter-spacing: 0.05em; }
+.city-dock .city-t-val { font-size: 15px; gap: 3px; }
+.city-dock .city-comfort { font-size: 10px; padding: 1px 4px; }
+.city-dock .city-mode > button { padding: 3px 8px; font-size: 12px; }
+.city-dock .city-pop { gap: 6px; padding: 0 7px 0 5px; font-size: 14px; }
+.city-dock .city-pop-w { display: none; }
+.city-dock .city-auto { margin-bottom: 0; padding-inline: 8px; font-size: 12px; }
 
 /* ===== modules/military.css ===== */
 /* Last Furnace military module styles (owner: military agent).
@@ -3364,11 +3442,17 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
   .prog-day.is-ready .tile { animation: none !important; }
 }
 
+/* in a narrow landscape side panel the progress bar carries the count, so the icon and number make room for the text */
+@container side (max-width: 300px) {
+  .prog-banner-ico, .prog-banner-num { display: none; }
+}
+
 </style>
 </head>
 <body>
 <div class="app" id="app">
   <header class="hud" id="hud" aria-label="Chief status"></header>
+  <aside class="side-slot" id="side-slot" aria-label="Quick controls"></aside>
   <main class="screens" id="screens"></main>
   <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
   <div class="ui-layer" id="ui-layer"></div>
@@ -4021,6 +4105,12 @@ Game.registerNav = (prefix, fn) => {
   if (prefix && typeof fn === 'function') navs.set(String(prefix), fn);
 };
 Game.screen = () => currentScreen;
+// Landscape: screens fill the right side and the HUD, tabs and screen tools dock in a left panel.
+// core.css uses the same media query; modules move their tools into Game.sideSlot() on 'layout:changed'.
+const LANDSCAPE_MQ = typeof matchMedia === 'function' ? matchMedia('(orientation: landscape) and (min-width: 640px)') : null;
+Game.isLandscape = () => !!LANDSCAPE_MQ?.matches;
+Game.sideSlot = () => document.getElementById('side-slot');
+LANDSCAPE_MQ?.addEventListener?.('change', () => Game.emit('layout:changed', { landscape: Game.isLandscape() }));
 
 function tabScreens() {
   return [...screens.values()].filter(r => r.def.tab).sort((a, b) => num(a.def.tab.order ?? 99) - num(b.def.tab.order ?? 99));
@@ -5242,6 +5332,8 @@ function tick(dt, now) {
     t += step * 1000;
     simulate(step, t, false);
   }
+  // the landscape dock shows shortcut buttons on every tab, but the city screen update only runs on the City tab
+  if (Game.isLandscape?.() && Game.screen?.() !== 'city' && View.mounted()) View.updateSideBadges();
 }
 function offline(sec) {
   if (!Game.S || !(sec > 0)) return;
@@ -6319,9 +6411,10 @@ const View = (() => {
   }
   function freeArea() {
     const r = v.root.getBoundingClientRect();
-    const top = v.els.top ? v.els.top.getBoundingClientRect().bottom - r.top : 0;
+    const onMap = el => el && v.root.contains(el);
+    const top = onMap(v.els.top) ? v.els.top.getBoundingClientRect().bottom - r.top : 0;
     let bot = v.vh;
-    if (v.els.bottom && !v.els.banner.hidden && v.els.banner.childElementCount) bot = v.els.bottom.getBoundingClientRect().top - r.top;
+    if (onMap(v.els.bottom) && !v.els.banner.hidden && v.els.banner.childElementCount) bot = v.els.bottom.getBoundingClientRect().top - r.top;
     return { top: clamp(top, 0, v.vh * 0.5), bot: clamp(bot, v.vh * 0.5, v.vh) };
   }
   function camFor(wx, wy) {
@@ -6431,6 +6524,7 @@ const View = (() => {
       new ResizeObserver(() => layoutSide()).observe(v.els.side.parentElement);
     } else window.addEventListener('resize', () => { resize(); layoutSide(); });
     resize();
+    applyLayout();
   }
 
   function buildWorldDom() {
@@ -6557,7 +6651,9 @@ const View = (() => {
     const first = !v.vw;
     v.vw = w; v.vh = h;
     v.dpr = Math.min(2, window.devicePixelRatio || 1);
-    v.s = clamp(w / 446, 0.8, 1.2);
+    v.s = Game.isLandscape?.()
+      ? Math.max(clamp(Math.min(w / 446, h / 560), 0.7, 1.2), w / WORLD_W, h / WORLD_H)
+      : clamp(w / 446, 0.8, 1.2);
     v.canvas.width = Math.round(w * v.dpr);
     v.canvas.height = Math.round(h * v.dpr);
     v.canvas.style.width = w + 'px';
@@ -7102,16 +7198,7 @@ const View = (() => {
     e.alertBtn.hidden = !showOver;
     // builders
     updateBuilders();
-    // side buttons badges
-    for (const [id, def] of v.sideDefs) {
-      const dot = e.side.querySelector(`[data-side="${CSS.escape(id)}"] .badge-dot`);
-      if (!dot) continue;
-      let n = 0;
-      try { n = Number(def.badge?.()) || 0; } catch (err) { n = 0; }
-      dot.hidden = !(n > 0);
-      dot.classList.toggle('has-count', n > 1);
-      Game.setText(dot, n > 1 ? (n > 99 ? '99+' : String(n)) : '');
-    }
+    updateSideBadges();
     // building overlays
     const hl = currentHighlight();
     let full = 0;
@@ -7217,6 +7304,46 @@ const View = (() => {
     renderSide();
   }
   // Fit the side buttons above the banner: as many rows as fit, then more columns to the left.
+  function updateSideBadges() {
+    const e = v.els;
+    if (!e?.side) return;
+    for (const [id, def] of v.sideDefs) {
+      const dot = e.side.querySelector(`[data-side="${CSS.escape(id)}"] .badge-dot`);
+      if (!dot) continue;
+      let n = 0;
+      try { n = Number(def.badge?.()) || 0; } catch (err) { n = 0; }
+      dot.hidden = !(n > 0);
+      dot.classList.toggle('has-count', n > 1);
+      Game.setText(dot, n > 1 ? (n > 99 ? '99+' : String(n)) : '');
+    }
+  }
+  // Landscape: the temperature and survivor panel, quest banner, builders and shortcut buttons leave the map and
+  // dock in core's left panel. Comment markers remember where each part goes back in portrait.
+  function applyLayout() {
+    const slot = Game.sideSlot?.();
+    if (!v.root || !slot) return;
+    const parts = [v.els.top, v.els.bottom, v.els.left, v.els.side].filter(Boolean);
+    if (!v.dock) {
+      v.dock = document.createElement('div');
+      v.dock.className = 'city-dock';
+      v.homes = parts.map(el => { const mark = document.createComment('city-dock'); el.parentNode.insertBefore(mark, el); return mark; });
+    }
+    const land = !!Game.isLandscape?.();
+    if (land && v.dock.parentNode !== slot) {
+      parts.forEach(el => v.dock.appendChild(el));
+      slot.appendChild(v.dock);
+    } else if (!land && v.dock.parentNode) {
+      parts.forEach((el, i) => v.homes[i].parentNode.insertBefore(el, v.homes[i].nextSibling));
+      v.dock.remove();
+    }
+    // away from the City tab only the quest banner and shortcut buttons stay in the panel
+    v.dock.classList.toggle('is-away', Game.screen?.() !== 'city');
+    updateSideBadges();
+    resize();
+    // a rotation changes the view's shape and scale, so frame the town again
+    if (v.landState !== undefined && v.landState !== land) { homeCamera(); applyWorldTransform(); requestDraw(); }
+    v.landState = land;
+  }
   function layoutSide() {
     // the row wraps on its own (flex-wrap in city.css); this only clears grid sizes older builds set inline
     const el = v.els.side;
@@ -7288,6 +7415,7 @@ const View = (() => {
 
   return {
     mount, update, start, stop, requestDraw, focus, addSide, removeSide, setBanner, onCollect, onLevelUp, onArrival, offlineNote,
+    applyLayout, updateSideBadges,
     get v() { return v; },
     setHighlight(id) { v.highlight = id && B[id] ? id : null; requestDraw(); },
     mounted: () => !!v.root,
@@ -7722,6 +7850,10 @@ Game.registerModule({
   offline,
   power: cityPower,
 });
+
+// landscape dock follows rotation and the active tab; its shortcut badges keep updating on other tabs
+Game.on('layout:changed', () => { if (View.mounted()) View.applyLayout(); });
+Game.on('screen:shown', () => { if (View.mounted()) View.applyLayout(); });
 
 Game.registerScreen('city', {
   tab: { label: 'City', icon: 'city', order: 1 },
