@@ -290,9 +290,9 @@ function shardIconMarkup(h) {
 
 // ================================================================ art: enemies (64x64, facing left)
 const ENEMIES = {
-  wolf: { name: 'Snow Wolf', boss: 'Alpha Wolf' },
-  bandit: { name: 'Raider', boss: 'Raider Chief' },
-  beast: { name: 'Frost Beast', boss: 'Frost Titan' },
+  wolf: { name: 'Snow Wolf', plural: 'Snow Wolves', boss: 'Alpha Wolf' },
+  bandit: { name: 'Raider', plural: 'Raiders', boss: 'Raider Chief' },
+  beast: { name: 'Frost Beast', plural: 'Frost Beasts', boss: 'Frost Titan' },
 };
 function enemySvg(type, boss, cls = 'mil-esvg') {
   let s = '';
@@ -1405,7 +1405,7 @@ function openReveal(results, n) {
     if (shardN) parts.push(`${shardN} shard ${shardN === 1 ? 'drop' : 'drops'}`);
     parts.push(`Legendary hero within ${pityLeft()} ${pityLeft() === 1 ? 'pull' : 'pulls'}`);
     const sum = body.querySelector('.mil-rsum');
-    sum.innerHTML = parts.join('<span class="mil-dotsep" aria-hidden="true"></span>');
+    sum.innerHTML = parts.map(x => `<span>${x}</span>`).join('<span class="mil-dotsep" aria-hidden="true"></span>');
     sum.hidden = false;
     body.querySelector('#mil-reveal-skip').hidden = true;
     const again = body.querySelector('#mil-reveal-again');
@@ -1787,7 +1787,7 @@ function openBattle() {
     <div class="mil-bhead">
       <div class="mil-bside"><span class="mil-bside-k">Your squad</span><span class="mil-bside-v">${Game.icon('power', 16)}${fmtFull(myPow)}</span></div>
       <span class="mil-bvs">${Game.icon('sword', 22)}</span>
-      <div class="mil-bside is-foe"><span class="mil-bside-k">${esc(isBoss(stage) ? ENEMIES[foes[0].type].boss : ENEMIES[foes[0].type].name + 's')}</span><span class="mil-bside-v">${Game.icon('power', 16)}${fmtFull(foePow)}</span></div>
+      <div class="mil-bside is-foe"><span class="mil-bside-k">${esc(isBoss(stage) ? ENEMIES[foes[0].type].boss : ENEMIES[foes[0].type].plural)}</span><span class="mil-bside-v">${Game.icon('power', 16)}${fmtFull(foePow)}</span></div>
     </div>
     <div class="mil-arena is-intro">
       ${arenaBgSvg()}
@@ -2050,9 +2050,23 @@ Game.registerNav('explore', rest => {
   else if (rest === 'idle') openIdleSheet();
 });
 
+function tierAtCamp(lv) {
+  let t = 1;
+  for (let i = 0; i < TIER_MIN_CAMP.length; i++) if (lv >= TIER_MIN_CAMP[i]) t = i + 1;
+  return t;
+}
 Game.on('ready', () => {
   updateBadges(true);
   Game.city?.addSideButton?.({ id: 'mil-recruit', icon: 'ticket', label: 'Recruit', onClick: () => Game.navigate('heroes:recruit'), badge: () => (Game.S?.mil && freeReady() ? 1 : 0) });
+  // camp sheets in the city show what the camp trains and link to the training sheet
+  for (const type of TROOP_TYPES) {
+    const T = TROOPS[type];
+    Game.city?.setBuildingInfo?.(T.camp, lv => [
+      ['Troop tier', lv > 0 ? 'T' + tierAtCamp(lv) : '-'],
+      ['Troops per batch', lv > 0 ? fmtFull(20 + 30 * lv) : '-'],
+    ]);
+    Game.city?.addBuildingAction?.(T.camp, { id: 'mil-train', label: `Train ${T.name}`, icon: T.icon, kind: 'blue', onClick: () => Game.navigate('heroes:train:' + type) });
+  }
 });
 Game.on('hero:recruited', () => updateBadges(true));
 Game.on('granted', () => updateBadges(true));

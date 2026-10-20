@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Last Furnace: dist/index.html is the standalone build that players open locally, so it is tracked
+!dist/

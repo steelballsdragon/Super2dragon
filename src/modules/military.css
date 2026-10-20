@@ -496,6 +496,7 @@
 .mil-reveal.is-multi .mil-rgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .mil-reveal.is-single .mil-rgrid { grid-template-columns: minmax(0, 176px); justify-content: center; padding-block: 10px; }
 .mil-rc { position: relative; perspective: 700px; aspect-ratio: 3 / 4.25; }
+.mil-reveal.is-multi .mil-rc { aspect-ratio: 3 / 4.7; }
 .mil-rc-in {
   position: relative;
   width: 100%;
@@ -568,8 +569,8 @@
   font: 11px/1 var(--font-display);
 }
 .mil-rc-tag.is-new { background: linear-gradient(180deg, var(--red), var(--red-2)); color: var(--red-ink); }
-.mil-rc-name { margin-top: auto; padding-top: 3px; font: 13px/1.05 var(--font-display); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 0 var(--black-a55); }
-.mil-rc-kind { padding: 2px 0 3px; font: 600 10px/1 var(--font-body); text-align: center; color: var(--text-2); }
+.mil-rc-name { flex: none; margin-top: auto; padding-top: 3px; font: 13px/1.05 var(--font-display); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 0 var(--black-a55); }
+.mil-rc-kind { flex: none; padding: 2px 0 3px; font: 600 10px/1 var(--font-body); text-align: center; color: var(--text-2); }
 .mil-reveal.is-single .mil-rc-name { font-size: 20px; }
 .mil-reveal.is-single .mil-rc-kind { font-size: 12px; padding-bottom: 6px; }
 .mil-reveal.is-single .mil-rc-tag { font-size: 14px; padding: 4px 7px; }
@@ -810,7 +811,7 @@
 .mil-arena.is-intro .mil-unit.is-foe .mil-unit-fig { animation: mil-in-r 0.42s ease-out both; }
 @keyframes mil-in-l { from { opacity: 0; transform: translateX(-46px); } to { opacity: 1; transform: none; } }
 @keyframes mil-in-r { from { opacity: 0; transform: translateX(46px); } to { opacity: 1; transform: none; } }
-.mil-troopchip { position: absolute; left: 8px; bottom: 8px; z-index: 2; font-size: 12px; }
+.mil-troopchip { position: absolute; left: 50%; bottom: 6px; z-index: 2; font-size: 12px; transform: translateX(-50%); white-space: nowrap; }
 .mil-fx { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 .mil-dmg {
   position: absolute;

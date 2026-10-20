@@ -117,6 +117,16 @@ Catalog (who emits):
 | `screen:shown` (**extra**) | `{ id }` | core |
 | `nav` (**extra**) | `{ target }` | core (`Game.navigate`) |
 | `motion:changed` (**extra**) | `{ reduced }` | core, when prefers-reduced-motion changes |
+| `hero:obtained` (**extra**) | `{ heroId, source }` | military, whenever a hero joins (recruit, shards, stage reward) |
+| `city:blizzard` (**extra**) | `{ start, end }` | city, when a blizzard warning goes out |
+| `city:mode` (**extra**) | `{ mode }` (`'off' \| 'on' \| 'over'`) | city, furnace mode changed |
+| `vip:points` (**extra**) | `{ amount, source, level }` | shop |
+| `vip:levelup` (**extra**) | `{ level, from }` | shop |
+| `shop:gift` (**extra**) | `{}` | shop, daily free gift claimed |
+| `shop:bought` (**extra**) | `{ id, item, count, gems }` | shop, Gem Shop purchase |
+| `login:claimed` (**extra**) | `{ day, round }` | progress |
+
+Payload details: `purchase:completed` also carries `transactionId`, `priceUsd` and `test` (true for the test store). `mission:claimed` ids are `daily:<missionId>`, `chapter<N>:<taskId>` and `chapter<N>:chest`. `hero:recruited` also carries `newHeroIds` and `pay` (`'free' | 'tickets' | 'gems'`).
 
 ## Resources
 
@@ -237,6 +247,7 @@ Bases: `builders 1` (capped at 2, floored), `freeFinishSec 60`, `productionPct 0
 - The screen element (`section.screen#screen-<id>`) already scrolls vertically and has the side gutter and 14 px top padding. Pass `fullBleed: true` (or add class `full-bleed`) to remove the padding, as the city canvas does.
 - `navigate(target)`: closes open sheets, shows the screen named by the whole target or by the part before the first colon, then calls the handler with the longest matching prefix (`'heroes:recruit'` matches a handler registered for `'heroes:recruit'` with rest `''`, or one for `'heroes'` with rest `'recruit'`). Unknown targets fall back to the tab before the first colon, else city. Calls before `ready` are queued.
 - Known targets: `city`, `city:building:<id>`, `heroes`, `heroes:recruit`, `explore`, `events`, `events:daily`, `shop`, `shop:gems`, `shop:vip`, `profile`.
+- Module targets (**extra**, added by the modules): `city:survivors` (survivors and workers sheet); `heroes:roster`, `heroes:squad`, `heroes:troops`, `heroes:hero:<heroId>`, `heroes:train:<troopType>`, `explore:fight`, `explore:idle`; `events:chapter`, `events:login`, `mail`; `shop:packs`, `shop:items`, and `shop:starter|builder|monthly|daily|hero|gift|history` (scroll to and highlight that offer).
 
 ## City extension points (provided by the city module)
 
@@ -251,9 +262,22 @@ Game.on('ready', () => {
 const camp = Game.city?.level?.('infantry_camp') ?? 0;
 ```
 
+Extras on `Game.city` (**extra**, all safe to call with optional chaining): `removeSideButton(id)`, `ids` (building ids in display order), `name(id)`, `unlockLevel(id)`, `maxLevel(id)`, `isUpgrading(id)`, `canUpgrade(id)`, `upgrade(id)`, `upgradeCost(id, level?)`, `focus(id)` (pan the camera), `highlight(id | null)` (gold ring on a building), `collect(id)`, `collectAll()`, `production(type)` (per hour), `stock(id)`, `survivors()` → `{ total, cap, healthy, sick, idle }`, `temperature()`, `setMode('off'|'on'|'over')`, `autoAssign()`, `openSurvivors()`, `setBuildingInfo(id, fn(level) → [[label, value]])`, `addBuildingAction(id, { id, label, kind, icon, onClick })`.
+
+Side buttons: ids are unique, so adding the same id twice replaces the button. The column holds about six buttons at 390x844; keep labels to one short word.
+
 Building ids: `furnace shelter sawmill coalmine ironmine hunter infirmary storehouse infantry_camp lancer_camp marksman_camp`. Furnace max level 30.
 
 `Game.store` (the purchase provider) belongs to the shop module. Other modules use it guarded: `Game.store?.buy?.('starter_pack')`.
+
+## Public objects of the modules (**extra**)
+
+Always read these with optional chaining; each one is missing in a `--only` build without its module.
+
+- `Game.store` (shop): `{ provider, setProvider(p), products(), product(id), canPurchase(id) → { ok, reason }, purchase(id) → Promise, buy (alias of purchase), restore(), history(), deliver(...), busy, isTest, DemoProvider }`. Product ids are `lf.gems.t1`..`t6`, `lf.pack.starter`, `lf.card.monthly`, `lf.pack.builder`, `lf.pack.daily`, `lf.pack.hero`; the aliases `starter_pack`, `builder`, `monthly_card`, `daily_deal` and `hero_pack` also work. Every purchase goes through the provider; the only one shipped is the DemoProvider test store ("Test mode. No money is charged."). See docs/IAP.md.
+- `Game.shop`: `{ vipLevel(), vipPoints(), addVipPoints(n, source), vipPerks(lv?), open(section?), giftReady(), claimGift(), openGift(), monthlyCard() → { active, claimable, claimsLeft }, claimMonthly(), hasSecondBuilder(), claimables(), gemShop() }`.
+- `Game.mil` (military): `heroIds()`, `owns(id)`, `heroDef(id)`, `heroLevel(id)`, `heroStars(id)`, `heroPower(id)`, `heroMaxLevel()`, `squad()`, `squadPower()`, `troopPower()`, `troopCount(type?)`, `troopTier(type)`, `campLevel(type)`, `highestStage()`, `stageLabel(n)`, `enemyPower(n)`, `idleMinutes()`, `freeRecruitReady()`, `pityLeft()`, `recruit(n, pay)`, `grantHero(id, { source })`, `claimIdle()`, `startTraining(type, n)`, `openHero(id)`, `openRecruit()`, `openTraining(type)`, `openBattle()`, `openIdle()`, `portraitSvg(id)`, `enemySvg(type, boss)`, plus the data tables `HEROES`, `CLASSES`, `RARITIES`, `TROOPS`, `ODDS`, `PITY_AT`, `MAX_STAGE`.
+- `Game.prog` (progress): `openMail()`, `openLetter(id)`, `sendMail({ id, from, title, body: [paragraphs], rewards?, go?: { label, target } })`, `mailUnread()`, `claimables()`, `chapter()`, `current()` (the City banner model), `daily()`, `loginReady()`, `claimTask(id)`, `claimChapterChest()`, `claimMission(id)`, `claimDailyChest(at)`, `claimLogin()`, `claimMail(id)`.
 
 ## UI helpers
 
@@ -261,7 +285,7 @@ Building ids: `furnace shelter sawmill coalmine ironmine hunter infirmary storeh
 |---|---|
 | `Game.sheet({ title, body, actions?, update?(bodyEl, handle), onClose?(handle), className? })` → `{ el, body, close(), refresh(), setTitle(t), closed }` | `Game.sheet({ title: 'Sawmill', body: html, actions: [{ label: 'Upgrade', kind: 'gold', onClick: upgrade }] })` |
 | `Game.confirmSheet({ title, message, confirmLabel, kind, onConfirm, cancelLabel?, onCancel? })` | `Game.confirmSheet({ title: 'Recruit x10', message: 'Spend 2,700 Gems?', confirmLabel: 'Recruit', kind: 'gold', onConfirm: go })` |
-| `Game.toast(text, kind = 'info' \| 'good' \| 'bad')` | `Game.toast('Sawmill upgraded to Lv 4', 'good')` |
+| `Game.toast(text, kind = 'info' \| 'good' \| 'bad')` (an identical toast already on screen is replaced, not stacked) | `Game.toast('Sawmill upgraded to Lv 4', 'good')` |
 | `Game.rewardPopup(rewards, title = 'Rewards')` (queued if one is open) | `Game.rewardPopup({ gems: 100, custom: [{ icon: 'hero', name: 'Mira', rarity: 'epic' }] }, 'Recruited')` |
 | `Game.needGems(amount)` "Not enough Gems" sheet (**extra**) | `if (!Game.spend({ gems: c }, 'x')) Game.needGems(c)` |
 | `Game.missingSheet(cost, { title?, message?, actions? })` shortfall rows with Use crate / Go / Get Gems (**extra**) | `if (!Game.has(cost)) Game.missingSheet(cost)` |
@@ -301,11 +325,11 @@ Tokens (all on `:root`, single dark theme, `color-scheme: dark`):
 - Type: `--font-display` ("Lilita One": titles, big numbers, buttons), `--font-body` ("Barlow" 400/500/600/700)
 - Shape: `--r-sm 6px --r 8px --r-lg 10px --app-max 480px`; `--hud-h` (measured HUD height, on `.app`)
 
-Layout: `.app` is a flex column (HUD, `.screens`, tab bar) max 480 px wide, centered on desktop. Overlays (`#ui-layer`) cover the whole column. Global `prefers-reduced-motion` rule disables animations and transitions; canvas code checks `Game.reducedMotion`.
+Layout: `.app` is a flex column (HUD, `.screens`, tab bar) max 480 px wide, centered on desktop. A `position: sticky` header inside a screen needs `top: -14px` and `margin-top: -14px`, because the screen has 14 px top padding and Chrome measures sticky offsets from the content edge. Overlays (`#ui-layer`) cover the whole column. Global `prefers-reduced-motion` rule disables animations and transitions; canvas code checks `Game.reducedMotion`.
 
 ## Storage
 
-`Game.storage.get(key)`, `.set(key, value)` → boolean, `.remove(key)` (**extra**): wrappers that never throw. Use them for per-viewer conveniences. Game state lives in `Game.S` and is saved by core (every 5 s, on hide and on pagehide) under `last-furnace-v2`; modules never save it themselves.
+`Game.storage.get(key)`, `.set(key, value)` → boolean, `.remove(key)` (**extra**): wrappers that never throw. Use them for per-viewer conveniences. Game state lives in `Game.S` and is saved by core (every 5 s, on hide and on pagehide) under `last-furnace-v2`. Modules do not save on their own, with one exception: right after something the player paid for is delivered (a store purchase or a restore), call `Game.save()` so a crash inside the 5 s window cannot lose it. The shop module does this.
 
 ## Debug (tests only, never in UI)
 

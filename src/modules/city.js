@@ -1568,8 +1568,10 @@ const View = (() => {
     renderSide();
     applyBanner();
     bindPointer();
-    if (typeof ResizeObserver === 'function') new ResizeObserver(() => resize()).observe(v.viewEl);
-    else window.addEventListener('resize', resize);
+    if (typeof ResizeObserver === 'function') {
+      new ResizeObserver(() => resize()).observe(v.viewEl);
+      new ResizeObserver(() => layoutSide()).observe(v.els.side.parentElement);
+    } else window.addEventListener('resize', () => { resize(); layoutSide(); });
     resize();
   }
 
@@ -2342,6 +2344,22 @@ const View = (() => {
     v.sideDefs.delete(String(id));
     renderSide();
   }
+  // Fit the side buttons above the banner: as many rows as fit, then more columns to the left.
+  function layoutSide() {
+    const el = v.els.side;
+    const mid = el?.parentElement;
+    if (!el || !mid) return;
+    const n = el.childElementCount;
+    const cs = getComputedStyle(mid);
+    const avail = mid.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+    const rows = Math.max(1, Math.floor((avail + 6) / (62 + 6)));
+    const cols = Math.max(1, Math.ceil(n / rows));
+    const r = Math.max(1, Math.ceil(n / cols));
+    const tc = `repeat(${cols}, 54px)`;
+    const tr = `repeat(${r}, 62px)`;
+    if (el.style.gridTemplateColumns !== tc) el.style.gridTemplateColumns = tc;
+    if (el.style.gridTemplateRows !== tr) el.style.gridTemplateRows = tr;
+  }
   function renderSide() {
     const el = v.els.side;
     if (!el) return;
@@ -2356,6 +2374,7 @@ const View = (() => {
       b.addEventListener('click', () => { try { def.onClick?.(); } catch (e) { console.error('[city] side button failed', e); } });
       el.appendChild(b);
     }
+    layoutSide();
   }
   function setBanner(node) {
     if (typeof node === 'string') node = node.trim() ? Game.el(node) : null;
@@ -2533,7 +2552,7 @@ function buildingSheet(id) {
     title: d.name,
     body,
     className: 'city-bsheet',
-    update: bodyEl => {
+    update: (bodyEl, hd) => {
       if (!Game.S) return;
       const c = C();
       const L = lvl(id);
@@ -2553,7 +2572,7 @@ function buildingSheet(id) {
       const prog = bodyEl.querySelector('.city-sh-prog');
       prog.hidden = !t;
       if (t) {
-        Game.setText(prog.querySelector('.city-sh-prog-lbl'), `Upgrading to Lv ${t.data?.level ?? L + 1}`);
+        Game.setText(prog.querySelector('.city-sh-prog-lbl'), L < 1 ? 'Building' : `Upgrading to Lv ${t.data?.level ?? L + 1}`);
         Game.setText(prog.querySelector('.city-sh-prog-time span'), fmtT(Game.timers.remaining(t.id)));
         prog.querySelector('.bar').style.width = (Game.timers.progress(t.id) * 100).toFixed(1) + '%';
       }
@@ -2615,8 +2634,8 @@ function buildingSheet(id) {
         speed: !!t,
         gofurnace: st.s === 'locked',
       };
-      h.el?.querySelectorAll('.sheet-actions [data-action]').forEach(b => { const on = !!show[b.dataset.action]; if (b.hidden === on) b.hidden = !on; });
-      const acts = h.el?.querySelector('.sheet-actions');
+      hd?.el?.querySelectorAll('.sheet-actions [data-action]').forEach(b => { const on = !!show[b.dataset.action]; if (b.hidden === on) b.hidden = !on; });
+      const acts = hd?.el?.querySelector('.sheet-actions');
       if (acts) acts.hidden = !Object.values(show).some(Boolean);
     },
     actions: [
@@ -2641,7 +2660,7 @@ function buildingSheet(id) {
         id: 'speed',
         kind: () => (buildTimer(id) && Game.timers.remaining(timerId(id)) <= Game.perk('freeFinishSec') ? 'green' : 'gold'),
         label: () => (buildTimer(id) && Game.timers.remaining(timerId(id)) <= Game.perk('freeFinishSec') ? `${Game.icon('check', 18)}<span>Free</span>` : `${Game.icon('speedup', 18)}<span>Speed up</span>`),
-        onClick: () => { View.v && onTimerTapPublic(id); return false; },
+        onClick: () => { onTimerTapPublic(id); return false; },
       },
       {
         id: 'gofurnace',
@@ -2852,6 +2871,7 @@ Game.registerNav('city:building', rest => {
   openSheet(id);
 });
 
+Game.registerNav('city:survivors', () => { survivorsSheet(); });
 Game.on('screen:shown', p => { if (p?.id === 'city') View.start(); else View.stop(); });
 Game.on('motion:changed', () => { if (Game.screen?.() === 'city') { View.stop(); View.start(); } });
 Game.on('ready', () => {
@@ -2896,6 +2916,7 @@ Game.city = {
   },
   setMode,
   autoAssign,
+  openSurvivors: () => Game.navigate('city:survivors'),
   setBuildingInfo: (id, fn) => { if (B[id] && typeof fn === 'function') extraInfo.set(id, fn); },
   addBuildingAction: (id, def) => {
     if (!B[id] || !def || typeof def.onClick !== 'function') return;

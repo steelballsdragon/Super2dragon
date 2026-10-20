@@ -197,7 +197,7 @@
 .city-float.is-level { color: var(--gold); font-size: 22px; }
 .city-float.is-small { font-size: 14px; color: var(--good); }
 
-@keyframes city-bob { 0%, 100% { margin-top: 0; } 50% { margin-top: -5px; } }
+@keyframes city-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
 @keyframes city-bounce { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
 @keyframes city-float {
   0% { opacity: 0; margin-top: 6px; }
@@ -375,13 +375,26 @@
 .city-builder.is-locked .city-builder-time { color: var(--muted); font-size: 13px; }
 .city-builder:active { transform: translateY(1px); }
 
-.city-side { display: grid; gap: 8px; justify-items: center; pointer-events: none; }
+/* side buttons stack down the right edge; when they do not fit above the banner (short phones) layoutSide() in
+   city.js sets two or more columns, and direction: rtl puts the extra columns to the left of the first */
+.city-side {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: 54px;
+  grid-auto-rows: 62px;
+  gap: 6px 4px;
+  align-content: start;
+  justify-items: center;
+  direction: rtl;
+  pointer-events: none;
+}
+.city-side > * { direction: ltr; }
 .city-side > * { pointer-events: auto; }
 .city-sidebtn {
   display: grid;
   justify-items: center;
-  gap: 3px;
-  width: 58px;
+  gap: 2px;
+  width: 54px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -393,8 +406,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r);
   background: linear-gradient(180deg, var(--panel-3), var(--panel-deep));
@@ -402,7 +415,10 @@
 }
 .city-sidebtn-ico .badge-dot { position: absolute; top: -4px; right: -4px; }
 .city-sidebtn-lbl {
-  max-width: 62px;
+  max-width: 58px;
+  padding: 1px 4px 2px;
+  border-radius: 4px;
+  background: var(--black-a55);
   text-align: center;
   text-shadow: 0 1px 0 var(--black-a70), 0 0 4px var(--black-a70), 1px 0 0 var(--black-a55), -1px 0 0 var(--black-a55);
 }

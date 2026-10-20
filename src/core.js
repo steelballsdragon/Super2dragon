@@ -889,8 +889,12 @@ Game.toast = (text, kind = 'info') => {
   const t = document.createElement('div');
   t.className = 'toast toast-' + k;
   t.innerHTML = `<span class="toast-icon">${Game.icon(k === 'good' ? 'check' : k === 'bad' ? 'exclaim' : 'info', 14)}</span><span class="toast-text"></span>`;
-  t.querySelector('.toast-text').textContent = String(text ?? '');
+  const msg = String(text ?? '');
+  t.querySelector('.toast-text').textContent = msg;
+  t.dataset.msg = k + ':' + msg;
   const host = toastHost();
+  // the same message twice in a row (a blizzard warning during a long skip, a double tap) shows once
+  for (const old of [...host.children]) if (old.dataset.msg === t.dataset.msg) old.remove();
   host.appendChild(t);
   while (host.children.length > 3) host.firstElementChild.remove();
   setTimeout(() => {
