@@ -1323,39 +1323,37 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 .city-builder.is-locked .city-builder-time { color: var(--muted); font-size: 13px; }
 .city-builder:active { transform: translateY(1px); }
 
-/* side buttons stack down the right edge; when they do not fit above the banner (short phones) layoutSide() in
-   city.js sets two or more columns, and direction: rtl puts the extra columns to the left of the first */
+/* side buttons sit in a row at the top right, like event icons in mobile games, so they stay clear of the
+   building labels lower down; extra buttons wrap onto a second row on narrow phones */
 .city-side {
-  display: grid;
-  grid-auto-flow: column;
-  grid-template-columns: 54px;
-  grid-auto-rows: 62px;
-  gap: 6px 4px;
-  align-content: start;
-  justify-items: center;
-  direction: rtl;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: flex-start;
+  gap: 4px 6px;
   pointer-events: none;
 }
-.city-side > * { direction: ltr; }
 .city-side > * { pointer-events: auto; }
 .city-sidebtn {
   display: grid;
   justify-items: center;
   gap: 2px;
-  width: 54px;
+  width: 48px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--text);
-  font: 11px/1.05 var(--font-display);
+  font: 10.5px/1.05 var(--font-display);
   letter-spacing: 0.02em;
 }
 .city-sidebtn-ico {
   position: relative;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--line-strong);
   border-radius: var(--r);
   background: linear-gradient(180deg, var(--panel-3), var(--panel-deep));
@@ -1363,7 +1361,7 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 }
 .city-sidebtn-ico .badge-dot { position: absolute; top: -4px; right: -4px; }
 .city-sidebtn-lbl {
-  max-width: 58px;
+  max-width: 52px;
   padding: 1px 4px 2px;
   border-radius: 4px;
   background: var(--black-a55);
@@ -7190,19 +7188,9 @@ const View = (() => {
   }
   // Fit the side buttons above the banner: as many rows as fit, then more columns to the left.
   function layoutSide() {
+    // the row wraps on its own (flex-wrap in city.css); this only clears grid sizes older builds set inline
     const el = v.els.side;
-    const mid = el?.parentElement;
-    if (!el || !mid) return;
-    const n = el.childElementCount;
-    const cs = getComputedStyle(mid);
-    const avail = mid.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
-    const rows = Math.max(1, Math.floor((avail + 6) / (62 + 6)));
-    const cols = Math.max(1, Math.ceil(n / rows));
-    const r = Math.max(1, Math.ceil(n / cols));
-    const tc = `repeat(${cols}, 54px)`;
-    const tr = `repeat(${r}, 62px)`;
-    if (el.style.gridTemplateColumns !== tc) el.style.gridTemplateColumns = tc;
-    if (el.style.gridTemplateRows !== tr) el.style.gridTemplateRows = tr;
+    if (el && (el.style.gridTemplateColumns || el.style.gridTemplateRows)) { el.style.gridTemplateColumns = ''; el.style.gridTemplateRows = ''; }
   }
   function renderSide() {
     const el = v.els.side;
@@ -7214,7 +7202,7 @@ const View = (() => {
       b.className = 'city-sidebtn';
       b.id = 'city-side-' + id.replace(/[^a-z0-9_-]/gi, '');
       b.dataset.side = id;
-      b.innerHTML = `<span class="city-sidebtn-ico">${Game.hasIcon?.(def.icon) ? Game.icon(def.icon, 28) : Game.icon('star', 28)}<span class="badge-dot" aria-hidden="true" hidden></span></span><span class="city-sidebtn-lbl">${esc(def.label || id)}</span>`;
+      b.innerHTML = `<span class="city-sidebtn-ico">${Game.hasIcon?.(def.icon) ? Game.icon(def.icon, 26) : Game.icon('star', 26)}<span class="badge-dot" aria-hidden="true" hidden></span></span><span class="city-sidebtn-lbl">${esc(def.label || id)}</span>`;
       b.addEventListener('click', () => { try { def.onClick?.(); } catch (e) { console.error('[city] side button failed', e); } });
       el.appendChild(b);
     }

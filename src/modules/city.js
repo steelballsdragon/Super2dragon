@@ -2346,19 +2346,9 @@ const View = (() => {
   }
   // Fit the side buttons above the banner: as many rows as fit, then more columns to the left.
   function layoutSide() {
+    // the row wraps on its own (flex-wrap in city.css); this only clears grid sizes older builds set inline
     const el = v.els.side;
-    const mid = el?.parentElement;
-    if (!el || !mid) return;
-    const n = el.childElementCount;
-    const cs = getComputedStyle(mid);
-    const avail = mid.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
-    const rows = Math.max(1, Math.floor((avail + 6) / (62 + 6)));
-    const cols = Math.max(1, Math.ceil(n / rows));
-    const r = Math.max(1, Math.ceil(n / cols));
-    const tc = `repeat(${cols}, 54px)`;
-    const tr = `repeat(${r}, 62px)`;
-    if (el.style.gridTemplateColumns !== tc) el.style.gridTemplateColumns = tc;
-    if (el.style.gridTemplateRows !== tr) el.style.gridTemplateRows = tr;
+    if (el && (el.style.gridTemplateColumns || el.style.gridTemplateRows)) { el.style.gridTemplateColumns = ''; el.style.gridTemplateRows = ''; }
   }
   function renderSide() {
     const el = v.els.side;
@@ -2370,7 +2360,7 @@ const View = (() => {
       b.className = 'city-sidebtn';
       b.id = 'city-side-' + id.replace(/[^a-z0-9_-]/gi, '');
       b.dataset.side = id;
-      b.innerHTML = `<span class="city-sidebtn-ico">${Game.hasIcon?.(def.icon) ? Game.icon(def.icon, 28) : Game.icon('star', 28)}<span class="badge-dot" aria-hidden="true" hidden></span></span><span class="city-sidebtn-lbl">${esc(def.label || id)}</span>`;
+      b.innerHTML = `<span class="city-sidebtn-ico">${Game.hasIcon?.(def.icon) ? Game.icon(def.icon, 26) : Game.icon('star', 26)}<span class="badge-dot" aria-hidden="true" hidden></span></span><span class="city-sidebtn-lbl">${esc(def.label || id)}</span>`;
       b.addEventListener('click', () => { try { def.onClick?.(); } catch (e) { console.error('[city] side button failed', e); } });
       el.appendChild(b);
     }
