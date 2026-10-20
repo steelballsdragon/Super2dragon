@@ -1284,22 +1284,23 @@ Game.speedupSheet = timerId => {
 
 // ---------------------------------------------------------------- HUD
 const hudEls = {};
+const hudNarrow = typeof matchMedia === 'function' ? matchMedia('(max-width: 374px)') : null;
 let shownPower = -1;
 let shownAvatar = null;
 function buildHud() {
   const hud = document.getElementById('hud');
   if (!hud) return;
+  // one compact band: avatar | power + gems over the four resources | backpack
   hud.innerHTML = `<div class="hud-inner">
-    <div class="hud-top">
-      <button type="button" class="hud-avatar" id="hud-avatar" aria-label="Chief profile"><span class="hud-avatar-img"></span><span class="hud-flv" title="Furnace level">${Game.icon('flame', 11)}<span class="hud-flv-num">1</span><span class="sr-only"> Furnace level</span></span></button>
-      <div class="hud-id">
-        <div class="hud-name" id="hud-name"></div>
-        <div class="hud-power">${Game.icon('power', 18)}<span class="sr-only">Power </span><span class="hud-power-num" id="hud-power">0</span></div>
+    <button type="button" class="hud-avatar" id="hud-avatar" aria-label="Chief profile"><span class="hud-avatar-img"></span><span class="hud-flv" title="Furnace level">${Game.icon('flame', 10)}<span class="hud-flv-num">1</span><span class="sr-only"> Furnace level</span></span></button>
+    <div class="hud-main">
+      <div class="hud-row">
+        <div class="hud-power"><span class="sr-only" id="hud-name"></span>${Game.icon('power', 15)}<span class="sr-only">Power </span><span class="hud-power-num" id="hud-power">0</span></div>
+        <button type="button" class="hud-gems" id="hud-gems">${Game.icon('gem', 16)}<span class="sr-only">Gems </span><span class="hud-gem-num" id="hud-gem-num">0</span><span class="hud-plus">${Game.icon('plus', 12)}<span class="sr-only"> Get more</span></span></button>
       </div>
-      <button type="button" class="hud-gems" id="hud-gems">${Game.icon('gem', 20)}<span class="sr-only">Gems </span><span class="hud-gem-num" id="hud-gem-num">0</span><span class="hud-plus">${Game.icon('plus', 14)}<span class="sr-only"> Get more</span></span></button>
-      <button type="button" class="hud-iconbtn" id="hud-bag" aria-label="Backpack">${Game.icon('bag', 26)}</button>
+      <div class="hud-res">${RES.map(r => `<button type="button" class="res-chip" id="hud-res-${r}" data-res="${r}">${Game.icon(RES_INFO[r].icon, 16)}<span class="sr-only">${RES_INFO[r].name} </span><span class="res-num">0</span></button>`).join('')}</div>
     </div>
-    <div class="hud-res">${RES.map(r => `<button type="button" class="res-chip" id="hud-res-${r}" data-res="${r}">${Game.icon(RES_INFO[r].icon, 20)}<span class="sr-only">${RES_INFO[r].name} </span><span class="res-num">0</span></button>`).join('')}</div>
+    <button type="button" class="hud-iconbtn" id="hud-bag" aria-label="Backpack">${Game.icon('bag', 24)}</button>
   </div>`;
   hudEls.avatar = hud.querySelector('.hud-avatar-img');
   hudEls.flv = hud.querySelector('.hud-flv-num');
@@ -1335,7 +1336,12 @@ function updateHud() {
     shownPower = p;
     setText(hudEls.power, p < 1e7 ? Game.fmtFull(p) : Game.fmt(p));
   }
-  for (const r of RES) setText(hudEls.res[r], Game.fmt(S.res[r]));
+  // narrow phones only fit about four characters per chip, so 1,000+ shows as 9.9K there (floored, never rounding up)
+  const narrow = hudNarrow?.matches;
+  for (const r of RES) {
+    const n = Math.max(0, Number(S.res[r]) || 0);
+    setText(hudEls.res[r], narrow && n >= 1000 && n < 1e5 ? (Math.floor(n / 100) / 10).toFixed(1).replace(/\.0$/, '') + 'K' : Game.fmt(n));
+  }
   const g = num(S.res.gems);
   setText(hudEls.gems, g < 1e5 ? Game.fmtFull(g) : Game.fmt(g));
   setText(hudEls.name, S.meta.chiefName);
