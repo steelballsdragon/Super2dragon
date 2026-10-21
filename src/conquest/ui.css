@@ -79,6 +79,8 @@ body { margin: 0; }
 }
 .aoc.is-large { font-size: 17px; }
 .aoc *, .aoc *::before, .aoc *::after { box-sizing: border-box; }
+/* no double-tap zoom anywhere; the map and town canvases take every gesture themselves (touch-action: none below) */
+html, body, .aoc, .aoc * { touch-action: manipulation; }
 :where(.aoc button) { font: inherit; color: inherit; cursor: pointer; }
 .aoc :focus-visible { outline: 2px solid var(--a-ice); outline-offset: 2px; }
 .aoc [hidden] { display: none !important; }
@@ -132,7 +134,7 @@ body { margin: 0; }
 .aoc-table th { text-align: left; color: var(--a-muted); font-weight: 600; border-bottom: 1px solid var(--a-line-2); padding: 4px 6px; }
 .aoc-table td { border-bottom: 1px solid var(--a-line-soft); padding: 5px 6px; }
 .aoc-table tr.is-me td { background: rgba(255, 216, 98, 0.12); }
-.aoc-input { width: 100%; min-height: 40px; padding: 8px 10px; border-radius: var(--a-r); border: 1px solid var(--a-line); background: var(--a-chip); color: var(--a-text); font: inherit; }
+.aoc-input { width: 100%; min-height: 40px; padding: 8px 10px; border-radius: var(--a-r); border: 1px solid var(--a-line); background: var(--a-chip); color: var(--a-text); font: inherit; font-size: 16px; }   /* 16px: phones zoom into smaller fields */
 .aoc-input:focus { border-color: var(--a-ice); outline: none; }
 .aoc-num { max-width: 120px; font-variant-numeric: tabular-nums; }
 .aoc-label { display: grid; gap: 4px; margin: 8px 0; color: var(--a-muted); font-size: 0.9em; }

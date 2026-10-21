@@ -43,9 +43,10 @@ const MAKES = { farm: 'food', lumber: 'wood', quarry: 'stone', mine: 'iron', mar
 
 const H = {
   cv: null, g: null, w: 0, h: 0, dpr: 1, cam: { x: 0, y: 300, z: 0.6 }, raf: 0, lastT: 0, sel: null, hits: [], tops: {},
-  pointers: new Map(), drag: null, pinch: null, build: {}, buildSig: '', buildAt: 0, busy: false, scene: null, pops: [], popAt: 0, popK: 0, homed: false,
+  pointers: new Map(), drag: null, build: {}, buildSig: '', buildAt: 0, busy: false, scene: null, pops: [], popAt: 0, popK: 0, homed: false,
 };
-const ZMIN = 0.32, ZMAX = 1.7;
+// the town is shown at one scale, set by the screen's width (only the world map zooms)
+const cityZoom = () => Math.max(0.5, Math.min(0.95, H.w / 560));
 U.home = H;
 
 // ================================================================ the static parts of the scene, per world seed
@@ -78,14 +79,13 @@ const toW = (sx, sy) => [H.cam.x + (sx - H.w / 2) / H.cam.z, H.cam.y + (sy - H.h
 const tileOf = (wx, wy) => [(wx / 32 + wy / 16) / 2, (wy / 16 - wx / 32) / 2];
 function clampCam() {
   const c = H.cam;
-  c.z = Math.max(ZMIN, Math.min(ZMAX, c.z));
+  c.z = cityZoom();
   c.x = Math.max(-760, Math.min(760, c.x));
   c.y = Math.max(-60, Math.min(760, c.y));
 }
 function homeCam() {
   const [x, y] = iso(10.5, 10.5);
   H.cam.x = x; H.cam.y = y - 40;
-  H.cam.z = Math.max(0.5, Math.min(0.95, H.w / 560));
   clampCam();
 }
 function resize() {
@@ -97,6 +97,7 @@ function resize() {
   H.w = w; H.h = h; H.dpr = dpr;
   H.cv.width = Math.round(w * dpr); H.cv.height = Math.round(h * dpr);
   H.cv.style.width = w + 'px'; H.cv.style.height = h + 'px';
+  clampCam();
 }
 
 // ================================================================ drawing
@@ -700,7 +701,7 @@ function refreshChecks(f) {
 }
 function mount(root) {
   root.innerHTML = `<div class="aoc-town">
-    <canvas class="aoc-town-cv" aria-label="Your city. Drag to look around, pinch or scroll to zoom, tap a building to open it."></canvas>
+    <canvas class="aoc-town-cv" aria-label="Your city. Drag to look around, tap a building to open it."></canvas>
     <div class="aoc-wui"></div>
     <div class="aoc-town-top">
       <button type="button" class="aoc-builder is-idle"><span class="aoc-builder-i">${U.icon('hammer', 18)}</span><span class="aoc-builder-t">Idle</span><span class="aoc-builder-bar"><i></i></span></button>
@@ -726,13 +727,12 @@ function mount(root) {
     cv.setPointerCapture?.(e.pointerId);
     H.pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
     if (H.pointers.size === 1) H.drag = { x: e.offsetX, y: e.offsetY, cx: H.cam.x, cy: H.cam.y, moved: 0 };
-    else if (H.pointers.size === 2) { const [a, b] = [...H.pointers.values()]; H.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: H.cam.z }; if (H.drag) H.drag.moved = 99; }
+    else if (H.drag) H.drag.moved = 99;   // a second finger never zooms the town, and ends the tap
   });
   cv.addEventListener('pointermove', e => {
     if (!H.pointers.has(e.pointerId)) return;
     H.pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
     H.camAt = performance.now();
-    if (H.pointers.size === 2 && H.pinch) { const [a, b] = [...H.pointers.values()]; H.cam.z = H.pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(1, H.pinch.d); clampCam(); return; }
     if (H.drag) {
       const dx = e.offsetX - H.drag.x, dy = e.offsetY - H.drag.y;
       H.drag.moved = Math.max(H.drag.moved, Math.abs(dx) + Math.abs(dy));
@@ -742,26 +742,21 @@ function mount(root) {
   const end = e => {
     const tap = H.drag && H.drag.moved < 8 && H.pointers.size === 1 && e.type === 'pointerup';
     H.pointers.delete(e.pointerId);
-    if (H.pointers.size < 2) H.pinch = null;
     if (tap) { const id = pick(e.offsetX, e.offsetY); if (id) select(id); }
     if (!H.pointers.size) H.drag = null;
   };
   cv.addEventListener('pointerup', end);
   cv.addEventListener('pointercancel', end);
+  // the wheel and trackpad scroll the town instead of zooming it
   cv.addEventListener('wheel', e => {
     e.preventDefault();
     H.camAt = performance.now();
-    const [a0, b0] = toW(e.offsetX, e.offsetY);
-    H.cam.z *= e.deltaY < 0 ? 1.12 : 1 / 1.12; clampCam();
-    const [a1, b1] = toW(e.offsetX, e.offsetY);
-    H.cam.x += a0 - a1; H.cam.y += b0 - b1; clampCam();
+    H.cam.x += (e.shiftKey ? e.deltaY : e.deltaX) / H.cam.z; H.cam.y += (e.shiftKey ? 0 : e.deltaY) / H.cam.z; clampCam();
   }, { passive: false });
   cv.tabIndex = 0;
   cv.addEventListener('keydown', e => {
     const k = { ArrowLeft: [-60, 0], ArrowRight: [60, 0], ArrowUp: [0, -60], ArrowDown: [0, 60] }[e.key];
     if (k) { H.cam.x += k[0] / H.cam.z; H.cam.y += k[1] / H.cam.z; clampCam(); e.preventDefault(); }
-    if (e.key === '+' || e.key === '=') { H.cam.z *= 1.2; clampCam(); }
-    if (e.key === '-') { H.cam.z /= 1.2; clampCam(); }
   });
 }
 U.screen('city', {

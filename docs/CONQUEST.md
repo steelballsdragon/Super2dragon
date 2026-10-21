@@ -246,7 +246,7 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | Inspector | Done | public facts for anyone; personality, goals, reasons, memories and troops only with a scout report under 6 hours old, or for guild mates |
 | Offline progress | Done | simulated on load at a tenth of play speed, capped (0, 6 or 12 hours, 1 or 3 days), then summarized |
 | Saves, backups, migrations, validation | Done | IndexedDB with gzip, a backup every 5 minutes, checksum, schema version with a migration hook, integrity checks |
-| Notifications, accessibility | Done | three notification levels, large text, reduced motion, keyboard map controls, labels on every control, portrait and landscape layouts |
+| Notifications, accessibility | Done | three notification levels, large text, reduced motion, keyboard map controls, labels on every control, portrait and landscape layouts; only the world map zooms (the page and the city never do, so fast taps on buttons do not zoom the screen) |
 | Pictures instead of text | Done | the drawn city as the home screen, the painted world map with castles and marching armies, battle scenes, icon-based sheets, a Tap marker instead of a written guide |
 | Last Furnace look and interactions | Done | its design system, level plates, builder chip, side buttons with red dots, chapter banner with Go and Claim, reward pop-ups, building sheets with effects and requirements, Free finish and crates (simulation rules shared with the AI) |
 | Developer mode | Done | 7 taps on the start screen logo; unlimited resources and instant switches saved with the world; max buildings, troops, commanders, timers, map, shield, resources, time skips; refused by the simulation outside developer mode |
@@ -260,7 +260,7 @@ Run on 2026-10-21 in this repository (`node tests/all.mjs`):
 |---|---|
 | conquest-engine | 52 of 52 passed |
 | conquest-demo | 5 of 5 passed |
-| conquest-ui | 17 of 17 passed |
+| conquest-ui | 18 of 18 passed |
 | conquest-dev | 10 of 10 passed |
 | conquest-robust | 6 of 6 passed (two game days at 64x: at most 751 DOM nodes, a 28 MB page heap with the paintings loaded, the town still drawing in under 4 ms a frame) |
 
@@ -302,7 +302,7 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 | Save and load | 41 ms and 128 ms (load includes regenerating the kingdom's terrain and the integrity checks) |
 | Command round trip, page to worker and back | 0.3 ms |
 | Path search | 1.2 ms on average for a 242-tile march between two random cities with every pass open (most cross several regions) |
-| Drawing the city | 1.5 ms per frame (median; 2.2 ms at the 95th percentile zoomed out) with Town Hall 25 and every building, on a 390 by 844 screen at 3x density in headless Chromium; the town redraws at about 30 frames a second while it is on screen |
+| Drawing the city | 1.5 ms per frame (median; 2.2 ms at the 95th percentile when it was zoomed out; the city no longer zooms) with Town Hall 25 and every building, on a 390 by 844 screen at 3x density in headless Chromium; the town redraws at about 30 frames a second while it is on screen |
 | Drawing the world map | terrain is painted in chunks of 32 by 32 tiles (16 pixels per tile) as they come into view, at most 4 a frame and 48 kept; a 4-pixels-per-tile painting of the whole kingdom stands in when zoomed out. In headless Chromium on a phone-sized screen a frame takes under 1 ms of script at every zoom, up to about 4 ms fully zoomed in |
 
 6,000 governors (ten servers) has not been measured, so this document makes no claim about it. At the measured cost, ten servers would need roughly ten times the CPU at 1x, which looks feasible on a desktop, but that is an estimate, not a result.

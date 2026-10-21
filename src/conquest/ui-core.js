@@ -247,6 +247,16 @@ U.reward = (items, title = 'Reward') => new Promise(res => {
   try { wrap.querySelector('.aoc-reward-ok').focus({ preventScroll: true }); } catch (e) { /* ignore */ }
 });
 U.layer = () => document.getElementById('aoc-layer') || document.body;
+// the page itself never zooms (double taps, pinches, ctrl+wheel and trackpad pinches); the world map handles its
+// own pinch and wheel zoom on its canvas
+{
+  const onMap = e => !!(e.target && e.target.closest && e.target.closest('.aoc-map-cv'));
+  for (const type of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(type, e => e.preventDefault(), { passive: false });
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1 && !onMap(e)) e.preventDefault(); }, { passive: false });
+  document.addEventListener('wheel', e => { if (e.ctrlKey && !onMap(e)) e.preventDefault(); }, { passive: false });
+  document.addEventListener('dblclick', e => { if (!onMap(e)) e.preventDefault(); }, { passive: false });
+  document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && ['+', '=', '-', '0'].includes(e.key)) e.preventDefault(); });
+}
 // the avatar redraws once the commander paintings have loaded
 window.addEventListener('aoc-art', () => { const p = document.querySelector('.aoc-me-pic'); if (p) p._civ = null; });
 U.reduced = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

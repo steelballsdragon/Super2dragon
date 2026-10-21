@@ -129,7 +129,6 @@ const standalone = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>${HOST_RESET}</style>
 ${headPart.trim()}
 ${APP_HEAD}

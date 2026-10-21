@@ -12,6 +12,8 @@ It looks and plays like the Last Furnace city game it replaces, a mobile strateg
 
 The simulated governors get the same conveniences: they collect their crates and finish nearly done builds free too.
 
+Only the world map zooms (pinch, the scroll wheel or its + and - buttons). The city is shown at one scale and you drag to look around; the page itself never zooms, so quick double taps on buttons are just taps.
+
 Turn your phone sideways for a landscape layout with the tabs on the left.
 
 Architecture, save format, feature checklist, test results, measured performance, limitations and roadmap: [docs/CONQUEST.md](docs/CONQUEST.md).

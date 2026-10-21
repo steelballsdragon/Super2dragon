@@ -279,6 +279,36 @@ await step('the kingdom: zoom out to all ten regions, find a pass, read why the 
   await closeSheets();
 });
 
+await step('only the world map zooms: the town and the page do not', async () => {
+  await page.click('#aoc-tab-city');
+  await page.waitForTimeout(300);
+  const box = await page.locator('.aoc-town-cv').boundingBox();
+  const z0 = await page.evaluate(() => window.AOCUI.home.cam.z);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -400);
+  await page.keyboard.press('+');
+  await page.waitForTimeout(200);
+  check(await page.evaluate(() => window.AOCUI.home.cam.z) === z0, 'the town zoomed');
+  // a pinch (ctrl+wheel) or a double tap on the page is refused; the viewport forbids page zoom
+  const blocked = await page.evaluate(() => {
+    const w = new WheelEvent('wheel', { ctrlKey: true, deltaY: -100, bubbles: true, cancelable: true });
+    document.querySelector('.aoc-topbar, .aoc-res, #aoc').dispatchEvent(w);
+    const d = new MouseEvent('dblclick', { bubbles: true, cancelable: true });
+    document.querySelector('.aoc-res, #aoc').dispatchEvent(d);
+    return { wheel: w.defaultPrevented, dbl: d.defaultPrevented, meta: document.querySelector('meta[name=viewport]')?.content || '' };
+  });
+  check(blocked.wheel && blocked.dbl && /user-scalable=no/.test(blocked.meta), `page zoom is not blocked: ${JSON.stringify(blocked)}`);
+  // the map still zooms
+  await page.click('#aoc-tab-map');
+  await page.waitForTimeout(300);
+  const m0 = await page.evaluate(() => window.AOCUI.map.z);
+  const mb = await page.locator('.aoc-map-cv').boundingBox();
+  await page.mouse.move(mb.x + mb.width / 2, mb.y + mb.height / 2);
+  await page.mouse.wheel(0, -300);
+  await page.waitForTimeout(200);
+  check(await page.evaluate(() => window.AOCUI.map.z) > m0, 'the map did not zoom');
+});
+
 await step('guilds: the ten guilds are listed and the player can apply', async () => {
   await page.click('#aoc-tab-guild');
   await page.waitForSelector('[data-apply]');
