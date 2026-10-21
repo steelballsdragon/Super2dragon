@@ -40,7 +40,12 @@ function battleSheet(r) {
   const { input, res, view } = r;
   const x = r.extra || {};
   const won = r.won;
+  const sum = (s, lost) => `<div class="aoc-bsum-side is-${s}"><b>${esc(input[s].label)}</b><div>${A.UNIT_KEYS.filter(u => (input[s].units[u] || 0) > 0).map(u => `<span class="aoc-troop">${U.icon(u, 16)}${fmt(input[s].units[u])}<i class="aoc-bad">-${fmt(lost[u])}</i></span>`).join('') || '<span class="aoc-muted">nobody</span>'}</div></div>`;
   const body = el(`<div class="aoc-battle">
+    <div class="aoc-bscene-slot"></div>
+    <div class="aoc-bsum">${sum('a', res.a.lost)}${sum('d', res.d.lost)}</div>
+    <button type="button" class="aoc-btn ghost small aoc-bdetails-btn" data-rp="details" aria-expanded="false">${U.icon('scroll', 15)}<span>Details</span></button>
+    <div class="aoc-bdetails" hidden>
     <p class="aoc-result ${won ? 'aoc-good' : 'aoc-bad'}">${won ? 'Victory' : 'Defeat'} · ${A.clock(r.t)} · ${esc(A.TERRAIN[input.terrain]?.name || '')}${input.ambush ? ' · ambush' : ''}</p>
     <div class="aoc-sides">${side(input.a.label, input.a, res.a.lost, res.a.end, x.aWounded, input.a.cmd)}${side(input.d.label, input.d, res.d.lost, res.d.end, x.dWounded, input.d.cmd)}</div>
     ${x.plunder ? `<p class="aoc-p">${view === 'a' ? 'Taken' : 'Lost'}: ${U.cost(x.plunder)}</p>` : ''}
@@ -51,7 +56,15 @@ function battleSheet(r) {
     <div class="aoc-replay"><div class="aoc-rp-bars"></div><div class="aoc-rp-ev aoc-small" aria-live="polite"></div>
       <div class="aoc-rp-ctl"><button type="button" class="aoc-btn ghost small" data-rp="play">${U.icon('replay', 15)}<span>Play</span></button><input type="range" min="0" max="${res.rounds.length}" value="${res.rounds.length}" aria-label="Round"><span class="aoc-rp-n"></span></div>
       <p class="aoc-small aoc-muted aoc-rp-verify">Replays re-run the battle from its recorded start; checking...</p></div>
+    </div>
   </div>`);
+  const scene = U.battleScene ? U.battleScene(r) : null;
+  if (scene) body.querySelector('.aoc-bscene-slot').appendChild(scene.el);
+  body.querySelector('[data-rp="details"]').addEventListener('click', e => {
+    const box = body.querySelector('.aoc-bdetails');
+    box.hidden = !box.hidden;
+    e.currentTarget.setAttribute('aria-expanded', String(!box.hidden));
+  });
   const bars = body.querySelector('.aoc-rp-bars');
   const a0 = A.troopsTotal(res.a.start), d0 = A.troopsTotal(res.d.start);
   const showRound = k => {
@@ -72,7 +85,7 @@ function battleSheet(r) {
     timer = setInterval(() => { k++; range.value = k; showRound(k); if (k >= res.rounds.length) clearInterval(timer); }, U.reduced ? 60 : 450);
   });
   showRound(res.rounds.length);
-  const h = U.sheet({ title: r.title, wide: true, body, onClose: () => clearInterval(timer), actions: r.x != null ? [{ label: 'Show on the map', kind: 'ghost', icon: 'map', onClick: () => U.mapFocus(r.x, r.y, 12) }] : [] });
+  const h = U.sheet({ title: r.title, wide: true, body, onClose: () => { clearInterval(timer); scene?.stop(); }, actions: r.x != null ? [{ label: 'Show on the map', kind: 'ghost', icon: 'map', onClick: () => U.mapFocus(r.x, r.y, 12) }] : [] });
   // the engine re-runs the battle; the result must match exactly
   U.host.query('replay', { id: r.id }).then(rr => {
     const same = rr && JSON.stringify(rr.rounds) === JSON.stringify(res.rounds) && rr.winner === res.winner;

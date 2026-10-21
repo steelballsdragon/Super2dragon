@@ -59,6 +59,14 @@ function updateTrainCost(u) {
   for (const r in A.UNITS[u].cost) cost[r] = A.UNITS[u].cost[r] * n;
   box.innerHTML = n > 0 ? `${U.cost(cost, U.F.player.res)}<span class="aoc-cost">${U.icon('clock', 14)}${dur(trainTime(u, n))}</span><span class="aoc-cost">eats ${fmt(n * A.UNITS[u].upkeep)} Food/h</span>` : '<span class="aoc-muted">Choose how many to train.</span>';
 }
+// a drawn soldier of the player's colours for the troop cards
+const soldierPics = new Map();
+function soldierImg(u, civ) {
+  const key = u + civ;
+  if (!soldierPics.has(key)) { let src = ''; try { src = U.art.soldier(u, A.CIV[civ].color, 0, 2).toDataURL('image/png'); } catch (e) { src = ''; } soldierPics.set(key, src); }
+  const src = soldierPics.get(key);
+  return src ? `<img class="aoc-unit-pic" src="${src}" alt="" width="60" height="60">` : U.icon(u, 30);
+}
 function troopsTab(f) {
   const P = f.player;
   const rows = A.UNIT_KEYS.map(u => {
@@ -72,7 +80,7 @@ function troopsTab(f) {
       : `<div class="aoc-trainrow"><input class="aoc-input aoc-num" type="number" inputmode="numeric" min="0" max="${A.trainBatch(L)}" data-tn="${u}" value="${K.train[u] || ''}" placeholder="0" aria-label="${esc(U2.plural)} to train">
           <button type="button" class="aoc-btn ghost small" data-trmax="${u}">Max</button><button type="button" class="aoc-btn gold small" data-train="${u}">Train</button></div>
           <div class="aoc-costs" data-tc="${u}"></div><p class="aoc-muted aoc-small">Up to ${full(A.trainBatch(L))} at a time at ${esc(bld.name)} level ${L}.</p>`;
-    return `<div class="aoc-card aoc-unit"><div class="aoc-unit-head">${U.icon(u, 30)}<div><b>${esc(U2.plural)}</b><div class="aoc-muted aoc-small">Attack ${U2.atk} · Defense ${U2.def} · Health ${U2.hp} · Speed ${U2.speed} · Load ${U2.load}${variant}</div></div></div>
+    return `<div class="aoc-card aoc-unit"><div class="aoc-unit-head">${soldierImg(u, P.civ)}<div><b>${esc(U2.plural)}</b><div class="aoc-muted aoc-small">Attack ${U2.atk} · Defense ${U2.def} · Health ${U2.hp} · Speed ${U2.speed} · Load ${U2.load}${variant}</div></div></div>
       <div class="aoc-kv is-row"><div><span>Home</span><b>${full(P.troops[u])}</b></div><div><span>Away</span><b>${full(P.away[u])}</b></div><div><span>Wounded</span><b>${full(P.wounded[u])}</b></div></div>${train}</div>`;
   }).join('');
   const w = A.troopsTotal(P.wounded);
@@ -162,6 +170,58 @@ function commanderSheet(id) {
   });
 }
 U.commanderSheet = commanderSheet;
+
+// training from the building in the town: a soldier, a slider and the price
+U.trainSheet = u => {
+  const P = U.F.player, d = A.UNITS[u], civ = A.CIV[P.civ];
+  const L = P.b[d.building] || 0;
+  if (!L) return U.toast(`Build the ${A.BUILDINGS[d.building].name} first.`, 'bad');
+  const busy = P.q.train[u];
+  const cap = A.trainBatch(L), most = maxTrain(u);
+  let n = Math.min(most, Math.max(1, Math.floor(cap / 2)));
+  const body = el(`<div class="aoc-trs"><div class="aoc-trs-top"><canvas class="aoc-trs-pic" width="360" height="260" aria-hidden="true"></canvas>
+      <div class="aoc-trs-stats"><span>${U.icon('sword', 16)}${d.atk}</span><span>${U.icon('shield', 16)}${d.def}</span><span>${U.icon('herb', 16)}${d.hp}</span><span>${U.icon('clock', 16)}${d.speed}</span><span>${U.icon('pick', 16)}${d.load}</span></div></div>
+    <div class="aoc-trs-have"><span>${U.icon(u, 18)}<b>${full(P.troops[u])}</b> at home</span>${civ.variant.unit === u ? `<span class="aoc-gold">${esc(civ.variant.name)}</span>` : ''}</div>
+    ${busy ? `<p class="aoc-p">${full(busy.n)} in training: ${dur(busy.end - U.F.t)} left.</p>` : `<div class="aoc-trs-pick"><input type="range" min="0" max="${Math.max(0, most)}" value="${n}" aria-label="How many"><input class="aoc-input aoc-num" type="number" inputmode="numeric" min="0" max="${cap}" value="${n}" aria-label="How many" data-tn="${u}"></div>
+    <div class="aoc-up-cost aoc-trs-cost"></div><p class="aoc-muted aoc-small">Up to ${full(cap)} at a time.</p>`}</div>`);
+  const pic = body.querySelector('canvas');
+  const g = pic.getContext('2d');
+  g.scale(2, 2);
+  const sp = [U.art.soldier(u, civ.color, 0, 3), U.art.soldier(u, civ.color, 1, 3)];
+  let k = 0;
+  const anim = () => { g.clearRect(0, 0, 180, 130); for (const [i, x, y] of [[1, 74, 4], [0, 4, 20], [2, 44, 38]]) U.art.put(g, sp[(k + i) % 2], x, y); };
+  anim();
+  const timer = U.reduced ? 0 : setInterval(() => { k++; anim(); }, 420);
+  const cost = () => {
+    const box = body.querySelector('.aoc-trs-cost');
+    if (!box) return;
+    const c = {};
+    for (const r in d.cost) c[r] = d.cost[r] * n;
+    box.innerHTML = Object.entries(c).map(([r, v]) => `<span class="aoc-up-c${(P.res[r] || 0) < v ? ' is-short' : ''}">${U.resIcon(r, 24)}<b>${fmt(v)}</b><i>${fmt(P.res[r] || 0)}</i></span>`).join('') + `<span class="aoc-up-c">${U.icon('clock', 24)}<b>${dur(trainTime(u, Math.max(1, n)))}</b><i>${fmt(n * d.upkeep)} Food/h</i></span>`;
+  };
+  const range = body.querySelector('input[type=range]'), num = body.querySelector('input[type=number]');
+  if (range) {
+    range.addEventListener('input', () => { n = Number(range.value); num.value = n; cost(); });
+    num.addEventListener('input', () => { n = Math.max(0, Math.min(cap, Math.floor(Number(num.value) || 0))); range.value = n; cost(); });
+    cost();
+  }
+  return U.sheet({
+    title: d.plural, body, onClose: () => clearInterval(timer),
+    actions: busy ? [] : [{ label: 'Train', id: 'aoc-train-go', icon: u, onClick: async () => { if (n <= 0) return false; const r = await U.run({ type: 'train', unit: u, n: Math.min(n, cap) }, `Training ${full(Math.min(n, cap))} ${d.plural}.`); return r ? true : false; } }],
+  });
+};
+// the hospital
+U.healSheet = async () => {
+  const P = U.F.player;
+  const w = A.troopsTotal(P.wounded);
+  const c = await U.host.query('heal');
+  U.sheet({
+    title: 'Hospital',
+    body: `<div class="aoc-trs-have"><span>${U.icon('herb', 20)}<b>${full(w)}</b> wounded</span><span>${full(P.hosp)} beds</span></div><div>${U.troopLine(P.wounded)}</div>
+      ${P.q.heal ? `<p class="aoc-p">Healing ${full(A.troopsTotal(P.q.heal.troops))}: ${dur(P.q.heal.end - U.F.t)} left.</p>` : c?.ok ? `<div class="aoc-up-cost">${Object.entries(c.cost).map(([r, v]) => `<span class="aoc-up-c">${U.resIcon(r, 24)}<b>${fmt(v)}</b><i>${fmt(P.res[r] || 0)}</i></span>`).join('')}<span class="aoc-up-c">${U.icon('clock', 24)}<b>${dur(c.minutes)}</b><i>${full(A.troopsTotal(c.troops))} healed</i></span></div>` : `<p class="aoc-up-err">${esc(c?.err || '')}</p>`}`,
+    actions: c?.ok && !P.q.heal ? [{ label: 'Heal', icon: 'herb', onClick: () => U.run({ type: 'heal' }, 'Healing started.') }] : [],
+  });
+};
 function render(force) {
   const root = document.querySelector('.aoc-screen-army');
   if (!root || root.hidden || !U.F) return;

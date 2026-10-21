@@ -17,7 +17,14 @@ This document covers what is built, how it works, how to run and test it, what i
 3. Choose **New world**, then pick how to begin:
    - **Eternal Conquest**: Day 1, with everyone else.
    - **Demonstration: The Coalition War**: Day 3. One guild already dominates.
-4. Pick a civilization and a name, and found your city. A six-page guide explains the rest, and the goals banner leads the first steps.
+4. Pick a civilization and a name, and found your city. After a one-line welcome, a glowing hand points at what to tap for each of the first goals.
+
+### What you see
+
+Everything is drawn by the game itself with canvas paths (no image files besides the logo), in each civilization's colors and roof style:
+- **Your city** is the home screen: an isometric town where every building stands on its own plot at its real level, from an empty plot with a sign to a towered keep. Walls go from a wooden palisade to stone with towers and a gatehouse. The building under construction wears scaffolding with a swinging hammer and a timer; soldiers drill in the yard in proportion to the troops you have at home; villagers walk the roads; smoke rises from chimneys; green arrows mark what you can upgrade right now; a shield is a dome of light over the town; the light follows the game clock. Tap a building for round buttons (Upgrade, Train, Research, Trade, Heal, Shield and so on).
+- **The world map** is painted terrain (shores, forests of small trees, mountain peaks with snow, hills, tundra, fords, passes). Zoomed in, cities are castles that grow with their Town Hall in their guild's color, fortresses and the Capital are walled keeps, and bandit camps, resource fields and ruins have their own pictures. Armies march as small banners of soldiers of their main troop type along dashed routes, and battles you can see flash where they happen.
+- **Battles** in reports play out: the two armies march in, archers loose arrows, siege engines hurl stones at the walls, soldiers fall exactly as the recorded rounds say, commanders' skills flash up with their portraits, and a Victory or Defeat ribbon shows the loot. The written report, its reasons and the replay check are behind Details.
 
 Time runs at **1 game minute per real second** at 1x (a game day is 24 real minutes). You can pause, or play at 2x or 4x; developer mode adds 16x and 64x. While the game is closed, the world keeps going at a tenth of that speed, up to a limit you choose (12 game hours by default). A summary of what happened greets you when you return.
 
@@ -87,14 +94,18 @@ src/conquest/
   ai.js          governor decisions, guild planning, diplomacy, coalitions, succession, collapse and refounding
   api.js         validated actions, player commands, fog-of-war views, saves and checks, the server loop
   bundle.mjs     joins the engine files into one script (for the page, its Web Worker and the Node tests)
-  ui-core.js     interface shell: host (worker or page), saves, title and new-world screens, sheets, toasts
-  ui-map.js      the world map (canvas): terrain, territory, fog, cities, armies; tile actions
-  ui-city.js     city: buildings, research, market, the Grand Exchange, goals
-  ui-army.js     troops, training, hospital, armies in the field, commanders, the march sheet
+  ui-core.js     interface shell: host (worker or page), saves, title and new-world screens, sheets, toasts, goal banner
+  ui-art.js      every picture: isometric buildings per civilization, walls, trees, castles, camps, fields, soldiers
+  ui-home.js     the drawn city (home screen): plots, walls, troops, villagers, timers, tap-to-upgrade, upgrade sheet
+  ui-map.js      the world map (canvas): painted terrain, territory, fog, castles, camps, armies, battles; tile actions
+  ui-city.js     city panels: every building, research, market, the Grand Exchange, goals, the shield
+  ui-army.js     troops, training (and the training sheet), hospital, armies in the field, commanders, marches
   ui-guild.js    guilds, applying, rallies, members, contributions, diplomacy
-  ui-intel.js    reports and battle replays
+  ui-battle.js   the battle scene played from a report's recorded rounds
+  ui-intel.js    reports, battle details and replay checks
   ui-chron.js    chronicle, maps of past territory, power over time, casualties, rankings, server population
-  ui-misc.js     inspector, menu and settings, developer tools, guide, the offline summary
+  ui-misc.js     inspector, menu and settings, developer tools, the six-page How to play, the offline summary
+  ui-guide.js    the welcome and the pointing hand for the first goals
   ui.css         the look: charcoal stone, molten gold, lava, crimson and royal blue (from the artwork)
 public/conquest-logo.webp   the Last Furnace: Age of Conquest artwork (inlined by the build)
 tests/conquest-engine.mjs   engine tests (Node)
@@ -206,6 +217,7 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | Offline progress | Done | simulated on load at a tenth of play speed, capped (0, 6 or 12 hours, 1 or 3 days), then summarized |
 | Saves, backups, migrations, validation | Done | IndexedDB with gzip, a backup every 5 minutes, checksum, schema version with a migration hook, integrity checks |
 | Notifications, accessibility | Done | three notification levels, large text, reduced motion, keyboard map controls, labels on every control, portrait and landscape layouts |
+| Pictures instead of text | Done | the drawn city as the home screen, the painted world map with castles and marching armies, battle scenes, icon-based upgrade and training sheets, a pointing hand instead of a written guide |
 | Spectator, sandbox, editor, ironman, seasons, tournaments | Planned | |
 
 ## Test results
@@ -217,7 +229,7 @@ Run on 2026-10-21 in this repository (`node tests/all.mjs`):
 | conquest-engine | 42 of 42 passed |
 | conquest-demo | 5 of 5 passed |
 | conquest-ui | 15 of 15 passed |
-| smoke, cloud, dev, soak (Last Furnace) | 20, 8, 13 and 7 of 7 steps passed |
+| smoke, cloud, dev (Last Furnace) | 20, 8 and 13 steps passed (the soak run was stopped before it finished) |
 
 The engine suite covers:
 - production, storage and upkeep, building and research prerequisites, training and healing, the market
@@ -251,6 +263,8 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 | Save and load | 43 ms and 48 ms (load includes regenerating the map and the integrity checks) |
 | Command round trip, page to worker and back | 0.1 to 0.2 ms |
 | Path search | 0.5 ms for an 87-tile path across the map |
+| Drawing the city | 1.5 ms per frame (median; 2.2 ms at the 95th percentile zoomed out) with Town Hall 25 and every building, on a 390 by 844 screen at 3x density in headless Chromium; the town redraws at about 30 frames a second while it is on screen |
+| Drawing the world map | painted terrain is made once per world (16 pixels per tile); armies and battle flashes keep 60 frames a second in the same test |
 
 6,000 governors (ten servers) has not been measured, so this document makes no claim about it. At the measured cost, ten servers would need roughly ten times the CPU at 1x, which looks feasible on a desktop, but that is an estimate, not a result.
 
@@ -258,7 +272,8 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 
 - One server, one mode, and a demonstration campaign. Cross-server features, the other modes, the sandbox, the spectator view and the scenario editor are not built.
 - Rally battles use the rally leader's bonuses (civilization, research, commanders) for the whole army; joiners contribute troops, not bonuses.
-- Battles are fought by army totals over rounds, not by units on a battlefield. The "tactical view" is the round-by-round replay.
+- Battles are fought by army totals over rounds, not by units on a battlefield. The battle scene animates those rounds with representative soldiers (up to 34 a side), so a figure is a share of the army, not one unit.
+- The art is drawn in code: clean and consistent, but simpler than a commercial game's painted art. There is no sound.
 - No supply lines, fatigue or combat weather; no equipment; no caravans, loans, tribute or sanctions; no spies or sabotage beyond false reports and discovering secret pacts.
 - Culture, stability, public order and civilization reforms are not modeled.
 - Offline time runs at a tenth of play speed and is capped. Long caps take several seconds to catch up on slower phones.

@@ -16,6 +16,8 @@ Turn your phone sideways for a landscape layout with every control in a panel on
 
 The start screen also offers **Last Furnace: Age of Conquest**, a grand strategy game in the same page. You are one of 600 governors on the Ashen Crown server; the other 599 are simulated, each with its own personality, memory, economy and army, playing by the same rules as you. Ten guilds sign pacts, betray them, form coalitions and wage war over fortresses and the Ember Throne. Build your city, scout through the fog of war, train troops, lead commanders, join or found a guild, call rallies, and win the Age by holding the Throne or building the Grand Exchange. A demonstration campaign, *The Coalition War*, starts on Day 3 with one guild dominating the server.
 
+It is played with pictures rather than lists: your city is a drawn isometric town where you tap buildings to upgrade and use them, the world map shows castles in guild colors, camps, fields, forests and marching armies, battle reports play out with soldiers, and a pointing hand shows new players what to tap.
+
 This version builds one fully simulated server and the Eternal Conquest mode (plus the demonstration campaign); the other servers and modes are planned. Architecture, save format, feature checklist, test results, measured performance, limitations and roadmap: [docs/CONQUEST.md](docs/CONQUEST.md).
 
 ## Where players get the game
@@ -87,7 +89,7 @@ node tests/all.mjs
 - `tests/dev.mjs` checks the hidden 7-tap switch (six taps or slow taps do nothing, the setting survives a reload) and every control on the Dev panel, including a blizzard on demand without the page freezing.
 - `tests/conquest-engine.mjs` checks the Age of Conquest rules and simulation in Node: the 600-governor and 10-guild invariants, the economy, prerequisites, pathfinding, combat counters and replays, fog of war, guild politics, saves, offline time, victory, and that invalid commands are refused.
 - `tests/conquest-demo.mjs` runs the Coalition War campaign: a coalition forms against the dominant guild, the war changes the map, and the player's intervention changes the outcome.
-- `tests/conquest-ui.mjs` plays the opening of a world through the interface, with the simulation in its worker and on the page, in portrait and landscape.
+- `tests/conquest-ui.mjs` plays the opening of a world through the interface: it follows the guide hand, taps buildings in the drawn city to upgrade and train, attacks a camp from the map and watches the battle scene, with the simulation in its worker and on the page, in portrait and landscape.
 - `tests/soak.mjs` plays from Furnace 1 to 30 on a phone-density screen in portrait and in landscape, visiting every screen and fighting a battle at every level, and fails on any freeze, error, memory growth or oversized save. It reloads at Furnace 17 and 30, then damages saves on purpose (a corrupt save, every copy corrupt, blocked storage) to check that nothing is lost.
 
 ## Project layout

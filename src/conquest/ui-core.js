@@ -78,10 +78,30 @@ const ICONS = {
   replay: '<path d="M5 12a7 7 0 1 0 2.1-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 4v4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 9.5v5l4-2.5Z" fill="currentColor"/>',
   tent: '<path d="M3 19 12 5l9 14Z" fill="#a4483a" stroke="#4d1c14" stroke-width="1.2" stroke-linejoin="round"/><path d="M12 19 9.5 13h5Z" fill="#2a120e"/>',
   ruin: '<path d="M4 20h16M6 20V9M10 20v-7M14 20V11M18 20V8M5 9h3M13 11h3M17 8h2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  hammer: '<path d="m13.5 9.5-9 9 2 2 9-9" fill="#8a5a2b" stroke="#3a2412" stroke-width="1.2" stroke-linejoin="round"/><path d="M11 6.5 15 2.5l6.5 6.5-4 4Z" fill="#b6c3cf" stroke="#3d4652" stroke-width="1.2" stroke-linejoin="round"/>',
+  herb: '<path d="M12 21c0-6 1-10 6-15-6 1-10 5-10 10 0 2 1.5 3.5 4 5Z" fill="#6fc35f" stroke="#245a1c" stroke-width="1.2" stroke-linejoin="round"/><path d="M12 21c-.5-4 1-8 4-11" fill="none" stroke="#245a1c" stroke-width="1.1" stroke-linecap="round"/>',
+  up: '<path d="M12 3.5 20 12h-5v8.5H9V12H4Z" fill="#5fd35a" stroke="#173d14" stroke-width="1.3" stroke-linejoin="round"/>',
+  next: '<path d="M4 12h13M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  info: '<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.4" fill="currentColor"/>',
   dev: '<path d="M14.6 3.4a5 5 0 0 0-5.9 6.5L3.6 15a2 2 0 0 0 0 2.8l2.6 2.6a2 2 0 0 0 2.8 0l5.1-5.1a5 5 0 0 0 6.5-5.9l-3 3-3-.6-.6-3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
 };
 U.icon = (name, size = 18) => `<svg class="aico aico-${name}" width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
 U.resIcon = (r, s = 16) => U.icon(r, s);
+// an icon as a canvas, for pictures drawn on canvases (drawn when its image has loaded; local data, no request)
+const iconCv = new Map();
+U.iconCanvas = (name, color = '#f1e7d8') => {
+  const key = name + color;
+  let c = iconCv.get(key);
+  if (c) return c;
+  c = document.createElement('canvas');
+  c.width = c.height = 48; c.sw = c.sh = 24;
+  iconCv.set(key, c);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">${(ICONS[name] || '').replace(/currentColor/g, color)}</svg>`;
+  const img = new Image();
+  img.onload = () => { try { c.getContext('2d').drawImage(img, 0, 0, 48, 48); } catch (e) { /* ignore */ } };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  return c;
+};
 
 // heraldry: a shield in the guild colour with its emblem
 const EMBLEMS = {
@@ -318,8 +338,8 @@ function showNote(n) {
 const screens = new Map();
 U.screen = (id, def) => screens.set(id, def);
 const TABS = [
-  { id: 'map', label: 'Map', icon: 'map' },
   { id: 'city', label: 'City', icon: 'city' },
+  { id: 'map', label: 'World', icon: 'map' },
   { id: 'army', label: 'Army', icon: 'army' },
   { id: 'guild', label: 'Guild', icon: 'guild' },
   { id: 'intel', label: 'Reports', icon: 'report' },
@@ -345,6 +365,7 @@ U.go = (id, arg) => {
 function shellHtml() {
   return `<div class="aoc-app">
     <header class="aoc-top">
+      <button type="button" class="aoc-me" aria-label="Your governor"><canvas class="aoc-me-pic" width="88" height="88" aria-hidden="true"></canvas><span class="aoc-me-t"><b class="aoc-me-n"></b><span class="aoc-me-p">${U.icon('power', 13)}<span>0</span></span></span></button>
       <div class="aoc-res" role="group" aria-label="Resources">${A.RES.map(r => `<button type="button" class="aoc-chip" data-res="${r}" aria-label="${A.RES_NAME[r]}">${U.resIcon(r, 16)}<span class="aoc-chip-v">0</span></button>`).join('')}</div>
       <div class="aoc-time"><span class="aoc-day">Day 1</span><span class="aoc-hm">06:00</span></div>
       <div class="aoc-speed" role="group" aria-label="Game speed">
@@ -369,6 +390,10 @@ function updateShell(f) {
     setText(b.querySelector('.aoc-chip-v'), fmt(P.res[r]));
     b.classList.toggle('is-full', P.res[r] >= P.cap && r !== 'gold');
   });
+  setText(root.querySelector('.aoc-me-n'), P.name);
+  setText(root.querySelector('.aoc-me-p span'), fmt(P.power));
+  const pic = root.querySelector('.aoc-me-pic');
+  if (pic && pic._civ !== P.civ && U.art) { pic._civ = P.civ; const c = U.art.portrait(A.CIV[P.civ].commander, 44); const g = pic.getContext('2d'); g.clearRect(0, 0, 88, 88); g.drawImage(c, 0, 0, 88, 88); }
   setText(root.querySelector('.aoc-day'), `Day ${f.day}`);
   setText(root.querySelector('.aoc-hm'), f.clock.split(', ')[1]);
   root.querySelectorAll('.aoc-speed button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.speed) === f.speed ? 'true' : 'false'));
@@ -526,8 +551,8 @@ async function beginWorld(msg) {
   // wait for the first frame (it arrives right after ready)
   if (!U.F) await new Promise(res => { const off = U.onFrame(() => { off(); res(); }); });
   openShell();
-  if (msg.type === 'new') { U.go('map'); U.intro?.(); }
-  else U.go('map');
+  U.go('city');
+  if (msg.type === 'new') U.welcome?.();
 }
 function loadWorld(json) { beginWorld({ type: 'load', json }); }
 function openShell() {
@@ -538,6 +563,7 @@ function openShell() {
   root.querySelectorAll('.aoc-speed button').forEach(b => b.addEventListener('click', () => { U.host.post({ type: 'speed', v: Number(b.dataset.speed) }); }));
   root.querySelectorAll('.aoc-chip').forEach(b => b.addEventListener('click', () => resSheet(b.dataset.res)));
   root.querySelector('.aoc-menu').addEventListener('click', () => U.menu?.());
+  root.querySelector('.aoc-me').addEventListener('click', () => U.inspect?.(U.F.player.id));
   U.onFrame(f => { updateShell(f); const s = screens.get(U.current); if (s && s.el && !s.el.hidden) s.update?.(f, false); });
   updateShell(U.F);
   // keep the save fresh when the page is hidden or closed
@@ -545,6 +571,16 @@ function openShell() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
   window.addEventListener('pagehide', flush);
 }
+// the current goal, shown over the city and the map; the guide hand shows how to reach it
+const QICON = { hall2: 'castle', farm2: 'food', warehouse: 'castle', train: 'inf', scout: 'eye', camp: 'tent', gather: 'pick', research: 'scroll', guild: 'guild', hall5: 'castle', wins5: 'sword', rally: 'flag', hall10: 'crown' };
+U.questBar = (box, f) => {
+  if (!box) return;
+  const q = f.quests.find(x => !x.claimed);
+  if (!q) { box.hidden = true; return; }
+  box.hidden = false;
+  setHtml(box, `<span class="aoc-quest-ico${q.done ? ' is-done' : ''}">${U.icon(QICON[q.id] || 'star', 26)}</span><div class="aoc-quest-in"><b>${esc(q.text)}</b><span class="aoc-quest-r">${U.cost(q.reward)}</span></div>
+    ${q.done ? `<button type="button" class="aoc-btn gold small" data-claim="${q.id}">Claim</button>` : ''}`);
+};
 // result helper for commands: toast the error, return ok
 U.run = async (cmd, okText) => {
   const r = await U.host.cmd(cmd);

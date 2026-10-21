@@ -63,9 +63,29 @@ async function newWorld(civ, name) {
   await page.click(`[data-civ="${civ}"]`);
   await page.fill('#aoc-name', name);
   await page.click('#aoc-found');
-  await page.waitForSelector('.aoc-map-cv', { timeout: 30000 });
-  await page.waitForFunction(() => window.AOCUI.F && window.AOCUI.current === 'map');
+  await page.waitForSelector('.aoc-town-cv', { timeout: 30000 });
+  await page.waitForFunction(() => window.AOCUI.F && window.AOCUI.current === 'city');
 }
+// tap a building in the drawn city where it is on screen
+async function tapBuilding(id) {
+  // look at it first, as a player scrolls the town to find it
+  await page.evaluate(i => window.AOCUI.home.focus(i), id);
+  await page.waitForTimeout(150);
+  const p = await page.evaluate(i => window.AOCUI.home.where(i), id);
+  await page.mouse.click(p.x, p.y);
+  await page.waitForSelector('.aoc-bbar:not([hidden])');
+  const sel = await page.evaluate(() => window.AOCUI.home.sel);
+  check(sel === id, `tapping the ${id} selected ${sel}`);
+}
+// how varied a canvas is: distinct colours in a sample of its pixels
+const variety = sel => page.evaluate(s => {
+  const c = document.querySelector(s);
+  const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+  const seen = new Set();
+  let lit = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4 * 61) { seen.add((d[i] >> 4) + ',' + (d[i + 1] >> 4) + ',' + (d[i + 2] >> 4)); if (d[i] + d[i + 1] + d[i + 2] > 90) lit++; n++; }
+  return { colors: seen.size, lit, n };
+}, sel);
 
 console.log(`conquest-ui: ${FILE}`);
 page = await newPage({ width: 390, height: 844 });
@@ -87,23 +107,27 @@ await step('a new world: server facts, twelve civilizations, a name, and the sim
   await page.click('[data-civ="steppe"]');
   await page.fill('#aoc-name', 'Uitest');
   await page.click('#aoc-found');
-  await page.waitForSelector('.aoc-map-cv', { timeout: 30000 });
+  await page.waitForSelector('.aoc-town-cv', { timeout: 30000 });
   await page.waitForFunction(() => window.AOCUI.F);
   check(await page.evaluate(() => window.AOCUI.host.mode) === 'worker', 'the simulation is not in a worker');
   const f = await F();
   check(f.P.name === 'Uitest' && f.P.civ === 'steppe' && f.guilds === 10, 'wrong player or guilds');
 });
 
-await step('the guide walks through six pages', async () => {
-  await page.waitForSelector('.aoc-sheet-wrap.is-open');
-  for (let i = 0; i < 5; i++) { await page.click('.aoc-sheet-actions .aoc-btn:last-child'); await page.waitForTimeout(120); }
-  check((await page.locator('.aoc-sheet-actions .aoc-btn:last-child').textContent()).includes('Start playing'), 'guide did not reach the end');
-  await page.click('.aoc-sheet-actions .aoc-btn:last-child');
-  await page.waitForTimeout(250);
+await step('a short welcome, then a glowing hand points at the Town Hall in the drawn city', async () => {
+  await page.waitForSelector('#aoc-welcome-go');
+  await page.click('#aoc-welcome-go');
+  await page.waitForSelector('.aoc-hand:not([hidden])');
+  await page.waitForTimeout(400);
+  const d = await page.evaluate(() => { const t = window.AOCUI.guideTarget(), h = window.AOCUI.home.where('hall'); return t && h ? Math.hypot(t.x - h.x, t.y - h.y) : -1; });
+  check(d >= 0 && d < 4, `the hand is not on the Town Hall (${d})`);
+  const v = await variety('.aoc-town-cv');
+  check(v.colors > 60, `the city looks flat (${JSON.stringify(v)})`);
 });
 
-await step('the map draws terrain around the city and hides the unexplored world', async () => {
-  await page.waitForTimeout(400);
+await step('the world map draws castles and terrain around the city and hides the unexplored world', async () => {
+  await page.click('#aoc-tab-map');
+  await page.waitForTimeout(500);
   const stats = await page.evaluate(() => {
     const c = document.querySelector('.aoc-map-cv');
     const g = c.getContext('2d');
@@ -114,26 +138,39 @@ await step('the map draws terrain around the city and hides the unexplored world
   });
   check(stats.lit > 50, `the map looks empty (${JSON.stringify(stats)})`);
   check(stats.dark > 50, 'no fog of war on screen');
+  const v = await variety('.aoc-map-cv');
+  check(v.colors > 60, `the map looks flat (${JSON.stringify(v)})`);
   const P = (await F()).P;
   await tapTile(P.x, P.y);
   check((await page.locator('.aoc-sheet-body').textContent()).includes('Your city'), 'tapping your city did not say so');
   await closeSheets();
 });
 
-await step('city: upgrade the Town Hall from the buildings list and claim the first goal', async () => {
-  await page.click('#aoc-tab-city');
-  await page.waitForSelector('[data-build="hall"]');
-  await page.click('[data-build="hall"]');
+await step('city: tap the Town Hall, upgrade it, watch it build and claim the goal', async () => {
+  await page.click('.aoc-screen-map .aoc-world-btn');
+  await page.waitForFunction(() => window.AOCUI.current === 'city');
+  await tapBuilding('hall');
+  await page.click('#aoc-bbar-up');
+  await page.waitForSelector('#aoc-up-go:not([disabled])');
+  check(await page.locator('.aoc-up-pic').count() === 2, 'the upgrade sheet does not show the building before and after');
+  await page.click('#aoc-up-go');
   await page.waitForFunction(() => window.AOCUI.F.player.q.build?.id === 'hall');
   await page.click('[data-speed="4"]');
   await page.waitForFunction(() => window.AOCUI.F.player.b.hall === 2, null, { timeout: 30000 });
-  await page.waitForSelector('[data-claim="hall2"]');
+  await page.waitForSelector('.aoc-screen-city [data-claim="hall2"]');
   const food = (await F()).P.res.food;
-  await page.click('[data-claim="hall2"]');
+  await page.click('.aoc-screen-city [data-claim="hall2"]');
   await page.waitForFunction(f => window.AOCUI.F.player.res.food > f + 2000, food);
 });
 
-await step('army: train infantry and read a commander\'s skills and story', async () => {
+await step('army: train infantry at the Barracks and in the army screen, and read a commander', async () => {
+  await tapBuilding('barracks');
+  await page.click('[data-bact="train"]');
+  await page.waitForSelector('#aoc-train-go');
+  await page.fill('.aoc-trs input[type=number]', '40');
+  await page.click('#aoc-train-go');
+  await page.waitForFunction(() => window.AOCUI.F.player.q.train.inf?.n === 40);
+  await page.waitForFunction(() => !window.AOCUI.F.player.q.train.inf, null, { timeout: 20000 });
   await page.click('#aoc-tab-army');
   await page.fill('[data-tn="inf"]', '250');
   await page.click('[data-train="inf"]');
@@ -146,13 +183,14 @@ await step('army: train infantry and read a commander\'s skills and story', asyn
   check(txt.includes('Storm of Arrows') && txt.includes('Talents'), 'commander sheet incomplete');
   await closeSheets();
   await page.click('[data-atab="troops"]');
-  await page.waitForFunction(() => window.AOCUI.F.player.stats.trained.inf >= 159, null, { timeout: 40000 });
+  await page.waitForFunction(() => window.AOCUI.F.player.stats.trained.inf >= 199, null, { timeout: 40000 });
 });
 
 await step('attack the nearest bandit camp from the map; the report explains it and its replay matches', async () => {
   await page.click('#aoc-tab-map');
-  const camp = await page.evaluate(() => { const F = window.AOCUI.F, P = F.player; return F.camps.slice().sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0]; });
-  check(camp && camp.lv === 1, `expected a level 1 camp near the start, got ${JSON.stringify(camp)}`);
+  // the newcomer camps: level 1, near the start (a stronger camp may happen to be closer on some maps)
+  const camp = await page.evaluate(() => { const F = window.AOCUI.F, P = F.player; const c = F.camps.filter(x => x.lv === 1).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0]; return c ? { ...c, d: Math.hypot(c.x - P.x, c.y - P.y) } : null; });
+  check(camp && camp.d < 14, `expected a level 1 camp near the start, got ${JSON.stringify(camp)}`);
   await tapTile(camp.x, camp.y);
   await page.locator('.aoc-sheet-actions .aoc-btn', { hasText: 'Attack' }).click();
   await page.waitForSelector('#aoc-march-go');
@@ -163,6 +201,12 @@ await step('attack the nearest bandit camp from the map; the report explains it 
   await page.click('#aoc-tab-intel');
   await page.waitForSelector('[data-rep]');
   await page.click('[data-rep]');
+  await page.waitForSelector('.aoc-bscene-cv');
+  await page.waitForTimeout(1500);
+  const v = await variety('.aoc-bscene-cv');
+  check(v.colors > 40, `the battle scene looks empty (${JSON.stringify(v)})`);
+  await page.click('[data-bs="skip"]');
+  await page.click('[data-rp="details"]');
   await page.waitForSelector('.aoc-replay');
   await page.waitForFunction(() => /exactly the same result/.test(document.querySelector('.aoc-rp-verify')?.textContent || ''), null, { timeout: 8000 });
   check((await page.locator('.aoc-battle').textContent()).includes('Why'), 'no explanation');
@@ -205,7 +249,7 @@ await step('the world is saved, survives a reload, and continues', async () => {
   await page.waitForSelector('#aoc-continue:not([hidden])');
   check((await page.locator('.aoc-savecard').textContent()).includes('Uitest'), 'save card does not show the governor');
   await page.click('#aoc-continue');
-  await page.waitForSelector('.aoc-map-cv', { timeout: 30000 });
+  await page.waitForSelector('.aoc-town-cv', { timeout: 30000 });
   await page.waitForFunction(() => window.AOCUI.F);
   const after = await F();
   check(after.P.name === 'Uitest' && after.P.b.hall >= 2 && after.t >= before.t - 5, `the reloaded world is not the same (${before.t} -> ${after.t})`);
@@ -238,7 +282,7 @@ await step('the Coalition War demonstration starts on Day 3 with a dominant guil
   await page.click('#aoc-new');
   await page.click('[data-scn="coalition"]');
   await page.click('#aoc-found');
-  await page.waitForSelector('.aoc-map-cv', { timeout: 30000 });
+  await page.waitForSelector('.aoc-town-cv', { timeout: 30000 });
   await page.waitForFunction(() => window.AOCUI.F);
   const s = await page.evaluate(() => { const f = window.AOCUI.F; const tot = f.guilds.reduce((a, g) => a + g.power, 0); return { scenario: f.scenario, day: f.day, top: Math.max(...f.guilds.map(g => g.power)) / tot, hall: f.player.b.hall }; });
   check(s.scenario === 'coalition' && s.day === 3 && s.top > 0.28 && s.hall === 12, `unexpected start: ${JSON.stringify(s)}`);

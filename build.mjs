@@ -22,7 +22,7 @@ const MODULES = ['city', 'military', 'shop', 'progress', 'dev'];
 const ALIASES = { mil: 'military', prog: 'progress', heroes: 'military' };
 // Age of Conquest: the engine goes in its own script tag (the page also starts its Web Worker from that text),
 // the interface files run after the Last Furnace modules
-const CONQUEST_UI = ['ui-core.js', 'ui-map.js', 'ui-city.js', 'ui-army.js', 'ui-guild.js', 'ui-intel.js', 'ui-chron.js', 'ui-misc.js'];
+const CONQUEST_UI = ['ui-core.js', 'ui-art.js', 'ui-home.js', 'ui-map.js', 'ui-city.js', 'ui-army.js', 'ui-guild.js', 'ui-battle.js', 'ui-intel.js', 'ui-chron.js', 'ui-misc.js', 'ui-guide.js'];
 
 // ---------- arguments
 function parseArgs(argv) {

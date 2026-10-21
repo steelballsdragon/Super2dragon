@@ -557,6 +557,8 @@ function frameView(w, since) {
     const own = m.owner === PLAYER || (P.guild >= 0 && w.govs[m.owner].guild === P.guild);
     if (own || vis[i] >= 2) out.marches.push(marchView(w, m, P));
   }
+  // battles seen in the last few game minutes flash on the map
+  out.fights = w.battles.filter(b => w.t - b.t <= 8 && (b.seen || b.a === PLAYER || b.d === PLAYER)).map(b => ({ x: b.x, y: b.y, t: b.t }));
   out.camps = w.camps.filter(c => ex[idx(c.x, c.y)]).map(c => ({ id: c.id, x: c.x, y: c.y, lv: c.lv }));
   out.nodes = w.nodes.filter(n => ex[idx(n.x, n.y)]).map(n => ({ id: n.id, x: n.x, y: n.y, res: n.res, lv: n.lv, amount: vis[idx(n.x, n.y)] ? n.amount : null, max: n.max, busy: !!n.by && vis[idx(n.x, n.y)] >= 2 }));
   out.marks = w.marks.map(mk => ({ id: mk.id, kind: mk.kind, name: mk.name, x: mk.x, y: mk.y, owner: mk.owner, since: mk.since, level: mk.level, known: !!ex[idx(mk.x, mk.y)], cleared: (mk.cleared || []).includes(PLAYER) }));
