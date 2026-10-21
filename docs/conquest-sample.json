@@ -2,12 +2,12 @@
   "_note": "Excerpt of a real Age of Conquest save after 3 game days (seed 2026). The full save has 600 governors, 10 guilds and every list in full; see docs/CONQUEST.md for the schema.",
   "wrapper": {
     "format": "age-of-conquest",
-    "v": 2,
+    "v": 3,
     "check": "<FNV-1a hash of body>",
     "body": "<the world below, as JSON text>"
   },
   "world": {
-    "v": 2,
+    "v": 3,
     "seed": 2026,
     "rs": 2473651442,
     "t": 4680,
@@ -556,7 +556,7 @@
           "arc": 36,
           "sie": 0
         },
-        "c1": "darius",
+        "c1": "joan",
         "c2": "kael",
         "path": "60332:",
         "k": 0,
@@ -589,7 +589,7 @@
           "sie": 0
         },
         "c1": "kael",
-        "c2": "seris",
+        "c2": "suntzu",
         "path": "60332:",
         "k": 0,
         "frac": 0,

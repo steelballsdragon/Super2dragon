@@ -82,8 +82,10 @@ await test('every governor has a full identity and persistent state', () => {
   check(new Set(w.govs.map(g => g.civ)).size === 12, 'all 12 civilizations appear');
   check(new Set(w.govs.map(g => g.name)).size > 450, 'names are mostly unique');
 });
-await test('12 civilizations each have bonuses and real costs, and 27 commanders are complete', () => {
-  check(A.CIVS.length === 12 && A.COMMANDERS.length === 27, 'counts');
+await test('12 civilizations each have bonuses and real costs, and 20 painted commanders are complete', () => {
+  check(A.CIVS.length === 12 && A.COMMANDERS.length === 20, 'counts');
+  // every commander has a painting: the removed ones are gone from every table
+  for (const id in A.CMD_REPLACED) check(!A.CMD[id] && A.CMD[A.CMD_REPLACED[id]] && !A.RECRUIT[id] && !A.CIVS.some(v => v.commander === id), `${id} was not removed`);
   // every commander has a full kit, a valid rival and talent tree, and a way to be recruited (a civilization's
   // starting commander or a deed in RECRUIT)
   for (const c of A.COMMANDERS) {
@@ -150,6 +152,27 @@ await test('damaged, tampered or impossible saves are refused', () => {
   const b2 = JSON.stringify(body);
   const r = A.deserialize(JSON.stringify({ ...wrap, body: b2, check: A.hash32(b2) }));
   check(!r.ok && /61 members/.test(r.err), `rule-breaking save: ${r.err}`);
+});
+await test('a save from before the unpainted commanders left converts them to their replacements', () => {
+  const w = fresh();
+  A.advance(w, 120);
+  const wrap = JSON.parse(A.serialize(w, 1));
+  const body = JSON.parse(wrap.body);
+  const g = body.govs.find(x => !x.human && x.civ === 'ashen'), p = body.govs[P];
+  // an AI governor who had Seris (level 12) and Sun Tzu (level 4), and the player who had Rokan as steward
+  g.cmds.seris = { lv: 12, xp: 5, sk: [2, 2, 1, 1], tal: { scout: 3 } }; g.cmds.suntzu = { lv: 4, xp: 0, sk: [1, 1, 1, 1], tal: {} };
+  g.steward = 'seris';
+  p.cmds.rokan = { lv: 9, xp: 0, sk: [1, 1, 1, 1], tal: {} }; p.steward = 'rokan'; p.defender = 'rokan';
+  body.reports.push({ id: 999999, kind: 'spy', defender: 'thane', commanders: [{ id: 'maelis', lv: 3 }] });
+  const b2 = JSON.stringify(body);
+  const r = A.deserialize(JSON.stringify({ ...wrap, v: 2, body: b2, check: A.hash32(b2) }));
+  check(r.ok, r.err);
+  const g2 = r.world.govs[g.id], p2 = r.world.govs[P];
+  check(!g2.cmds.seris && g2.cmds.suntzu.lv === 12 && g2.steward === 'suntzu', `Seris should become Sun Tzu at level 12: ${JSON.stringify(g2.cmds.suntzu)} ${g2.steward}`);
+  check(!p2.cmds.rokan && p2.cmds.musashi?.lv === 9 && p2.steward === 'musashi' && p2.defender === 'musashi', 'Rokan should become Musashi');
+  const rep = r.world.reports.find(x => x.id === 999999);
+  check(rep.defender === 'boudica' && rep.commanders[0].id === 'hannibal', 'reports should name the replacements');
+  for (const x of r.world.govs) for (const c in x.cmds) check(A.CMD[c], `unknown commander ${c} survived`);
 });
 await test('offline time is simulated on load, capped by the player\'s setting', () => {
   const w = fresh();

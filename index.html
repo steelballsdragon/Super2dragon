@@ -825,37 +825,37 @@ const CIVS = [
     mods: { stone: 0.15, cityDef: 0.1, speed: -0.1, gather: -0.05 },
     pros: ['+15% Stone', '+10% defense in your own city', 'Wardens: +10% health'], cons: ['-10% march speed', '-5% gathering speed'],
     lore: 'Mountain-wardens who carve their cities into the living rock and never once have opened a gate to a siege.' },
-  { id: 'raven', name: 'Raven Court', adj: 'Raven', color: '#5d4a7a', commander: 'seris', terrain: 'forest', roof: '#3c2f52', stone: '#5c5866',
+  { id: 'raven', name: 'Raven Court', adj: 'Raven', color: '#5d4a7a', commander: 'suntzu', terrain: 'forest', roof: '#3c2f52', stone: '#5c5866',
     variant: { unit: 'arc', name: 'Raven Skirmisher', mods: { atk: 0.05, forestAtk: 0.1 } },
     mods: { scoutAcc: 0.2, counter: 0.2, hp: -0.05 },
     pros: ['+20% scout accuracy', '+20% counterintelligence', 'Skirmishers: +10% attack in forests'], cons: ['-5% troop health'],
     lore: 'A shadow court of whisperers whose ravens carry more secrets than any treasury holds gold.' },
-  { id: 'dawn', name: 'Dawn Kingdom', adj: 'Dawn', color: '#c9b065', commander: 'darius', terrain: 'plains', roof: '#8c6f2c', stone: '#9a8f7a',
+  { id: 'dawn', name: 'Dawn Kingdom', adj: 'Dawn', color: '#c9b065', commander: 'joan', terrain: 'plains', roof: '#8c6f2c', stone: '#9a8f7a',
     variant: { unit: 'inf', name: 'Dawn Legionary', mods: { atk: 0.08 } },
     mods: { morale: 0.1, infAtk: 0.05, iron: -0.1 },
     pros: ['+10% morale', '+5% Infantry attack', 'Legionaries: +8% attack'], cons: ['-10% Iron production'],
     lore: 'Sworn to greet every sunrise as a victory, the Dawn legions sing as they march into the cold.' },
-  { id: 'frost', name: 'Frost Clans', adj: 'Frost', color: '#9fc6d6', commander: 'nyra', terrain: 'snow', roof: '#4d6a78', stone: '#9aa5ab',
+  { id: 'frost', name: 'Frost Clans', adj: 'Frost', color: '#9fc6d6', commander: 'ragnar', terrain: 'snow', roof: '#4d6a78', stone: '#9aa5ab',
     variant: { unit: 'arc', name: 'Frost Hunter', mods: { def: 0.08 } },
     mods: { roughDef: 0.1, winterProof: 1, gold: -0.1 },
     pros: ['+10% defense in forests, hills and tundra', 'Unaffected by Harsh Winter', 'Frost Hunters: +8% defense'], cons: ['-10% Gold production'],
     lore: 'Seers and hunters of the white north, who read the ice like scripture and fear no winter.' },
-  { id: 'golden', name: 'Golden League', adj: 'League', color: '#e0c060', commander: 'ilyan', terrain: 'plains', roof: '#a88a2a', stone: '#a09070',
+  { id: 'golden', name: 'Golden League', adj: 'League', color: '#e0c060', commander: 'cleopatra', terrain: 'plains', roof: '#a88a2a', stone: '#a09070',
     variant: { unit: 'cav', name: 'League Outrider', mods: { load: 0.3 } },
     mods: { gold: 0.15, tradeFee: -0.3, atk: -0.08 },
     pros: ['+15% Gold', '30% lower market fee', 'Outriders carry 30% more'], cons: ['-8% troop attack'],
     lore: 'Merchant princes who discovered that a well-placed loan wins more wars than a well-placed spear.' },
-  { id: 'forge', name: 'Forge Holds', adj: 'Forge', color: '#a8582f', commander: 'rokan', terrain: 'hills', roof: '#5d3524', stone: '#5e534c',
+  { id: 'forge', name: 'Forge Holds', adj: 'Forge', color: '#a8582f', commander: 'musashi', terrain: 'hills', roof: '#5d3524', stone: '#5e534c',
     variant: { unit: 'sie', name: 'Forge Ram', mods: { wallAtk: 0.2 } },
     mods: { iron: 0.15, sieAtk: 0.1, food: -0.05, cavDef: -0.1 },
     pros: ['+15% Iron', '+10% siege attack', 'Forge Rams: +20% damage to walls'], cons: ['-5% Food', '-10% Cavalry defense'],
     lore: 'Dwarf-tall smiths of the deep holds whose rams have broken every wall that ever said no.' },
-  { id: 'tempest', name: 'Tempest Isles', adj: 'Tempest', color: '#3f8f8a', commander: 'maelis', terrain: 'water', roof: '#2a5c58', stone: '#6d7c78',
+  { id: 'tempest', name: 'Tempest Isles', adj: 'Tempest', color: '#3f8f8a', commander: 'hannibal', terrain: 'water', roof: '#2a5c58', stone: '#6d7c78',
     variant: { unit: 'arc', name: 'Tempest Bowman', mods: { atk: 0.06 } },
     mods: { arcAtk: 0.08, wood: 0.1, infDef: -0.08 },
     pros: ['+8% Archer attack', '+10% Wood', 'Tempest Bowmen: +6% attack'], cons: ['-8% Infantry defense'],
     lore: 'Island lords who sail frozen lakes on runner-ships and call down the gale against their foes.' },
-  { id: 'oath', name: 'Oathbound Marches', adj: 'Oathbound', color: '#6f8f5a', commander: 'thane', terrain: 'forest', roof: '#41583a', stone: '#6c6f5e',
+  { id: 'oath', name: 'Oathbound Marches', adj: 'Oathbound', color: '#6f8f5a', commander: 'boudica', terrain: 'forest', roof: '#41583a', stone: '#6c6f5e',
     variant: { unit: 'cav', name: 'Oath Rider', mods: { hp: 0.1 } },
     mods: { hospital: 0.15, heal: 0.15, reinforce: 0.1, food: -0.05, wood: -0.05 },
     pros: ['+15% hospital space and healing speed', '+10% defense when reinforcing', 'Oath Riders: +10% health'], cons: ['-5% Food and Wood'],
@@ -889,47 +889,12 @@ const COMMANDERS = [
     active: { name: 'Iron Orders', desc: 'All troops gain 15% attack for 2 rounds.', effects: [{ k: 'buff', stat: 'atk', pct: 15, rounds: 2 }] },
     passives: [{ name: 'Chain of Command', desc: '+15% rally capacity when she leads a rally.', mods: { rally: 0.15 }, when: 'rally' }, { name: 'Supply Lines', desc: '+20% speed for reinforcements and rallies.', mods: { reinforceSpeed: 0.2 } }],
     ultimate: { name: 'Concord Square', desc: '+10% defense in rallies and garrisons.', mods: { def: 0.1 }, when: 'rally' },
-    talents: ['atk', 'def', 'rally'], story: 'A clerk who rewrote the Concord war charter overnight. Veyra wins wars on paper weeks before the first march.', rival: 'seris' },
+    talents: ['atk', 'def', 'rally'], story: 'A clerk who rewrote the Concord war charter overnight. Veyra wins wars on paper weeks before the first march.', rival: 'caocao' },
   { id: 'orun', name: 'Orun', title: 'the Immortal Sentinel', civ: 'bastion', rarity: 'legendary', spec: 'inf', role: 'Fortress garrisons and siege defense',
     active: { name: 'Stoneheart', desc: 'Restores 8% of troops lost so far and grants 20% defense for 2 rounds.', effects: [{ k: 'heal', pct: 8 }, { k: 'buff', stat: 'def', pct: 20, rounds: 2 }] },
     passives: [{ name: 'Gatekeeper', desc: '+15% defense when defending a city or fortress.', mods: { def: 0.15 }, when: 'city' }, { name: 'Living Rock', desc: '+15% wall durability while he leads your city.', mods: { wallDur: 0.15 }, steward: true }],
     ultimate: { name: 'Thousand-Year Watch', desc: 'Wall towers deal 30% more damage.', mods: { tower: 0.3 } },
-    talents: ['def', 'inf', 'city'], story: 'Orun has stood the north gate of the Bastion for three hundred winters, or so the songs say. Nobody alive remembers the gate without him.', rival: 'rokan' },
-  { id: 'seris', name: 'Seris', title: 'the Veiled Raven', civ: 'raven', rarity: 'epic', spec: 'arc', role: 'Intelligence, sabotage and counterintelligence',
-    active: { name: 'Veil Strike', desc: 'Enemy attack drops 20% for 2 rounds.', effects: [{ k: 'debuff', stat: 'atk', pct: 20, rounds: 2 }, { k: 'nuke', power: 120 }] },
-    passives: [{ name: 'Whisper Network', desc: '+25% scout accuracy and +25% counterintelligence while she leads your city.', mods: { scoutAcc: 0.25, counter: 0.25 }, steward: true }, { name: 'From the Trees', desc: '+15% attack in forests.', mods: { atk: 0.15 }, when: 'forest' }],
-    ultimate: { name: 'False Raven', desc: 'Enemy scouts reading your city get false numbers half the time.', mods: { falseReports: 0.5 }, steward: true },
-    talents: ['scout', 'atk', 'counter'], story: 'Nobody has seen Seris twice with the same face. Her letters arrive before the battles they describe.', rival: 'veyra' },
-  { id: 'darius', name: 'Darius Vale', title: 'the Lion of Dawn', civ: 'dawn', rarity: 'epic', spec: 'inf', role: 'Infantry assaults and morale',
-    active: { name: 'Dawn Roar', desc: '+20 morale and +20% Infantry attack for 2 rounds.', effects: [{ k: 'morale', amount: 20 }, { k: 'buff', stat: 'atk', pct: 20, rounds: 2, unit: 'inf' }] },
-    passives: [{ name: 'Unbroken', desc: 'Morale falls 20% slower.', mods: { moraleLoss: -0.2 } }, { name: 'Vanguard', desc: '+8% Infantry attack when attacking.', mods: { infAtk: 0.08 }, when: 'attack' }],
-    ultimate: { name: 'Second Sunrise', desc: 'After a victory, 10% more casualties return as wounded.', mods: { wounded: 0.1 } },
-    talents: ['inf', 'atk', 'morale'], story: 'A shepherd who held a bridge alone for a night and a day. The Dawn Kingdom made him a lord; he still sleeps with his soldiers.', rival: 'thane' },
-  { id: 'nyra', name: 'Nyra', title: 'the Frost Oracle', civ: 'frost', rarity: 'epic', spec: 'arc', role: 'Terrain control and defensive disruption',
-    active: { name: 'Frostbind', desc: 'Enemy attack drops 25% and enemy cavalry another 15% for 2 rounds.', effects: [{ k: 'debuff', stat: 'atk', pct: 25, rounds: 2 }, { k: 'debuff', stat: 'atk', pct: 15, rounds: 2, unit: 'cav' }] },
-    passives: [{ name: 'Child of Ice', desc: '+12% defense in forests, hills and tundra.', mods: { roughDef: 0.12 } }, { name: 'Winter Ward', desc: 'Your city ignores Harsh Winter while she leads it.', mods: { winterProof: 1 }, steward: true }],
-    ultimate: { name: 'White Silence', desc: 'The enemy cannot cast its commander skill for the first 3 rounds.', effects: [{ k: 'silence', rounds: 3 }] },
-    talents: ['def', 'arc', 'terrain'], story: 'Nyra walked out of a glacier at the age of nine and has foretold every great winter since. She has never foretold her own.', rival: 'maelis' },
-  { id: 'ilyan', name: 'Ilyan', title: 'the Golden Merchant', civ: 'golden', rarity: 'epic', spec: 'cav', role: 'Trade, logistics and economic bonuses',
-    active: { name: 'Golden Ransom', desc: 'A modest strike; plunder is 20% higher if the battle is won.', effects: [{ k: 'nuke', power: 150 }], mods: { plunder: 0.2 } },
-    passives: [{ name: 'Caravan Master', desc: '+20% gathering speed and carry load.', mods: { gather: 0.2, load: 0.2 } }, { name: 'Honest Scales', desc: '-20% market fee and +10% Gold while he leads your city.', mods: { tradeFee: -0.2, gold: 0.1 }, steward: true }],
-    ultimate: { name: 'Every Man Has a Price', desc: 'Defenders he defeats lose 10% more resources.', mods: { plunder: 0.1 } },
-    talents: ['gather', 'load', 'gold'], story: 'Ilyan once bought a war, ended it, and sold the peace at a profit. Kings owe him money; that is why kings want him alive.', rival: 'rokan' },
-  { id: 'rokan', name: 'Rokan', title: 'the Siege Breaker', civ: 'forge', rarity: 'legendary', spec: 'sie', role: 'Siege engines and fortress assaults',
-    active: { name: 'Breach', desc: 'Doubles damage to walls this round and strikes the garrison.', effects: [{ k: 'nuke', power: 280 }, { k: 'wallburst', mult: 2 }] },
-    passives: [{ name: 'Forgefather', desc: '+15% siege attack.', mods: { sieAtk: 0.15 } }, { name: 'Wallbreaker', desc: '+20% damage to walls and fortresses.', mods: { wallAtk: 0.2 }, when: 'city' }],
-    ultimate: { name: 'Spoils of the Hold', desc: '+15% plunder.', mods: { plunder: 0.15 } },
-    talents: ['sie', 'atk', 'city'], story: 'Rokan forged his first ram from the gate of the city that exiled him. He has been returning the favor ever since.', rival: 'orun' },
-  { id: 'maelis', name: 'Maelis', title: 'the Stormcaller', civ: 'tempest', rarity: 'legendary', spec: 'arc', role: 'Ranged formations and battlefield disruption',
-    active: { name: 'Tempest Call', desc: 'A storm strikes every enemy and lowers their defense 10% for 2 rounds.', effects: [{ k: 'nuke', power: 300 }, { k: 'debuff', stat: 'def', pct: 10, rounds: 2 }] },
-    passives: [{ name: 'Gale Volleys', desc: '+12% Archer attack.', mods: { arcAtk: 0.12 } }, { name: 'Thunderhead', desc: 'Enemy morale drops 3 extra per round in the first three rounds.', mods: { terror: 3 } }],
-    ultimate: { name: 'Eye of the Storm', desc: 'Your archers take 10% less damage.', mods: { arcDef: 0.1 } },
-    talents: ['arc', 'atk', 'morale'], story: 'Maelis calls the gale and the gale answers. Sailors pray to her; generals pray she stays at sea.', rival: 'nyra' },
-  { id: 'thane', name: 'Thane', title: 'the Last Oath', civ: 'oath', rarity: 'epic', spec: 'mix', role: 'Rescue, reinforcement and desperate defense',
-    active: { name: 'Last Oath', desc: 'Restores 10% of troops lost; below 40% troops also +25% defense for 2 rounds.', effects: [{ k: 'heal', pct: 10 }, { k: 'buff', stat: 'def', pct: 25, rounds: 2, below: 0.4 }] },
-    passives: [{ name: 'No One Left Behind', desc: '10% more casualties return as wounded.', mods: { wounded: 0.1 } }, { name: 'Shield Brother', desc: '+15% defense when reinforcing.', mods: { def: 0.15 }, when: 'reinforce' }],
-    ultimate: { name: 'Oath Beyond Death', desc: 'Morale never falls below 15 while troops remain above 25%.', effects: [{ k: 'floor', morale: 15, above: 0.25 }] },
-    talents: ['def', 'heal', 'reinforce'], story: 'Thane swore to hold the marches until the last fire dies. The fire is low. Thane is still there.', rival: 'darius' },
+    talents: ['def', 'inf', 'city'], story: 'Orun has stood the north gate of the Bastion for three hundred winters, or so the songs say. Nobody alive remembers the gate without him.', rival: 'leonidas' },
   // ---- legendary commanders of history, recruited by deeds (the same rules for AI governors and the player)
   { id: 'suntzu', name: 'Sun Tzu', title: 'the Master Strategist', civ: 'raven', rarity: 'epic', spec: 'mix', role: 'Strategy, intelligence and support',
     active: { name: 'The Art of War', desc: 'Enemy attack drops 15% and your defense rises 15% for 2 rounds.', effects: [{ k: 'debuff', stat: 'atk', pct: 15, rounds: 2 }, { k: 'buff', stat: 'def', pct: 15, rounds: 2 }] },
@@ -1008,15 +973,11 @@ const COMMANDERS = [
     talents: ['atk', 'territory', 'morale'], story: 'When an empire took her lands she burned three of its cities. Boudica fights for one thing: that no one takes what is hers again.', rival: 'caesar' },
 ];
 const CMD = Object.fromEntries(COMMANDERS.map(c => [c.id, c]));
+// commanders who were removed (they had no painting), and who takes their place in older saves
+const CMD_REPLACED = { seris: 'suntzu', darius: 'joan', nyra: 'ragnar', ilyan: 'cleopatra', rokan: 'musashi', maelis: 'hannibal', thane: 'boudica' };
 // pairs that fight better together (primary + secondary in either order)
 const SYNERGY = [
   { a: 'kael', b: 'orun', name: 'Ash and Stone', mods: { def: 0.05 } },
-  { a: 'amara', b: 'ilyan', name: 'Gold and Sun', mods: { atk: 0.04, load: 0.1 } },
-  { a: 'temur', b: 'maelis', name: 'Storm Front', mods: { arcAtk: 0.06 } },
-  { a: 'veyra', b: 'darius', name: 'Iron Dawn', mods: { atk: 0.04, morale: 0.05 } },
-  { a: 'seris', b: 'nyra', name: 'Veil of Frost', mods: { def: 0.04, scoutAcc: 0.1 } },
-  { a: 'rokan', b: 'veyra', name: 'Breach Doctrine', mods: { sieAtk: 0.06 } },
-  { a: 'thane', b: 'kael', name: 'Oath to the Throne', mods: { def: 0.04, wounded: 0.05 } },
   { a: 'suntzu', b: 'caocao', name: 'Art of the Three Kingdoms', mods: { atk: 0.04, scoutAcc: 0.1 } },
   { a: 'genghis', b: 'saladin', name: 'Lords of the Horse', mods: { cavAtk: 0.06 } },
   { a: 'caesar', b: 'cleopatra', name: 'Rome and the Nile', mods: { def: 0.04, load: 0.1 } },
@@ -1048,13 +1009,6 @@ const RECRUIT = {
   temur: { kind: 'scouts', n: 10, text: 'Send 10 scout reports.' },
   veyra: { kind: 'rallies', n: 2, text: 'Join or lead 2 rallies.' },
   orun: { kind: 'defenses', n: 3, text: 'Win 3 battles defending your city or a fortress.' },
-  seris: { kind: 'tech', id: 'counter', n: 2, text: 'Research Counterintelligence to level 2.' },
-  darius: { kind: 'wins', n: 12, text: 'Win 12 battles.' },
-  nyra: { kind: 'tech', id: 'fortify', n: 2, text: 'Research Fortification to level 2.' },
-  ilyan: { kind: 'traded', n: 20000, text: 'Trade 20,000 resources at the Market.' },
-  rokan: { kind: 'building', id: 'workshop', n: 3, text: 'Build the Siege Workshop to level 3.' },
-  maelis: { kind: 'troops', unit: 'arc', n: 3000, text: 'Train 3,000 Archers in total.' },
-  thane: { kind: 'healed', n: 2000, text: 'Heal 2,000 wounded troops.' },
   // the commanders of history ask for greater deeds
   suntzu: { kind: 'tech', id: 'scouting', n: 4, text: 'Research Scouting to level 4.' },
   joan: { kind: 'rallies', n: 8, text: 'Join or lead 8 rallies.' },
@@ -2260,7 +2214,7 @@ function noisy(rng, v, acc) {
 /* Age of Conquest simulation: world creation, the clock, queues, marches, battles, landmarks, territory, world
    events and the chronicle. AI decisions live in ai.js, player commands and views in api.js. Part of the engine. */
 
-const SCHEMA = 2;   // 2: the kingdom map (384 tiles, zones, passes and holy sites)
+const SCHEMA = 3;   // 2: the kingdom map (384 tiles, zones, passes and holy sites); 3: unpainted commanders replaced
 const PLAYER = GOVERNORS - 1;
 
 // ================================================================ creation
@@ -5600,7 +5554,39 @@ function migrate(w, v) {
   if (!w.campRespawn) w.campRespawn = [];
   if (!w.devSw) w.devSw = { unlimited: false, instant: false };
   for (const g of w.govs || []) if (!g.crate) g.crate = {};
-  void v;
+  if (v < 3) replaceCommanders(w);
+}
+// schema 3: seven commanders without paintings left the game; each save's copies become the commander who replaced them
+function replaceCommanders(w) {
+  const swap = id => (typeof id === 'string' && CMD_REPLACED[id]) || id;
+  for (const g of w.govs || []) {
+    for (const old in CMD_REPLACED) {
+      const rec = g.cmds && g.cmds[old];
+      if (!rec) continue;
+      delete g.cmds[old];
+      const to = CMD_REPLACED[old], have = g.cmds[to];
+      // the higher level survives; talents go back into the pool because the tree is different
+      if (!have || rec.lv > have.lv) g.cmds[to] = { lv: rec.lv, xp: rec.xp || 0, sk: (rec.sk || [1, 1, 1, 1]).slice(), tal: {} };
+    }
+    g.steward = swap(g.steward);
+    g.defender = swap(g.defender);
+    if (g.steward && !g.cmds[g.steward]) g.steward = Object.keys(g.cmds)[0] || null;
+    if (g.defender && !g.cmds[g.defender]) g.defender = Object.keys(g.cmds)[0] || null;
+  }
+  const fix = m => { if (!m) return; m.c1 = swap(m.c1); m.c2 = swap(m.c2); if (m.c1 && m.c1 === m.c2) m.c2 = null; };
+  for (const m of w.marches || []) { fix(m); for (const p of m.parts || []) fix(p); }
+  for (const r of w.rallies || []) fix(r);
+  // reports and replays name commanders by id: walk them and rename
+  const walk = o => {
+    if (!o || typeof o !== 'object') return;
+    if (Array.isArray(o)) { for (const x of o) walk(x); return; }
+    for (const k in o) {
+      const v = o[k];
+      if (typeof v === 'string') { if ((k === 'c1' || k === 'c2' || k === 'defender' || k === 'steward' || k === 'id') && CMD_REPLACED[v]) o[k] = CMD_REPLACED[v]; }
+      else walk(v);
+    }
+  };
+  walk(w.reports); walk(w.battles);
 }
 // the integrity checks run on every load and in the tests
 function validateWorld(w) {
@@ -5640,6 +5626,7 @@ function validateWorld(w) {
     }
     for (const b in g.b) if (!(g.b[b] >= 0 && g.b[b] <= MAX_LEVEL) || (b !== 'hall' && g.b[b] > g.b.hall)) p.push(`governor ${i} building ${b} level ${g.b[b]} is out of range`);
     for (const t in g.tech) if (!(g.tech[t] >= 0 && g.tech[t] <= TECH_MAX)) p.push(`governor ${i} tech ${t} out of range`);
+    for (const c in g.cmds) if (!CMD[c]) p.push(`governor ${i} has an unknown commander ${c}`);
     const key = g.x + ',' + g.y;
     if (seenTile.has(key)) p.push(`two cities share tile ${key}`);
     seenTile.add(key);
@@ -5784,7 +5771,7 @@ function diagnostics(w) {
   };
 }
 
-root.AOC = { RES, RES_NAME, RES_VALUE, UNITS, UNIT_KEYS, COUNTER, TERRAIN, T, BUILDINGS, BUILDING_KEYS, TECHS, TECH_KEYS, TECH_MAX, CIVS, CIV, COMMANDERS, CMD, SYNERGY, TALENT_STATS, TALENT_NAME, RECRUIT, ARCHETYPES, SERVER, GUILD_MAX, GUILD_COUNT, GOVERNORS, OFFICERS_MAX, THRONE_OPENS, THRONE_HOLD, EXCHANGE, SHIELD, NEWCOMER_SHIELD, MAP_N, HOUR, DAY, MAX_LEVEL, CMD_MAX_LEVEL, ULTIMATE_LEVEL, GUILD_TECH, QUESTS, CHAPTERS, ACHIEVEMENTS, PLAYER, SCHEMA, EVENTS, ROLE_NAME, FREE_FINISH, CRATE, ZONES, REGIONS, PASS_LEVELS, SITES, BLESSINGS, GATES, ALL_GATES, buildingCost, buildingMinutes, buildingReq, productionAt, BASE_PRODUCTION, protectedAmount, protectedStock, affordable, hospitalCap, wallDurability, visionRadius, marchCapacity, marchSlots, techCost, techMinutes, cmdXpToNext, skillCost, clock, roman, troopsTotal, troopPower, createWorld, createServer, step, advance, serialize, deserialize, validateWorld, playerCommand, frameView, inspect, guildDetail, rankings, chronicleView, historyView, tileView, diagnostics, fight, explainBattle, findPath, pathCost, settle, production, cityMods, upkeepPerHour, computePower, armySide, neutralSide, startMarch, startRally, joinRally, actBuild, buildCheck, actFree, freeCheck, actCollect, crateCheck, actResearch, researchCheck, actTrain, trainCheck, actHeal, actTrade, actShield, actRelocate, actContribute, applyToGuild, joinGuild, leaveGuild, declareWar, makePeace, treaty, setTreaty, succession, collapseGuild, refoundGuild, thinkGuild, think, scoutAccuracy, intelOn, garrisonOf, marchPos, makeRng, hash32, generateTerrain, recomputeTerritory, updatePlayerVision, idx, tx, ty, rleEncode, rleDecode, PF, projectRes, tierOf, marchCap, marchSpeed, checkRecruits, giveXp, endAge, dist, tileTarget, busyCommanders, regionAt, zoneAt, zoneOfRegion, regionCenter, edgeDist, gateAccess, regionsReachable, canReach, reachMaskOf, inReach, blessingMods, planObjective };
+root.AOC = { RES, RES_NAME, RES_VALUE, UNITS, UNIT_KEYS, COUNTER, TERRAIN, T, BUILDINGS, BUILDING_KEYS, TECHS, TECH_KEYS, TECH_MAX, CIVS, CIV, COMMANDERS, CMD, SYNERGY, TALENT_STATS, TALENT_NAME, RECRUIT, ARCHETYPES, SERVER, GUILD_MAX, GUILD_COUNT, GOVERNORS, OFFICERS_MAX, THRONE_OPENS, THRONE_HOLD, EXCHANGE, SHIELD, NEWCOMER_SHIELD, MAP_N, HOUR, DAY, MAX_LEVEL, CMD_MAX_LEVEL, CMD_REPLACED, ULTIMATE_LEVEL, GUILD_TECH, QUESTS, CHAPTERS, ACHIEVEMENTS, PLAYER, SCHEMA, EVENTS, ROLE_NAME, FREE_FINISH, CRATE, ZONES, REGIONS, PASS_LEVELS, SITES, BLESSINGS, GATES, ALL_GATES, buildingCost, buildingMinutes, buildingReq, productionAt, BASE_PRODUCTION, protectedAmount, protectedStock, affordable, hospitalCap, wallDurability, visionRadius, marchCapacity, marchSlots, techCost, techMinutes, cmdXpToNext, skillCost, clock, roman, troopsTotal, troopPower, createWorld, createServer, step, advance, serialize, deserialize, validateWorld, playerCommand, frameView, inspect, guildDetail, rankings, chronicleView, historyView, tileView, diagnostics, fight, explainBattle, findPath, pathCost, settle, production, cityMods, upkeepPerHour, computePower, armySide, neutralSide, startMarch, startRally, joinRally, actBuild, buildCheck, actFree, freeCheck, actCollect, crateCheck, actResearch, researchCheck, actTrain, trainCheck, actHeal, actTrade, actShield, actRelocate, actContribute, applyToGuild, joinGuild, leaveGuild, declareWar, makePeace, treaty, setTreaty, succession, collapseGuild, refoundGuild, thinkGuild, think, scoutAccuracy, intelOn, garrisonOf, marchPos, makeRng, hash32, generateTerrain, recomputeTerritory, updatePlayerVision, idx, tx, ty, rleEncode, rleDecode, PF, projectRes, tierOf, marchCap, marchSpeed, checkRecruits, giveXp, endAge, dist, tileTarget, busyCommanders, regionAt, zoneAt, zoneOfRegion, regionCenter, edgeDist, gateAccess, regionsReachable, canReach, reachMaskOf, inReach, blessingMods, planObjective };
 })(typeof self !== 'undefined' ? self : globalThis);
 
 </script>

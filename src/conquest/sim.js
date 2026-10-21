@@ -1,7 +1,7 @@
 /* Age of Conquest simulation: world creation, the clock, queues, marches, battles, landmarks, territory, world
    events and the chronicle. AI decisions live in ai.js, player commands and views in api.js. Part of the engine. */
 
-const SCHEMA = 2;   // 2: the kingdom map (384 tiles, zones, passes and holy sites)
+const SCHEMA = 3;   // 2: the kingdom map (384 tiles, zones, passes and holy sites); 3: unpainted commanders replaced
 const PLAYER = GOVERNORS - 1;
 
 // ================================================================ creation

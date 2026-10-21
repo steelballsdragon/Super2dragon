@@ -868,7 +868,39 @@ function migrate(w, v) {
   if (!w.campRespawn) w.campRespawn = [];
   if (!w.devSw) w.devSw = { unlimited: false, instant: false };
   for (const g of w.govs || []) if (!g.crate) g.crate = {};
-  void v;
+  if (v < 3) replaceCommanders(w);
+}
+// schema 3: seven commanders without paintings left the game; each save's copies become the commander who replaced them
+function replaceCommanders(w) {
+  const swap = id => (typeof id === 'string' && CMD_REPLACED[id]) || id;
+  for (const g of w.govs || []) {
+    for (const old in CMD_REPLACED) {
+      const rec = g.cmds && g.cmds[old];
+      if (!rec) continue;
+      delete g.cmds[old];
+      const to = CMD_REPLACED[old], have = g.cmds[to];
+      // the higher level survives; talents go back into the pool because the tree is different
+      if (!have || rec.lv > have.lv) g.cmds[to] = { lv: rec.lv, xp: rec.xp || 0, sk: (rec.sk || [1, 1, 1, 1]).slice(), tal: {} };
+    }
+    g.steward = swap(g.steward);
+    g.defender = swap(g.defender);
+    if (g.steward && !g.cmds[g.steward]) g.steward = Object.keys(g.cmds)[0] || null;
+    if (g.defender && !g.cmds[g.defender]) g.defender = Object.keys(g.cmds)[0] || null;
+  }
+  const fix = m => { if (!m) return; m.c1 = swap(m.c1); m.c2 = swap(m.c2); if (m.c1 && m.c1 === m.c2) m.c2 = null; };
+  for (const m of w.marches || []) { fix(m); for (const p of m.parts || []) fix(p); }
+  for (const r of w.rallies || []) fix(r);
+  // reports and replays name commanders by id: walk them and rename
+  const walk = o => {
+    if (!o || typeof o !== 'object') return;
+    if (Array.isArray(o)) { for (const x of o) walk(x); return; }
+    for (const k in o) {
+      const v = o[k];
+      if (typeof v === 'string') { if ((k === 'c1' || k === 'c2' || k === 'defender' || k === 'steward' || k === 'id') && CMD_REPLACED[v]) o[k] = CMD_REPLACED[v]; }
+      else walk(v);
+    }
+  };
+  walk(w.reports); walk(w.battles);
 }
 // the integrity checks run on every load and in the tests
 function validateWorld(w) {
@@ -908,6 +940,7 @@ function validateWorld(w) {
     }
     for (const b in g.b) if (!(g.b[b] >= 0 && g.b[b] <= MAX_LEVEL) || (b !== 'hall' && g.b[b] > g.b.hall)) p.push(`governor ${i} building ${b} level ${g.b[b]} is out of range`);
     for (const t in g.tech) if (!(g.tech[t] >= 0 && g.tech[t] <= TECH_MAX)) p.push(`governor ${i} tech ${t} out of range`);
+    for (const c in g.cmds) if (!CMD[c]) p.push(`governor ${i} has an unknown commander ${c}`);
     const key = g.x + ',' + g.y;
     if (seenTile.has(key)) p.push(`two cities share tile ${key}`);
     seenTile.add(key);

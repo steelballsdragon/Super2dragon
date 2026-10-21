@@ -26,7 +26,7 @@ This document covers what is built, how it works, how to run and test it, what i
 - **City:** the Town Hall in eight stages (from a watchtower to a golden palace), the Farm and the Barracks in four stages each, the Watchtower in three, and one painting each for the Lumber Mill, Quarry, Iron Mine, Market, Warehouse, Stables, Archery Range, Siege Workshop, Academy and Hospital. The City Wall is still drawn in code. A painted LEVEL UP! accent pops over a building that finishes a level.
 - **World map:** cities as castles of four sizes with a ring and a banner in their guild's colour, the Capital, passes (gatehouses with gold level pips), sanctums, altars and shrines, three kinds of ruins, bandit camps in three sizes, and the five resource fields (food and iron in two styles).
 - **Soldiers:** infantry, cavalry, archers and siege engines walk across the map and fight in the battle scenes with walking, attacking and falling frames.
-- **Commanders:** 20 of the 27 have paintings: Kael, Amara, Temur, Veyra and Orun (full figures), and the 15 commanders of history (a framed portrait and a full figure each, shown at the top of their sheet). Seris, Darius Vale, Nyra, Ilyan, Rokan, Maelis and Thane still use drawn portraits.
+- **Commanders:** all 20 have paintings: Kael, Amara, Temur, Veyra and Orun (full figures), and the 15 commanders of history (a framed portrait and a full figure each, shown at the top of their sheet). The seven commanders who had no painting (Seris, Darius Vale, Nyra, Ilyan, Rokan, Maelis and Thane) were removed. Their civilizations now start with Sun Tzu, Joan of Arc, Ragnar Lothbrok, Cleopatra, Miyamoto Musashi, Hannibal Barca and Boudica. A save made before then (schema 2) converts each removed commander into its replacement, keeping the higher level and returning its talent points.
 - **Interface:** painted icons for Food, Wood, Stone, Iron and Gold everywhere they appear, VICTORY and DEFEAT banners in battles, a treasure chest on reward pop-ups.
 
 What is still drawn in code: the terrain, trees, walls, villagers, smoke, the empty plots and seven of the commanders, in each civilization's colors and roof style:
@@ -107,7 +107,7 @@ Why this design:
 
 ```
 src/conquest/
-  data.js        tables: units, terrain, buildings, research, 12 civilizations, 27 commanders, archetypes, the server
+  data.js        tables: units, terrain, buildings, research, 12 civilizations, 20 commanders, archetypes, the server
                  identity, the kingdom's regions, pass levels, holy sites and their blessings
   world.js       random numbers, the kingdom layout (zones, regions, ranges, passes), terrain generation,
                  pass-aware pathfinding, occupancy and spatial buckets, vision
