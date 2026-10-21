@@ -115,9 +115,23 @@ await page.route(/fonts\.(googleapis|gstatic)\.com/, route => route.abort());
 console.log(`smoke: ${FILE}`);
 
 let start;
-await step('new game boots', async () => {
-  await page.goto(URL);
+// the start screen comes first on every fresh open; it enables its button once the save check is done
+async function passStart(label) {
+  const btn = page.locator('#start-continue');
+  await btn.waitFor({ state: 'visible', timeout: 10000 });
+  await page.waitForFunction(() => !document.querySelector('#start-continue')?.disabled, null, { timeout: 10000 });
+  const text = (await btn.textContent()).trim();
+  check(text === label, `start button says "${text}", expected "${label}"`);
+  await btn.click();
   await page.waitForFunction(() => window.Game && Game.isReady === true, null, { timeout: 10000 });
+  await page.waitForFunction(() => !document.getElementById('start'), null, { timeout: 3000 });
+}
+
+await step('new game boots from the start screen', async () => {
+  await page.goto(URL);
+  check(await G(() => !Game.isReady), 'game booted before the start screen');
+  check(await page.locator('#start-new').isHidden(), 'New game offered with no save');
+  await passStart('Start game');
   start = await state();
   check(start.v === 2, 'state version is not 2');
   check(start.city.levels.furnace === 1, 'Furnace does not start at Lv 1');
@@ -393,7 +407,11 @@ let saved;
 await step('reload restores the save', async () => {
   saved = await state();
   await page.reload();
-  await page.waitForFunction(() => window.Game && Game.isReady === true, null, { timeout: 10000 });
+  await page.locator('.start-save-txt').waitFor({ state: 'visible', timeout: 10000 });
+  const card = await page.locator('.start-save-txt').textContent();
+  check(card.includes(`Furnace Lv ${saved.city.levels.furnace}`), `start card does not show the saved furnace level: ${card}`);
+  check(await page.locator('#start-new').isVisible(), 'New game not offered on the start screen');
+  await passStart('Continue');
   const s = await state();
   check(s.city.levels.furnace === saved.city.levels.furnace, `furnace level ${s.city.levels.furnace} != ${saved.city.levels.furnace}`);
   check(s.city.levels.infantry_camp === 1, 'infantry camp lost');

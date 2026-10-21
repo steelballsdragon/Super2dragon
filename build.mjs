@@ -77,7 +77,7 @@ for (const m of selected) {
 
 const BOOT = `try { window.claude?.hot?.snapshot?.(() => ({ state: Game.S })) } catch (e) {}
 const hot = window.claude?.hot;
-if (hot?.ready) hot.ready(d => Game.boot(d)); else Game.boot(hot?.data ?? {});`;
+if (hot?.ready) hot.ready(d => Game.start(d)); else Game.start(hot?.data ?? {});`;
 
 // ---------- light lint (warnings only)
 const warnings = [];

@@ -369,14 +369,96 @@ function initSlice(m, saved) {
   S[m.id] = slice;
 }
 
-function loadSaved() {
-  const raw = Game.storage.get(SAVE_KEY);
-  if (!raw) return null;
+// ---------------------------------------------------------------- saving: this device and the cloud
+// This device keeps the live save (every 5 s), a rolling backup (every 2 min) and a rescue copy of any save
+// that could not be read or that a new game replaced, so progress is never thrown away silently.
+const BACKUP_KEY = SAVE_KEY + '-backup';
+const RESCUE_KEY = SAVE_KEY + '-rescue';
+const BACKUP_MS = 120000;
+const CLOUD_EVERY_MS = 30000;
+let lastBackup = -Infinity;
+function parseSave(raw) {
+  if (typeof raw !== 'string' || !raw) return null;
   try {
-    const data = JSON.parse(raw);
-    return isObj(data) ? data : null;
+    const d = JSON.parse(raw);
+    return isObj(d) && d.v === 2 ? d : null;
   } catch (e) { return null; }
 }
+const savedAtOf = st => num(st?.meta?.savedAt) || num(st?.meta?.lastSeen);
+function loadSaved() {
+  const raw = Game.storage.get(SAVE_KEY);
+  const main = parseSave(raw);
+  const backup = parseSave(Game.storage.get(BACKUP_KEY));
+  if (raw && !main) Game.storage.set(RESCUE_KEY, raw);
+  if (main && backup) return savedAtOf(backup) > savedAtOf(main) ? backup : main;
+  return main || backup;
+}
+
+// Cloud copy in the viewer's private claude.ai storage (data/users/<id>/save). Off outside the Claude app,
+// when signed out, or for viewers the artifact does not let write; the game then saves on this device only.
+const Cloud = { state: 'idle', note: '', ref: null, last: '', queued: null, busy: false, nextAt: 0, ready: null, loaded: null, hold: false };
+function cloudOff(note) { Cloud.state = 'off'; Cloud.note = note; Cloud.ref = null; }
+function cloudInit() {
+  if (Cloud.ready) return Cloud.ready;
+  Cloud.state = 'checking';
+  Cloud.note = 'Looking for your cloud save';
+  Cloud.ready = (async () => {
+    const use = window.claude?.use;
+    if (typeof use !== 'function') { cloudOff('Saved on this device'); return null; }
+    try {
+      const [db, user] = await Promise.all([use.call(window.claude, 'db'), use.call(window.claude, 'user')]);
+      const uid = user ? await user.id() : null;
+      if (!db || !uid) { cloudOff('Saved on this device. Sign in to Claude to save to the cloud.'); return null; }
+      const ref = db.doc('data/users/' + uid + '/save');
+      const snap = await ref.get();
+      const body = snap.exists ? snap.data() : null;
+      const st = parseSave(typeof body?.json === 'string' ? body.json : null);
+      if (st) Cloud.last = body.json;
+      Cloud.ref = ref;
+      Cloud.state = 'on';
+      Cloud.note = 'Saved to your Claude account';
+      Cloud.loaded = st;
+      return st;
+    } catch (e) {
+      cloudOff('Saved on this device. The cloud is not answering right now.');
+      return null;
+    }
+  })();
+  return Cloud.ready;
+}
+// save() offers every snapshot; the cloud gets at most one write per 30 s (or one now when leaving), one at a time
+function cloudOffer(json, now) {
+  if (!Cloud.ref || Cloud.hold || json === Cloud.last) return;
+  Cloud.queued = json;
+  if (Cloud.busy || (!now && Date.now() < Cloud.nextAt)) return;
+  cloudFlush();
+}
+async function cloudFlush() {
+  const json = Cloud.queued;
+  if (!json || !Cloud.ref || Cloud.busy) return;
+  Cloud.busy = true;
+  Cloud.queued = null;
+  try {
+    await Cloud.ref.set({ v: 2, savedAt: Date.now(), json });
+    Cloud.last = json;
+    Cloud.nextAt = Date.now() + CLOUD_EVERY_MS;
+    if (Cloud.state !== 'on') { Cloud.state = 'on'; Cloud.note = 'Saved to your Claude account'; }
+  } catch (e) {
+    const code = e?.code;
+    if (code === 'invalid_argument' || code === 'revoked' || code === 'not_granted' || code === 'capability_disabled' || code === 'capability_removed') {
+      cloudOff('Saved on this device. Your account cannot save to the cloud in this game.');
+    } else {
+      Cloud.nextAt = Date.now() + (code === 'resource_exhausted' || code === 'quota_exceeded' ? 300000 : 60000);
+      if (code === 'quota_exceeded') Cloud.note = 'Cloud storage is full. Saving on this device.';
+    }
+  } finally {
+    Cloud.busy = false;
+  }
+}
+Game.cloud = {
+  status: () => ({ state: Cloud.state, note: Cloud.note }),
+  ready: () => cloudInit(),
+};
 
 Game.power = () => {
   let p = 0;
@@ -1393,8 +1475,16 @@ function render() {
   for (const h of [...sheetStack]) h.refresh();
 }
 Game.render = render;
+let frameErrors = 0;
 function frame() {
   if (!S) return;
+  try { step(); frameErrors = 0; } catch (e) {
+    reportOnce('frame', e);
+    if (++frameErrors === 40) Game.toast('Something went wrong, but your progress is saved.', 'bad');
+  }
+  if (performance.now() - lastSave >= AUTOSAVE_MS) save();
+}
+function step() {
   const p = performance.now();
   let dt = (p - lastPerf) / 1000;
   lastPerf = p;
@@ -1412,15 +1502,18 @@ function frame() {
   checkDay();
   S.meta.lastSeen = Game.now();
   if (!document.hidden) render();
-  if (p - lastSave >= AUTOSAVE_MS) save();
 }
-function save() {
+function save(cloudNow) {
   lastSave = performance.now();
   if (!S || noSave) return false;
   S.meta.lastSeen = Game.now();
+  S.meta.savedAt = S.meta.lastSeen;
   let json;
   try { json = JSON.stringify(S); } catch (e) { reportOnce('save', e); return false; }
-  return Game.storage.set(SAVE_KEY, json);
+  const ok = Game.storage.set(SAVE_KEY, json);
+  if (lastSave - lastBackup >= BACKUP_MS) { lastBackup = lastSave; Game.storage.set(BACKUP_KEY, json); }
+  cloudOffer(json, cloudNow === true);
+  return ok;
 }
 Game.save = save;
 Game.saveKey = SAVE_KEY;
@@ -1430,9 +1523,10 @@ Game.boot = (d = {}) => {
   if (booted) return;
   booted = true;
   const data = isObj(d) ? d : {};
-  const src = isObj(data.state) ? data.state : loadSaved();
+  const src = data.fresh ? null : isObj(data.state) ? data.state : loadSaved();
   try { buildState(src); } catch (e) {
     console.error('[Game] saved game could not be loaded, starting a new game', e);
+    try { if (src) Game.storage.set(RESCUE_KEY, JSON.stringify(src)); } catch (e2) { /* keep going */ }
     buildState(null);
   }
   Game.isNew = isNewGame;
@@ -1462,9 +1556,128 @@ Game.boot = (d = {}) => {
   lastSave = lastPerf;
   loopTimer = setInterval(frame, TICK_MS);
   save();
+  cloudInit();
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) save();
+    if (document.hidden) save(true);
     else frame();
   });
-  window.addEventListener('pagehide', save);
+  window.addEventListener('pagehide', () => save(true));
+  // whatever breaks later, the last good state is already on disk
+  const saveOnError = () => { try { if (performance.now() - lastSave > 1000) save(); } catch (e) { /* nothing more to do */ } };
+  window.addEventListener('error', saveOnError);
+  window.addEventListener('unhandledrejection', saveOnError);
+};
+
+// ---------------------------------------------------------------- start screen
+// Shown on every fresh open. It waits for the cloud save (so an older copy on this device never overwrites a
+// newer one from another device), then boots the newest save, or a new game. A live update of an open game
+// (hot reload with a state) skips it and keeps playing.
+const ONLINE_KEY = 'last-furnace-online';
+Game.onlineWanted = () => Game.storage.get(ONLINE_KEY) !== '0';
+function ago(ms) {
+  const s = Math.max(0, (Date.now() - ms) / 1000);
+  if (s < 90) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return `${Math.round(s / 86400)} days ago`;
+}
+Game.start = (d = {}) => {
+  if (isObj(d) && isObj(d.state)) { Game.boot(d); return; }
+  if (booted || document.getElementById('start')) return;
+  const local = loadSaved();
+  let chosen = local;
+  let from = local ? 'device' : null;
+  const wrap = el(`<div class="start" id="start" role="dialog" aria-modal="true" aria-labelledby="start-title">
+    <div class="start-snow" aria-hidden="true"></div>
+    <div class="start-inner">
+      <div class="start-brand">
+        <div class="start-mark" aria-hidden="true">${Game.icon('flame', 46)}</div>
+        <h1 class="start-title" id="start-title">Last <span>Furnace</span></h1>
+        <p class="start-tag">Keep the great furnace burning and build the last city in the frozen north.</p>
+      </div>
+      <section class="start-card" aria-live="polite">
+        <div class="start-save"></div>
+        <div class="start-cloud"><span class="start-dot"></span><span class="start-cloud-t"></span></div>
+      </section>
+      <div class="start-actions">
+        <button type="button" class="btn gold wide start-go" id="start-continue" disabled>Continue</button>
+        <button type="button" class="btn ghost wide" id="start-new">New game</button>
+        <button type="button" class="start-skip" id="start-skip" hidden>Play without the cloud save</button>
+        <div class="start-confirm" hidden>
+          <p class="start-confirm-t"></p>
+          <div class="start-confirm-row">
+            <button type="button" class="btn ghost" id="start-keep">Keep my city</button>
+            <button type="button" class="btn red" id="start-wipe">Start over</button>
+          </div>
+        </div>
+      </div>
+      <label class="start-online" for="start-online">
+        <input type="checkbox" id="start-online">
+        <span class="start-online-txt"><b>Play online</b><small class="start-online-note">Leaderboard, world chat and chiefs online</small></span>
+      </label>
+      <p class="start-foot">Test store: purchases are free in this version.</p>
+    </div>
+  </div>`);
+  document.body.appendChild(wrap);
+  const $ = s => wrap.querySelector(s);
+  const go = $('#start-continue'), neu = $('#start-new'), skip = $('#start-skip'), conf = $('.start-confirm');
+  const onl = $('#start-online');
+  onl.checked = Game.onlineWanted();
+  onl.addEventListener('change', () => { Game.storage.set(ONLINE_KEY, onl.checked ? '1' : '0'); Game.emit('online:pref', { on: onl.checked }); });
+  try { Game.net?.check?.().then(r => { if (r?.note) setText($('.start-online-note'), r.note); }).catch(() => {}); } catch (e) { /* online module absent */ }
+
+  function summary(st) {
+    if (!st) return '<p class="start-new-t">No city yet. Light the furnace and start from the beginning.</p>';
+    const name = esc(String(st.meta?.chiefName || 'Chief').slice(0, 24));
+    const f = num(st.city?.levels?.furnace) || 1;
+    const gems = Math.floor(num(st.res?.gems));
+    const when = savedAtOf(st);
+    return `<div class="start-save-row"><span class="start-avatar">${Game.avatarSvg ? Game.avatarSvg(num(st.meta?.avatar), 44) : ''}</span>
+      <span class="start-save-txt"><b>${name}</b><span>Furnace Lv ${f} · ${Game.icon('gem', 14)} ${Game.fmt(gems)}${when ? ` · saved ${ago(when)}` : ''}</span></span></div>`;
+  }
+  function render(checking) {
+    $('.start-save').innerHTML = summary(chosen);
+    const c = Game.cloud.status();
+    const dot = $('.start-dot');
+    dot.className = 'start-dot ' + (checking ? 'is-wait' : c.state === 'on' ? 'is-on' : 'is-off');
+    setText($('.start-cloud-t'), checking ? 'Looking for your cloud save' : (from === 'cloud' ? 'Loaded from your Claude account' : c.note));
+    go.disabled = !!checking;
+    setText(go, checking ? 'Checking cloud save' : chosen ? 'Continue' : 'Start game');
+    neu.hidden = !chosen;
+  }
+  render(true);
+  const skipTimer = setTimeout(() => { if (go.disabled) skip.hidden = false; }, 4000);
+  cloudInit().then(cloud => {
+    if (!document.getElementById('start')) return;
+    clearTimeout(skipTimer);
+    skip.hidden = true;
+    if (cloud && (!local || savedAtOf(cloud) > savedAtOf(local) + 2000)) { chosen = cloud; from = 'cloud'; }
+    render(false);
+    try { go.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  });
+  skip.addEventListener('click', () => {
+    Cloud.hold = true;   // never let this session's older copy overwrite the cloud save
+    clearTimeout(skipTimer);
+    skip.hidden = true;
+    render(false);
+    setText($('.start-cloud-t'), 'Playing without the cloud save this time');
+  });
+  function leave(boot) {
+    wrap.classList.add('is-out');
+    setTimeout(() => wrap.remove(), Game.reducedMotion ? 0 : 320);
+    boot();
+  }
+  go.addEventListener('click', () => leave(() => (chosen ? Game.boot({ state: chosen }) : Game.boot({ fresh: true }))));
+  neu.addEventListener('click', () => {
+    const name = String(chosen?.meta?.chiefName || 'Chief').slice(0, 24);
+    setText($('.start-confirm-t'), `Start over? This replaces ${name}'s city (Furnace Lv ${num(chosen?.city?.levels?.furnace) || 1}). A copy stays on this device.`);
+    conf.hidden = false;
+    neu.hidden = true;
+    $('#start-keep').focus();
+  });
+  $('#start-keep').addEventListener('click', () => { conf.hidden = true; neu.hidden = false; neu.focus(); });
+  $('#start-wipe').addEventListener('click', () => {
+    try { if (chosen) Game.storage.set(RESCUE_KEY, JSON.stringify(chosen)); } catch (e) { /* keep going */ }
+    leave(() => Game.boot({ fresh: true }));
+  });
 };

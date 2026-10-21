@@ -1710,6 +1710,7 @@ const View = (() => {
     const first = !v.vw;
     v.vw = w; v.vh = h;
     v.dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (!v.ctx) v.ctx = v.canvas.getContext('2d');
     v.s = Game.isLandscape?.()
       ? Math.max(clamp(Math.min(w / 446, h / 560), 0.7, 1.2), w / WORLD_W, h / WORLD_H)
       : clamp(w / 446, 0.8, 1.2);
@@ -1718,7 +1719,9 @@ const View = (() => {
     v.canvas.style.width = w + 'px';
     v.canvas.style.height = h + 'px';
     const k = v.s * v.dpr;
-    if (!v.bg || Math.abs(k - v.bgK) > 0.01) renderBg(k);
+    // redraw the snowfield only when the scale really changed: small size changes reuse it scaled, which keeps
+    // phones (iOS caps total canvas memory) from piling up full-size backgrounds
+    if (!v.bg || k > v.bgK * 1.12 || k < v.bgK * 0.7) renderBg(k);
     initSnow();
     if (first || !v.focusedOnce) { homeCamera(); v.focusedOnce = true; }
     clampCam();
@@ -1742,11 +1745,14 @@ const View = (() => {
   function plazaPoint(a, k = 1) { return [PLAZA.x + Math.cos(a) * PLAZA.rx * k, PLAZA.y + Math.sin(a) * PLAZA.ry * k]; }
 
   function renderBg(k) {
+    k = Math.min(k, 2.4);
+    if (v.bg) { v.bg.width = 0; v.bg.height = 0; v.bg = null; }
     v.bgK = k;
     const c = document.createElement('canvas');
     c.width = Math.round(WORLD_W * k);
     c.height = Math.round(WORLD_H * k);
     const g = c.getContext('2d');
+    if (!g) { c.width = 0; c.height = 0; return; }
     g.setTransform(k, 0, 0, k, 0, 0);
     const rnd = mulberry32(20261018);
     // base snow
@@ -2490,6 +2496,7 @@ function drawThumb(canvas, id) {
   canvas.width = W * dpr;
   canvas.height = H * dpr;
   const ctx = canvas.getContext('2d');
+  if (!ctx) return;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const bgG = ctx.createRadialGradient(W / 2, H * 0.62, 6, W / 2, H * 0.62, W * 0.62);
   bgG.addColorStop(0, '#f2f7fb'); bgG.addColorStop(0.7, '#d5e2ee'); bgG.addColorStop(1, 'rgba(200,216,232,0)');
@@ -2718,7 +2725,10 @@ function buildingSheet(id) {
         onClick: () => { Game.navigate('city:building:furnace'); },
       },
     ],
-    onClose: () => { if (openBuildingSheet === h) openBuildingSheet = null; },
+    onClose: () => {
+      if (openBuildingSheet === h) openBuildingSheet = null;
+      if (thumb) { thumb.width = 0; thumb.height = 0; }
+    },
   });
   openBuildingSheet = h;
   return h;
