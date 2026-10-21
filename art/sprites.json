@@ -1,0 +1,1881 @@
+{
+ "sheets": {
+  "city": "city.jpg",
+  "map": "world-map.jpg",
+  "ui": "interface.jpg",
+  "kit": "production-kit.jpg",
+  "legend": "legendary-buildings.jpg",
+  "heroes": "heroes.jpg",
+  "soldiers": "soldiers.jpg",
+  "civ": "civilizations.jpg"
+ },
+ "sprites": [
+  {
+   "name": "hall-1",
+   "sheet": "city",
+   "box": [
+    108,
+    300,
+    88,
+    120
+   ],
+   "pad": 18,
+   "thr": 55,
+   "keep": 0.2
+  },
+  {
+   "name": "hall-2",
+   "sheet": "city",
+   "box": [
+    276,
+    308,
+    84,
+    112
+   ],
+   "pad": 18,
+   "thr": 55,
+   "keep": 0.2
+  },
+  {
+   "name": "hall-3",
+   "sheet": "city",
+   "box": [
+    424,
+    260,
+    248,
+    212
+   ],
+   "pad": 18,
+   "thr": 55,
+   "keep": 0.2
+  },
+  {
+   "name": "hall-4",
+   "sheet": "city",
+   "box": [
+    708,
+    232,
+    276,
+    240
+   ],
+   "pad": 18,
+   "thr": 55,
+   "keep": 0.2
+  },
+  {
+   "name": "hall-5",
+   "sheet": "city",
+   "box": [
+    1016,
+    228,
+    276,
+    244
+   ],
+   "pad": 18,
+   "thr": 55,
+   "keep": 0.2
+  },
+  {
+   "name": "hall-6",
+   "sheet": "city",
+   "box": [
+    1348,
+    208,
+    308,
+    260
+   ],
+   "pad": 18,
+   "thr": 55,
+   "keep": 0.2
+  },
+  {
+   "name": "hall-7",
+   "sheet": "city",
+   "box": [
+    1720,
+    140,
+    372,
+    340
+   ],
+   "pad": 18,
+   "thr": 55,
+   "keep": 0.2
+  },
+  {
+   "name": "hall-8",
+   "sheet": "city",
+   "box": [
+    2148,
+    84,
+    328,
+    388
+   ],
+   "pad": 18,
+   "thr": 55,
+   "keep": 0.2
+  },
+  {
+   "name": "range",
+   "sheet": "city",
+   "box": [
+    752,
+    540,
+    268,
+    168
+   ],
+   "pad": 14,
+   "bottom": 690,
+   "thr": 34
+  },
+  {
+   "name": "stables",
+   "sheet": "city",
+   "box": [
+    1128,
+    520,
+    188,
+    164
+   ],
+   "pad": 14,
+   "bottom": 690,
+   "thr": 34
+  },
+  {
+   "name": "workshop",
+   "sheet": "city",
+   "box": [
+    1460,
+    512,
+    248,
+    168
+   ],
+   "pad": 14,
+   "bottom": 690,
+   "thr": 34
+  },
+  {
+   "name": "academy",
+   "sheet": "city",
+   "box": [
+    2212,
+    500,
+    204,
+    184
+   ],
+   "pad": 14,
+   "bottom": 690,
+   "thr": 34
+  },
+  {
+   "name": "wall",
+   "sheet": "city",
+   "box": [
+    124,
+    780,
+    184,
+    136
+   ],
+   "pad": 14,
+   "bottom": 920,
+   "thr": 34
+  },
+  {
+   "name": "wall-gate",
+   "sheet": "city",
+   "box": [
+    440,
+    776,
+    168,
+    140
+   ],
+   "pad": 14,
+   "bottom": 920,
+   "thr": 34
+  },
+  {
+   "name": "wall-corner",
+   "sheet": "city",
+   "box": [
+    740,
+    784,
+    180,
+    124
+   ],
+   "pad": 14,
+   "bottom": 920,
+   "thr": 34
+  },
+  {
+   "name": "wall-breach",
+   "sheet": "city",
+   "box": [
+    1056,
+    784,
+    160,
+    128
+   ],
+   "pad": 14,
+   "bottom": 920,
+   "thr": 34
+  },
+  {
+   "name": "tower-1",
+   "sheet": "city",
+   "box": [
+    1400,
+    780,
+    88,
+    132
+   ],
+   "pad": 14,
+   "bottom": 920,
+   "thr": 48
+  },
+  {
+   "name": "tower-2",
+   "sheet": "city",
+   "box": [
+    1716,
+    776,
+    72,
+    136
+   ],
+   "pad": 14,
+   "bottom": 920,
+   "thr": 48
+  },
+  {
+   "name": "tower-3",
+   "sheet": "city",
+   "box": [
+    2012,
+    768,
+    84,
+    144
+   ],
+   "pad": 14,
+   "bottom": 920,
+   "thr": 48
+  },
+  {
+   "name": "bastion",
+   "sheet": "city",
+   "box": [
+    2272,
+    796,
+    148,
+    120
+   ],
+   "pad": 14,
+   "bottom": 920,
+   "thr": 34
+  },
+  {
+   "name": "market",
+   "sheet": "city",
+   "box": [
+    408,
+    1012,
+    228,
+    136
+   ],
+   "pad": 14,
+   "bottom": 1152,
+   "thr": 34
+  },
+  {
+   "name": "warehouse",
+   "sheet": "city",
+   "box": [
+    752,
+    996,
+    152,
+    148
+   ],
+   "pad": 14,
+   "bottom": 1152,
+   "thr": 34
+  },
+  {
+   "name": "lumber",
+   "sheet": "city",
+   "box": [
+    1048,
+    1002,
+    188,
+    140
+   ],
+   "pad": 14,
+   "bottom": 1152,
+   "thr": 34
+  },
+  {
+   "name": "mine",
+   "sheet": "city",
+   "box": [
+    1344,
+    1012,
+    172,
+    164
+   ],
+   "pad": 14,
+   "bottom": 1152,
+   "thr": 34
+  },
+  {
+   "name": "quarry",
+   "sheet": "city",
+   "box": [
+    1648,
+    996,
+    196,
+    156
+   ],
+   "pad": 14,
+   "bottom": 1152,
+   "thr": 34
+  },
+  {
+   "name": "blacksmith",
+   "sheet": "city",
+   "box": [
+    1956,
+    1008,
+    200,
+    140
+   ],
+   "pad": 14,
+   "bottom": 1152,
+   "thr": 34
+  },
+  {
+   "name": "tavern",
+   "sheet": "city",
+   "box": [
+    2280,
+    1012,
+    160,
+    168
+   ],
+   "pad": 14,
+   "bottom": 1152,
+   "thr": 34
+  },
+  {
+   "name": "cottage",
+   "sheet": "city",
+   "box": [
+    116,
+    1236,
+    196,
+    164
+   ],
+   "pad": 14,
+   "bottom": 1372,
+   "thr": 34
+  },
+  {
+   "name": "townhouse",
+   "sheet": "city",
+   "box": [
+    452,
+    1220,
+    148,
+    176
+   ],
+   "pad": 14,
+   "bottom": 1372,
+   "thr": 34
+  },
+  {
+   "name": "manor",
+   "sheet": "city",
+   "box": [
+    720,
+    1208,
+    212,
+    192
+   ],
+   "pad": 14,
+   "bottom": 1372,
+   "thr": 34
+  },
+  {
+   "name": "hospital",
+   "sheet": "city",
+   "box": [
+    1080,
+    1218,
+    124,
+    152
+   ],
+   "pad": 0,
+   "bottom": 1372,
+   "thr": 34,
+   "top": 1227,
+   "erase": [
+    [
+     1060,
+     1180,
+     75,
+     47
+    ],
+    [
+     1160,
+     1180,
+     70,
+     47
+    ]
+   ]
+  },
+  {
+   "name": "fountain",
+   "sheet": "city",
+   "box": [
+    1392,
+    1244,
+    108,
+    120
+   ],
+   "pad": 14,
+   "bottom": 1372,
+   "thr": 34
+  },
+  {
+   "name": "statue",
+   "sheet": "city",
+   "box": [
+    1712,
+    1228,
+    80,
+    136
+   ],
+   "pad": 14,
+   "bottom": 1372,
+   "thr": 34
+  },
+  {
+   "name": "bridge",
+   "sheet": "city",
+   "box": [
+    1968,
+    1248,
+    172,
+    116
+   ],
+   "pad": 14,
+   "bottom": 1372,
+   "thr": 34
+  },
+  {
+   "name": "barricade",
+   "sheet": "city",
+   "box": [
+    2268,
+    1252,
+    164,
+    100
+   ],
+   "pad": 14,
+   "bottom": 1372,
+   "thr": 34
+  },
+  {
+   "name": "camp-1",
+   "sheet": "map",
+   "box": [
+    112,
+    996,
+    224,
+    188
+   ],
+   "pad": 12,
+   "thr": 34,
+   "ground": "top"
+  },
+  {
+   "name": "camp-2",
+   "sheet": "map",
+   "box": [
+    408,
+    1008,
+    240,
+    176
+   ],
+   "pad": 12,
+   "thr": 34,
+   "ground": "top"
+  },
+  {
+   "name": "camp-3",
+   "sheet": "map",
+   "box": [
+    1636,
+    976,
+    224,
+    204
+   ],
+   "pad": 12,
+   "thr": 34,
+   "ground": "top"
+  },
+  {
+   "name": "ruin",
+   "sheet": "map",
+   "box": [
+    1636,
+    1212,
+    224,
+    188
+   ],
+   "pad": 12,
+   "thr": 34,
+   "ground": "top"
+  },
+  {
+   "name": "ruin-keep",
+   "sheet": "map",
+   "box": [
+    1036,
+    1012,
+    196,
+    168
+   ],
+   "pad": 12,
+   "thr": 34,
+   "ground": "top"
+  },
+  {
+   "name": "icon-food",
+   "sheet": "ui",
+   "box": [
+    96,
+    1260,
+    92,
+    92
+   ],
+   "pad": 10
+  },
+  {
+   "name": "icon-wood",
+   "sheet": "ui",
+   "box": [
+    200,
+    1260,
+    92,
+    92
+   ],
+   "pad": 10
+  },
+  {
+   "name": "icon-stone",
+   "sheet": "ui",
+   "box": [
+    308,
+    1268,
+    80,
+    76
+   ],
+   "pad": 10
+  },
+  {
+   "name": "icon-iron",
+   "sheet": "ui",
+   "box": [
+    420,
+    1272,
+    80,
+    68
+   ],
+   "pad": 10
+  },
+  {
+   "name": "icon-gold",
+   "sheet": "ui",
+   "box": [
+    516,
+    1260,
+    88,
+    92
+   ],
+   "pad": 10
+  },
+  {
+   "name": "banner-victory",
+   "sheet": "ui",
+   "box": [
+    1628,
+    940,
+    152,
+    220
+   ],
+   "pad": 10
+  },
+  {
+   "name": "banner-defeat",
+   "sheet": "ui",
+   "box": [
+    1784,
+    968,
+    192,
+    160
+   ],
+   "pad": 10
+  },
+  {
+   "name": "levelup",
+   "sheet": "ui",
+   "box": [
+    2188,
+    972,
+    300,
+    176
+   ],
+   "pad": 10
+  },
+  {
+   "name": "chest-1",
+   "sheet": "ui",
+   "box": [
+    1960,
+    1252,
+    120,
+    116
+   ],
+   "pad": 10
+  },
+  {
+   "name": "chest-2",
+   "sheet": "ui",
+   "box": [
+    2120,
+    1240,
+    140,
+    132
+   ],
+   "pad": 10
+  },
+  {
+   "name": "chest-3",
+   "sheet": "ui",
+   "box": [
+    2284,
+    1236,
+    156,
+    132
+   ],
+   "pad": 10
+  },
+  {
+   "name": "scroll",
+   "sheet": "ui",
+   "box": [
+    1024,
+    1260,
+    88,
+    92
+   ],
+   "pad": 10
+  },
+  {
+   "name": "trophy",
+   "sheet": "ui",
+   "box": [
+    1156,
+    1264,
+    96,
+    88
+   ],
+   "pad": 10
+  },
+  {
+   "name": "fx-fireball",
+   "sheet": "kit",
+   "box": [
+    1416,
+    800,
+    100,
+    64
+   ],
+   "pad": 10
+  },
+  {
+   "name": "fx-slash",
+   "sheet": "kit",
+   "box": [
+    2104,
+    792,
+    128,
+    104
+   ],
+   "pad": 10
+  },
+  {
+   "name": "fx-rock",
+   "sheet": "kit",
+   "box": [
+    2376,
+    792,
+    88,
+    100
+   ],
+   "pad": 10
+  },
+  {
+   "name": "fx-burst",
+   "sheet": "kit",
+   "box": [
+    2364,
+    920,
+    108,
+    92
+   ],
+   "pad": 10
+  },
+  {
+   "name": "capital",
+   "sheet": "legend",
+   "box": [
+    756,
+    744,
+    340,
+    320
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": [
+    [
+     728,
+     768,
+     120,
+     58
+    ]
+   ]
+  },
+  {
+   "name": "pass",
+   "sheet": "legend",
+   "box": [
+    1126,
+    780,
+    218,
+    270
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "sanctum",
+   "sheet": "legend",
+   "box": [
+    1424,
+    740,
+    224,
+    320
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "altar",
+   "sheet": "legend",
+   "box": [
+    1644,
+    850,
+    180,
+    210
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "shrine",
+   "sheet": "legend",
+   "box": [
+    1836,
+    836,
+    124,
+    208
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "ruin-legend",
+   "sheet": "legend",
+   "box": [
+    1996,
+    806,
+    228,
+    244
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "farm-1",
+   "sheet": "legend",
+   "box": [
+    1280,
+    550,
+    216,
+    140
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "farm-2",
+   "sheet": "legend",
+   "box": [
+    1508,
+    470,
+    276,
+    222
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "farm-3",
+   "sheet": "legend",
+   "box": [
+    1796,
+    440,
+    324,
+    252
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "farm-4",
+   "sheet": "legend",
+   "box": [
+    2116,
+    466,
+    416,
+    264
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "barracks-1",
+   "sheet": "legend",
+   "box": [
+    1280,
+    272,
+    190,
+    128
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "barracks-2",
+   "sheet": "legend",
+   "box": [
+    1530,
+    160,
+    236,
+    240
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "barracks-3",
+   "sheet": "legend",
+   "box": [
+    1836,
+    180,
+    288,
+    220
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "barracks-4",
+   "sheet": "legend",
+   "box": [
+    2152,
+    120,
+    350,
+    280
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "city-shield",
+   "sheet": "legend",
+   "box": [
+    40,
+    772,
+    288,
+    260
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "field-food",
+   "sheet": "legend",
+   "box": [
+    64,
+    1132,
+    264,
+    236
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "field-food-2",
+   "sheet": "legend",
+   "box": [
+    308,
+    1132,
+    292,
+    236
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "field-wood",
+   "sheet": "legend",
+   "box": [
+    628,
+    1132,
+    240,
+    236
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "field-stone",
+   "sheet": "legend",
+   "box": [
+    912,
+    1184,
+    220,
+    168
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "field-iron",
+   "sheet": "legend",
+   "box": [
+    1188,
+    1164,
+    252,
+    204
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "field-iron-2",
+   "sheet": "legend",
+   "box": [
+    1484,
+    1172,
+    192,
+    180
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "field-gold",
+   "sheet": "legend",
+   "box": [
+    1744,
+    1152,
+    252,
+    212
+   ],
+   "pad": 6,
+   "thr": 38,
+   "keep": 0.12,
+   "center": true,
+   "erase": []
+  },
+  {
+   "name": "hero-kael",
+   "sheet": "heroes",
+   "box": [
+    760,
+    160,
+    270,
+    240
+   ],
+   "pad": 4,
+   "keep": 0.08
+  },
+  {
+   "name": "hero-amara",
+   "sheet": "heroes",
+   "box": [
+    790,
+    410,
+    196,
+    240
+   ],
+   "pad": 4,
+   "keep": 0.08
+  },
+  {
+   "name": "hero-temur",
+   "sheet": "heroes",
+   "box": [
+    780,
+    650,
+    200,
+    240
+   ],
+   "pad": 4,
+   "keep": 0.08
+  },
+  {
+   "name": "hero-veyra",
+   "sheet": "heroes",
+   "box": [
+    750,
+    926,
+    210,
+    204
+   ],
+   "pad": 4,
+   "keep": 0.08
+  },
+  {
+   "name": "hero-orun",
+   "sheet": "heroes",
+   "box": [
+    700,
+    1146,
+    290,
+    268
+   ],
+   "pad": 4,
+   "keep": 0.08
+  },
+  {
+   "name": "inf-walk-1",
+   "sheet": "soldiers",
+   "box": [
+    54,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-walk-2",
+   "sheet": "soldiers",
+   "box": [
+    214,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-walk-3",
+   "sheet": "soldiers",
+   "box": [
+    384,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-walk-4",
+   "sheet": "soldiers",
+   "box": [
+    554,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-walk-5",
+   "sheet": "soldiers",
+   "box": [
+    724,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-walk-6",
+   "sheet": "soldiers",
+   "box": [
+    894,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-attack-1",
+   "sheet": "soldiers",
+   "box": [
+    1114,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-attack-3",
+   "sheet": "soldiers",
+   "box": [
+    1454,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-attack-4",
+   "sheet": "soldiers",
+   "box": [
+    1614,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-attack-5",
+   "sheet": "soldiers",
+   "box": [
+    1774,
+    172,
+    172,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-fall-1",
+   "sheet": "soldiers",
+   "box": [
+    1949,
+    172,
+    222,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-fall-2",
+   "sheet": "soldiers",
+   "box": [
+    2129,
+    172,
+    222,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "inf-fall-3",
+   "sheet": "soldiers",
+   "box": [
+    2319,
+    172,
+    222,
+    236
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-walk-1",
+   "sheet": "soldiers",
+   "box": [
+    57,
+    466,
+    186,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-walk-2",
+   "sheet": "soldiers",
+   "box": [
+    227,
+    466,
+    186,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-walk-3",
+   "sheet": "soldiers",
+   "box": [
+    397,
+    466,
+    186,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-walk-4",
+   "sheet": "soldiers",
+   "box": [
+    567,
+    466,
+    186,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-walk-5",
+   "sheet": "soldiers",
+   "box": [
+    727,
+    466,
+    186,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-walk-6",
+   "sheet": "soldiers",
+   "box": [
+    897,
+    466,
+    186,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-attack-1",
+   "sheet": "soldiers",
+   "box": [
+    1072,
+    466,
+    256,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-attack-2",
+   "sheet": "soldiers",
+   "box": [
+    1272,
+    466,
+    256,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-attack-3",
+   "sheet": "soldiers",
+   "box": [
+    1492,
+    466,
+    256,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-attack-4",
+   "sheet": "soldiers",
+   "box": [
+    1702,
+    466,
+    256,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-fall-1",
+   "sheet": "soldiers",
+   "box": [
+    1932,
+    466,
+    236,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-fall-2",
+   "sheet": "soldiers",
+   "box": [
+    2102,
+    466,
+    236,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "cav-fall-3",
+   "sheet": "soldiers",
+   "box": [
+    2302,
+    466,
+    236,
+    262
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-walk-1",
+   "sheet": "soldiers",
+   "box": [
+    56,
+    836,
+    168,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-walk-2",
+   "sheet": "soldiers",
+   "box": [
+    216,
+    836,
+    168,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-walk-3",
+   "sheet": "soldiers",
+   "box": [
+    386,
+    836,
+    168,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-walk-4",
+   "sheet": "soldiers",
+   "box": [
+    556,
+    836,
+    168,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-walk-5",
+   "sheet": "soldiers",
+   "box": [
+    726,
+    836,
+    168,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-walk-6",
+   "sheet": "soldiers",
+   "box": [
+    896,
+    836,
+    168,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-attack-3",
+   "sheet": "soldiers",
+   "box": [
+    1451,
+    836,
+    238,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-attack-4",
+   "sheet": "soldiers",
+   "box": [
+    1641,
+    836,
+    238,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-fall-1",
+   "sheet": "soldiers",
+   "box": [
+    1931,
+    836,
+    218,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-fall-2",
+   "sheet": "soldiers",
+   "box": [
+    2101,
+    836,
+    218,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "arc-fall-3",
+   "sheet": "soldiers",
+   "box": [
+    2321,
+    836,
+    218,
+    220
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "sie-walk-1",
+   "sheet": "soldiers",
+   "box": [
+    25,
+    1150,
+    250,
+    250
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "sie-walk-2",
+   "sheet": "soldiers",
+   "box": [
+    305,
+    1150,
+    250,
+    250
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "sie-walk-3",
+   "sheet": "soldiers",
+   "box": [
+    585,
+    1150,
+    250,
+    250
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "sie-walk-4",
+   "sheet": "soldiers",
+   "box": [
+    865,
+    1150,
+    250,
+    250
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "sie-attack-3",
+   "sheet": "soldiers",
+   "box": [
+    1635,
+    1150,
+    250,
+    250
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "sie-fall-1",
+   "sheet": "soldiers",
+   "box": [
+    1950,
+    1150,
+    300,
+    250
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  },
+  {
+   "name": "sie-fall-2",
+   "sheet": "soldiers",
+   "box": [
+    2270,
+    1150,
+    300,
+    250
+   ],
+   "pad": 0,
+   "thr": 34,
+   "keep": 0.15,
+   "open": 1,
+   "adaptive": true,
+   "center": true,
+   "scale": 0.62
+  }
+ ]
+}

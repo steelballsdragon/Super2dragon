@@ -209,10 +209,10 @@ await step('army: train infantry at the Barracks and in the army screen, and rea
   await page.waitForFunction(() => !window.AOCUI.F.player.q.train.inf, null, { timeout: 20000 });
   await closeSheets();
   await page.click('#aoc-tab-army');
-  await page.fill('[data-tn="inf"]', '250');
+  await page.fill('[data-tn="inf"]', '170');
   await page.click('[data-train="inf"]');
-  // more than one batch is trimmed to a full batch (159 at Barracks level 1)
-  await page.waitForFunction(() => window.AOCUI.F.player.q.train.inf?.n === 159);
+  // there is no limit on how many train at once (Barracks level 1 used to stop at 159)
+  await page.waitForFunction(() => window.AOCUI.F.player.q.train.inf?.n === 170);
   await page.click('[data-atab="cmds"]');
   await page.click('[data-cmd="temur"]');
   await page.waitForSelector('.aoc-sheet-wrap.is-open');
@@ -220,7 +220,7 @@ await step('army: train infantry at the Barracks and in the army screen, and rea
   check(txt.includes('Storm of Arrows') && txt.includes('Talents'), 'commander sheet incomplete');
   await closeSheets();
   await page.click('[data-atab="troops"]');
-  await page.waitForFunction(() => window.AOCUI.F.player.stats.trained.inf >= 199, null, { timeout: 40000 });
+  await page.waitForFunction(() => window.AOCUI.F.player.stats.trained.inf >= 210, null, { timeout: 40000 });
 });
 
 await step('attack the nearest bandit camp from the map; the report explains it and its replay matches', async () => {

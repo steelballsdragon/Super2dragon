@@ -102,13 +102,13 @@ const B_GROWTH = 1.45;
 const B_TGROWTH = 1.36;
 const MAX_LEVEL = 25;
 const BUILDINGS = {
-  hall: { name: 'Town Hall', base: { wood: 300, stone: 200 }, minutes: 4, needHall: 0, desc: 'Sets the level cap of every other building. Each level adds vision and storage.' },
+  hall: { name: 'Town Hall', base: { wood: 300, stone: 200 }, minutes: 4, needHall: 0, desc: 'Sets the level cap of every other building. Each level adds vision.' },
   farm: { name: 'Farm', base: { wood: 120 }, minutes: 2, needHall: 1, produces: 'food', desc: 'Produces Food. Troops eat Food every hour.' },
   lumber: { name: 'Lumber Mill', base: { food: 120 }, minutes: 2, needHall: 1, produces: 'wood', desc: 'Produces Wood.' },
   quarry: { name: 'Quarry', base: { food: 100, wood: 100 }, minutes: 2.5, needHall: 2, produces: 'stone', desc: 'Produces Stone.' },
   mine: { name: 'Iron Mine', base: { food: 120, wood: 140 }, minutes: 3, needHall: 3, produces: 'iron', desc: 'Produces Iron.' },
   market: { name: 'Market', base: { wood: 200, stone: 120 }, minutes: 3, needHall: 4, produces: 'gold', desc: 'Produces Gold and lowers the fee when you trade resources.' },
-  warehouse: { name: 'Warehouse', base: { wood: 160, stone: 80 }, minutes: 2.5, needHall: 1, desc: 'Raises storage and protects part of your stock from plunder.' },
+  warehouse: { name: 'Warehouse', base: { wood: 160, stone: 80 }, minutes: 2.5, needHall: 1, desc: 'Protects part of your stock from plunder. There is no limit on how much you can hold.' },
   barracks: { name: 'Barracks', base: { food: 150, wood: 150 }, minutes: 3, needHall: 1, trains: 'inf', desc: 'Trains Infantry. Higher levels train faster.' },
   stables: { name: 'Stables', base: { food: 180, wood: 160 }, minutes: 3.5, needHall: 2, trains: 'cav', desc: 'Trains Cavalry.' },
   range: { name: 'Archery Range', base: { food: 160, wood: 180 }, minutes: 3.5, needHall: 2, trains: 'arc', desc: 'Trains Archers.' },
@@ -141,14 +141,12 @@ function buildingMinutes(id, L) { return Math.max(1, Math.round(BUILDINGS[id].mi
 // production per hour of one producing building at level L
 function productionAt(L) { return L <= 0 ? 0 : Math.round(120 * L * Math.pow(1.12, L - 1)); }
 const BASE_PRODUCTION = { food: 200, wood: 200, stone: 80, iron: 40, gold: 20 };
-function storageCap(warehouseL, hallL) { return Math.round(6000 + 9000 * Math.pow(warehouseL, 1.45) + 2000 * hallL); }
 function protectedAmount(warehouseL) { return Math.round(1500 + 1800 * Math.pow(warehouseL, 1.3)); }
 function hospitalCap(L) { return L <= 0 ? 0 : Math.round(300 * Math.pow(L, 1.35)); }
 function wallDurability(L) { return Math.round(2000 + 1500 * L * Math.pow(1.08, L)); }
 function visionRadius(towerL, hallL) { return 5 + Math.floor(towerL / 2) + Math.floor(hallL / 6); }
 function marchCapacity(hallL) { return Math.round(1000 + 1200 * hallL * Math.pow(1.06, hallL)); }
 function marchSlots(hallL) { return 1 + Math.floor(hallL / 6); }
-function trainBatch(L) { return L <= 0 ? 0 : Math.round(150 * L * Math.pow(1.06, L)); }
 
 // ================================================================ research
 // lv max 10, capped at the Academy level. cost(lv) = base * 1.65^(lv-1); time = minutes * 1.4^(lv-1).
@@ -158,7 +156,7 @@ const TECHS = {
   masonry: { name: 'Masonry', branch: 'economy', per: 4, stat: 'stone', base: { wood: 400, stone: 300, gold: 50 }, minutes: 6, req: [['academy', 2]], desc: '+4% Stone production and +3% build speed per level.' },
   metal: { name: 'Metallurgy', branch: 'economy', per: 5, stat: 'iron', base: { wood: 500, stone: 400, gold: 60 }, minutes: 7, req: [['academy', 3], ['tech:masonry', 1]], desc: '+5% Iron production per level.' },
   trade: { name: 'Trade Routes', branch: 'economy', per: 6, stat: 'gold', base: { food: 600, wood: 600, gold: 120 }, minutes: 8, req: [['academy', 4], ['market', 1]], desc: '+6% Gold production and -2% market fee per level.' },
-  logistics: { name: 'Logistics', branch: 'economy', per: 8, stat: 'storage', base: { food: 500, wood: 500, gold: 60 }, minutes: 6, req: [['academy', 2]], desc: '+8% storage and +5% carry load per level.' },
+  logistics: { name: 'Logistics', branch: 'economy', per: 8, stat: 'protect', base: { food: 500, wood: 500, gold: 60 }, minutes: 6, req: [['academy', 2]], desc: '+8% stock safe from plunder and +5% carry load per level.' },
   drill: { name: 'Infantry Drill', branch: 'military', per: 3, stat: 'inf', base: { food: 500, wood: 400, gold: 60 }, minutes: 6, req: [['academy', 1], ['barracks', 1]], desc: '+3% Infantry attack and defense per level.' },
   horse: { name: 'Horsemanship', branch: 'military', per: 3, stat: 'cav', base: { food: 600, wood: 400, iron: 100, gold: 60 }, minutes: 7, req: [['academy', 2], ['stables', 1]], desc: '+3% Cavalry attack and defense per level.' },
   archery: { name: 'Archery', branch: 'military', per: 3, stat: 'arc', base: { food: 500, wood: 600, gold: 60 }, minutes: 7, req: [['academy', 2], ['range', 1]], desc: '+3% Archer attack and defense per level.' },

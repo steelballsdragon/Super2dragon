@@ -48,9 +48,7 @@ function crateCheck(w, g, id) {
   if (w.t < (g.crate[id] || 0)) return { ok: false, err: 'The crate is not full yet.', ready: g.crate[id] };
   const r = BUILDINGS[id].produces, m = cityMods(w, g);
   const amount = Math.max(1, Math.floor(production(w, g, m)[r] * CRATE.hours));
-  const room = r === 'gold' ? Infinity : storage(w, g, m) - g.res[r];
-  if (room < 1) return { ok: false, err: `Your ${RES_NAME[r]} storage is full.` };
-  return { ok: true, res: r, amount: Math.min(amount, Math.floor(room)) };
+  return { ok: true, res: r, amount };
 }
 function actCollect(w, g, id) {
   settle(w, g, w.t);
@@ -106,6 +104,8 @@ function actResearch(w, g, id) {
   g.q.research = { id, lv: c.lv, start: w.t, end: w.t + c.minutes, cost: c.cost };
   return { ok: true };
 }
+// how many soldiers of a type the stock pays for
+function affordable(g, cost) { let n = Infinity; for (const r in cost) n = Math.min(n, Math.floor((g.res[r] || 0) / cost[r])); return n === Infinity ? 0 : Math.max(0, n); }
 function trainCheck(w, g, u, n) {
   const U = own(UNITS, u) ? UNITS[u] : null;
   if (!U) return { ok: false, err: 'Unknown troop type.' };
@@ -113,13 +113,13 @@ function trainCheck(w, g, u, n) {
   const L = g.b[U.building] || 0;
   if (L <= 0) return { ok: false, err: `Build the ${BUILDINGS[U.building].name} first.` };
   if (!Number.isFinite(n) || n < 1) return { ok: false, err: 'Train at least one.' };
-  const max = trainBatch(L);
-  if (n > max) return { ok: false, err: `The ${BUILDINGS[U.building].name} trains at most ${max.toLocaleString('en-US')} at a time.` };
+  // no limit on how many at once: as many as you can pay for, and the time grows with the number
+  if (n > 1e9) return { ok: false, err: 'That is more soldiers than the world has.' };
   if (g.q.train[u]) return { ok: false, err: `The ${BUILDINGS[U.building].name} is busy.` };
   const cost = scaleCost(U.cost, n);
   const minutes = Math.max(1, Math.round(n * U.sec / 60 / (1 + 0.1 * L)));
-  if (!canAfford(g, cost)) return { ok: false, err: 'Not enough resources.', cost, minutes, n, max };
-  return { ok: true, err: '', cost, minutes, n, max };
+  if (!canAfford(g, cost)) return { ok: false, err: 'Not enough resources.', cost, minutes, n, max: affordable(g, U.cost) };
+  return { ok: true, err: '', cost, minutes, n, max: affordable(g, U.cost) };
 }
 function actTrain(w, g, u, n) {
   settle(w, g, w.t);
@@ -574,7 +574,7 @@ function playerView(w) {
     b: { ...P.b }, res: { ...P.res }, troops: { ...P.troops }, away: { ...P.away }, wounded: { ...P.wounded }, tech: { ...P.tech },
     cmds: JSON.parse(JSON.stringify(P.cmds)), busy: [...busy], steward: P.steward, defender: P.defender, q: JSON.parse(JSON.stringify(P.q)),
     shield: P.shield, shieldCd: P.shieldCd, wallDur: Math.round(P.wallDur), wallMax: wallMax(P, m), stats: JSON.parse(JSON.stringify(P.stats)),
-    prod, upkeep: upkeepPerHour(P), cap: storage(w, P, m), protect: protectedAmount(P.b.warehouse || 0), hosp: Math.round(hospitalCap(P.b.hospital || 0) * (1 + (m.hospital || 0))),
+    prod, upkeep: upkeepPerHour(P), protect: protectedStock(w, P, m), hosp: Math.round(hospitalCap(P.b.hospital || 0) * (1 + (m.hospital || 0))),
     marchCap: marchCap(w, P), marchSlots: marchLimit(w, P), marchesOut: activeMarches(w, P), vision: visionRadius(P.b.tower || 0, P.b.hall),
     fee: tradeFee(w, P), tradeLeft: Math.max(0, tradeLimit(P) - P.tradedToday), shieldCost: shieldCost(P), relocateCost: relocateCost(P), mods: m,
     invites: (P.invites || []).filter(gi => !w.guilds[gi].collapsed), alert: P.alert,
@@ -1002,7 +1002,7 @@ function createServer(host) {
               case 'preview': res = marchPreview(S.w, a); break;
               case 'build': res = BUILDING_KEYS.map(id => ({ id, ...buildCheck(S.w, S.w.govs[PLAYER], id) })); break;
               case 'research': res = TECH_KEYS.map(id => ({ id, ...researchCheck(S.w, S.w.govs[PLAYER], id) })); break;
-              case 'train': { const P = S.w.govs[PLAYER]; res = UNIT_KEYS.map(u => ({ u, max: trainBatch(P.b[UNITS[u].building] || 0), check: trainCheck(S.w, P, u, Math.max(1, Math.floor(Number(a[u]) || 1))) })); break; }
+              case 'train': { const P = S.w.govs[PLAYER]; res = UNIT_KEYS.map(u => ({ u, max: affordable(P, UNITS[u].cost), check: trainCheck(S.w, P, u, Math.max(1, Math.floor(Number(a[u]) || 1))) })); break; }
               case 'heal': res = healCheck(S.w, S.w.govs[PLAYER]); break;
               case 'quote': res = { got: tradeQuote(S.w, S.w.govs[PLAYER], a.sell, a.buy, Math.max(0, Math.floor(Number(a.amount) || 0))), price: { ...S.w.market.price } }; break;
               case 'achievements': { const P = S.w.govs[PLAYER]; res = ACHIEVEMENTS.map(x => ({ id: x.id, name: x.name, text: x.text, done: !!x.check(P) })); break; }

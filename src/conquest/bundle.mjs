@@ -13,12 +13,12 @@ const EXPORTS = [
   'THRONE_OPENS', 'THRONE_HOLD', 'EXCHANGE', 'SHIELD', 'NEWCOMER_SHIELD', 'MAP_N', 'HOUR', 'DAY', 'MAX_LEVEL', 'CMD_MAX_LEVEL', 'ULTIMATE_LEVEL', 'GUILD_TECH',
   'QUESTS', 'CHAPTERS', 'ACHIEVEMENTS', 'PLAYER', 'SCHEMA', 'EVENTS', 'ROLE_NAME', 'FREE_FINISH', 'CRATE', 'ZONES', 'REGIONS', 'PASS_LEVELS', 'SITES', 'BLESSINGS', 'GATES', 'ALL_GATES',
   // formulas
-  'buildingCost', 'buildingMinutes', 'buildingReq', 'productionAt', 'BASE_PRODUCTION', 'storageCap', 'protectedAmount', 'hospitalCap', 'wallDurability', 'visionRadius',
-  'marchCapacity', 'marchSlots', 'trainBatch', 'techCost', 'techMinutes', 'cmdXpToNext', 'skillCost', 'clock', 'roman', 'troopsTotal', 'troopPower',
+  'buildingCost', 'buildingMinutes', 'buildingReq', 'productionAt', 'BASE_PRODUCTION', 'protectedAmount', 'protectedStock', 'affordable', 'hospitalCap', 'wallDurability', 'visionRadius',
+  'marchCapacity', 'marchSlots', 'techCost', 'techMinutes', 'cmdXpToNext', 'skillCost', 'clock', 'roman', 'troopsTotal', 'troopPower',
   // engine
   'createWorld', 'createServer', 'step', 'advance', 'serialize', 'deserialize', 'validateWorld', 'playerCommand', 'frameView', 'inspect', 'guildDetail',
   'rankings', 'chronicleView', 'historyView', 'tileView', 'diagnostics', 'fight', 'explainBattle', 'findPath', 'pathCost', 'settle', 'production',
-  'cityMods', 'storage', 'upkeepPerHour', 'computePower', 'armySide', 'neutralSide', 'startMarch', 'startRally', 'joinRally', 'actBuild', 'buildCheck', 'actFree', 'freeCheck', 'actCollect', 'crateCheck',
+  'cityMods', 'upkeepPerHour', 'computePower', 'armySide', 'neutralSide', 'startMarch', 'startRally', 'joinRally', 'actBuild', 'buildCheck', 'actFree', 'freeCheck', 'actCollect', 'crateCheck',
   'actResearch', 'researchCheck', 'actTrain', 'trainCheck', 'actHeal', 'actTrade', 'actShield', 'actRelocate', 'actContribute', 'applyToGuild',
   'joinGuild', 'leaveGuild', 'declareWar', 'makePeace', 'treaty', 'setTreaty', 'succession', 'collapseGuild', 'refoundGuild', 'thinkGuild', 'think',
   'scoutAccuracy', 'intelOn', 'garrisonOf', 'marchPos', 'makeRng', 'hash32', 'generateTerrain', 'recomputeTerritory', 'updatePlayerVision', 'idx', 'tx', 'ty',

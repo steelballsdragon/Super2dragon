@@ -97,7 +97,13 @@ const wrapJs = p => `/* ===== ${p.name} ===== */\n;(function () {\n'use strict';
 // AOC_ASSETS.logo
 const logoPath = join(ROOT, 'public', 'conquest-logo.webp');
 const ASSETS = `window.AOC_ASSETS = { logo: ${existsSync(logoPath) ? `'data:image/webp;base64,${readFileSync(logoPath).toString('base64')}'` : 'null'} };\n`;
-const js = `/* ===== assets ===== */\n${ASSETS}window.AOC_GLUE = ${JSON.stringify(WORKER_GLUE).replace(/<\//g, '<\\/')};\n` + jsParts.map(wrapJs).join('\n') + `\n/* ===== boot ===== */\n${BOOT}\n`;
+// the painted sprites cut from the art sheets (art/sprites, made by tools/art/cut.py) become AOC_ART:
+// { name: { src, w, h, fx, fy } }, with (fx, fy) the foot point each picture stands on
+const ART_DIR = join(ROOT, 'art', 'sprites');
+const artIndex = existsSync(join(ART_DIR, 'index.json')) ? JSON.parse(readFileSync(join(ART_DIR, 'index.json'), 'utf8')) : {};
+const artEntries = Object.entries(artIndex).filter(([n]) => existsSync(join(ART_DIR, n + '.webp')));
+const ART_JS = `window.AOC_ART = {\n${artEntries.map(([n, m]) => `${JSON.stringify(n)}: { w: ${m.w}, h: ${m.h}, fx: ${m.fx}, fy: ${m.fy}, src: 'data:image/webp;base64,${readFileSync(join(ART_DIR, n + '.webp')).toString('base64')}' }`).join(',\n')}\n};\n`;
+const js = `/* ===== assets ===== */\n${ASSETS}${ART_JS}window.AOC_GLUE = ${JSON.stringify(WORKER_GLUE).replace(/<\//g, '<\\/')};\n` + jsParts.map(wrapJs).join('\n') + `\n/* ===== boot ===== */\n${BOOT}\n`;
 
 const filled = template
   .replace(CSS_MARK, () => css)

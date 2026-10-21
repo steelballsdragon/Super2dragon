@@ -334,6 +334,9 @@ function overlays(g, f) {
     for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2 + k; const r0 = 14 + k * 40, r1 = r0 + 14; g.beginPath(); g.moveTo(p[0] + Math.cos(a) * r0, cy - 20 + Math.sin(a) * r0 * 0.7); g.lineTo(p[0] + Math.cos(a) * r1, cy - 20 + Math.sin(a) * r1 * 0.7); g.stroke(); }
     g.font = '22px "Lilita One", "Arial Black", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     const y = cy - 50 - k * 30;
+    // the painted LEVEL UP! accent pops in over the level number
+    const pop = Math.min(1, k * 6), wob = 1 + 0.12 * Math.sin(Math.min(1, k * 3) * Math.PI);
+    ART.paint(g, 'levelup', p[0], y - 12, 104 * pop * wob);
     g.lineWidth = 4; g.strokeStyle = 'rgba(30,18,4,.85)'; g.strokeText(`Lv ${b.L}`, p[0], y);
     g.fillStyle = '#ffd862'; g.fillText(`Lv ${b.L}`, p[0], y);
     g.restore();
@@ -582,14 +585,14 @@ const FACTOR = { food: 1, wood: 1, stone: 0.8, iron: 0.6, gold: 0.35 };
 function effects(id, L) {
   const P = U.F.player, n = L + 1, rows = [];
   const row = (label, a, b) => rows.push([label, String(a), String(b)]);
-  if (id === 'hall') { row('Building level cap', `Lv ${L}`, `Lv ${n}`); row('Storage', fmt(A.storageCap(P.b.warehouse || 0, L)), fmt(A.storageCap(P.b.warehouse || 0, n))); row('Sight', `${A.visionRadius(P.b.tower || 0, L)} tiles`, `${A.visionRadius(P.b.tower || 0, n)} tiles`); }
+  if (id === 'hall') { row('Building level cap', `Lv ${L}`, `Lv ${n}`); row('Sight', `${A.visionRadius(P.b.tower || 0, L)} tiles`, `${A.visionRadius(P.b.tower || 0, n)} tiles`); }
   if (MAKES[id]) {
     const r = MAKES[id], base = x => A.BASE_PRODUCTION[r] + A.productionAt(x) * FACTOR[r], k = P.prod[r] / Math.max(1, base(L));
     row(`${A.RES_NAME[r]} per hour`, fmt(P.prod[r]), fmt(base(n) * k));
     row('Crate (every 4 hours)', fmt(P.prod[r] * A.CRATE.hours), fmt(base(n) * k * A.CRATE.hours));
   }
-  if (TRAINS[id]) { row('Trains at a time', fmt(A.trainBatch(L)), fmt(A.trainBatch(n))); row('Training speed', `+${L * 10}%`, `+${n * 10}%`); }
-  if (id === 'warehouse') { row('Storage', fmt(A.storageCap(L, P.b.hall)), fmt(A.storageCap(n, P.b.hall))); row('Safe from plunder', fmt(A.protectedAmount(L)), fmt(A.protectedAmount(n))); }
+  if (TRAINS[id]) { row('Training speed', `+${L * 10}%`, `+${n * 10}%`); }
+  if (id === 'warehouse') { row('Safe from plunder', fmt(A.protectedAmount(L)), fmt(A.protectedAmount(n))); }
   if (id === 'hospital') row('Beds', fmt(A.hospitalCap(L)), fmt(A.hospitalCap(n)));
   if (id === 'wall') row('Durability', fmt(A.wallDurability(L)), fmt(A.wallDurability(n)));
   if (id === 'tower') row('Sight', `${A.visionRadius(L, P.b.hall)} tiles`, `${A.visionRadius(n, P.b.hall)} tiles`);

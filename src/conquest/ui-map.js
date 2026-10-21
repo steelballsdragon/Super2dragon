@@ -445,6 +445,18 @@ function regionOfTile(x, y) {
   if (r == null || r === 255) return -1;
   return r < 100 ? r : U.S.kingdom.gates[r - 100].links[0];
 }
+// which painting stands for a landmark, a resource field
+function markPaint(mk) {
+  if (mk.kind === 'capital') return 'capital';
+  if (mk.kind === 'pass') return 'pass';
+  if (mk.kind === 'site') return mk.site === 'sanctum' ? 'sanctum' : mk.site === 'altar' ? 'altar' : 'shrine';
+  return ['ruin', 'ruin-keep', 'ruin-legend'][mk.id % 3];
+}
+function fieldPaint(n) {
+  if (n.res === 'food') return n.lv >= 3 ? 'field-food-2' : 'field-food';
+  if (n.res === 'iron') return n.lv >= 3 ? 'field-iron-2' : 'field-iron';
+  return 'field-' + n.res;
+}
 // zoomed out: the names of the ten regions over their lands
 function drawRegionNames(g, z) {
   const big = z < 2.6;
@@ -473,10 +485,20 @@ function drawMarks(g, f, z, inView, near) {
     const [sx, sy] = toScreen(mk.x + 0.5, mk.y + 0.5);
     const col = mk.owner >= 0 ? f.guilds[mk.owner].color : null;
     if (ART) {
-      if (mk.kind === 'capital') ART.put(g, ART.mapFort(col, true), sx, sy + Math.max(6, z * 0.5), 48, 66, Math.max(0.42, z * 3.6 / 60));
+      const pn = markPaint(mk);
+      const pw = mk.kind === 'capital' ? Math.max(30, z * 7) : mk.kind === 'pass' ? Math.max(20, z * 4) : mk.kind === 'site' ? Math.max(18, z * (mk.site === 'temple' ? 4.2 : 3.6)) : Math.max(14, z * 3);
+      if (ART.paint(g, pn, sx, sy + Math.max(3, z * 0.55), pw)) {
+        // the holder's banner over a pass, holy site or the Capital
+        if (col && mk.kind !== 'ruin') ART.flag(g, sx + pw * 0.22, sy + Math.max(3, z * 0.55) - ART.paintH(pn, pw) * 0.8, col, Math.max(9, z * 0.9));
+      } else if (mk.kind === 'capital') ART.put(g, ART.mapFort(col, true), sx, sy + Math.max(6, z * 0.5), 48, 66, Math.max(0.42, z * 3.6 / 60));
       else if (mk.kind === 'pass') ART.put(g, ART.mapPass(col, mk.tier), sx, sy + Math.max(4, z * 0.5), 48, 62, Math.max(0.3, z * (near ? 2.8 : 2.4) / 60));
       else if (mk.kind === 'site') ART.put(g, ART.mapSite(mk.site, col), sx, sy + Math.max(4, z * 0.5), 48, 70, Math.max(0.3, z * (near ? (mk.site === 'temple' ? 3 : 2.6) : 2.4) / 60));
       else ART.put(g, ART.mapRuin(), sx, sy + z * 0.3, 24, 36, Math.max(0.35, z * 1.6 / 36));
+      if (mk.kind === 'pass' && z >= 2.2) {
+        // level pips over a pass
+        const top = sy + Math.max(3, z * 0.55) - (ART.painted(pn) ? ART.paintH(pn, pw) : pw * 1.1) - 4;
+        for (let q = 0; q < mk.tier; q++) { const px = sx - (mk.tier - 1) * 5 + q * 10; g.fillStyle = '#ffd862'; g.strokeStyle = '#6a3e0c'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(px, top - 5); g.lineTo(px + 4, top); g.lineTo(px, top + 5); g.lineTo(px - 4, top); g.closePath(); g.fill(); g.stroke(); }
+      }
     }
     if (z >= 2.2 && (mk.kind !== 'ruin' || near)) labels.push({ pri: mk.kind === 'capital' ? 1e9 : mk.kind === 'pass' ? 1e8 + mk.tier : 1e7 + mk.level, x: sx, y: sy + Math.max(8, z * (mk.kind === 'capital' ? 1.5 : mk.kind === 'ruin' ? 0.8 : 1.1)), text: mk.name + (mk.owner >= 0 ? ` [${f.guilds[mk.owner].tag}]` : ''), col: col || (mk.kind === 'pass' ? '#d6ecff' : '#f4efe4') });
   }
@@ -500,14 +522,14 @@ function drawSprites(g, f, z, inView, gcol, P) {
   const at = (x, y) => toScreen(x + 0.5, y + 0.5);
   for (const n of f.nodes) {
     if (!inView(n.x, n.y)) continue;
-    const [sx, sy] = at(n.x, n.y), k = z * 1.3 / 34, s = ART.mapField(n.res);
-    objs.push({ y: n.y, f: () => { ART.put(g, s, sx, sy + z * 0.3, 24, 34, k); if (n.busy) ART.flag(g, sx + z * 0.35, sy + z * 0.2, '#efe6da', z * 0.7); } });
+    const [sx, sy] = at(n.x, n.y), k = z * 1.3 / 34, pn = fieldPaint(n);
+    objs.push({ y: n.y, f: () => { if (!ART.paint(g, pn, sx, sy + z * 0.55, z * 2.6)) ART.put(g, ART.mapField(n.res), sx, sy + z * 0.3, 24, 34, k); if (n.busy) ART.flag(g, sx + z * 0.35, sy + z * 0.2, '#efe6da', z * 0.7); } });
   }
   for (const c of f.camps) {
     if (!inView(c.x, c.y)) continue;
-    const [sx, sy] = at(c.x, c.y), k = z * 1.4 / 34, s = ART.mapCamp(c.lv);
+    const [sx, sy] = at(c.x, c.y), k = z * 1.4 / 34;
     objs.push({ y: c.y, f: () => {
-      ART.put(g, s, sx, sy + z * 0.3, 24, 36, k);
+      if (!ART.paint(g, c.lv <= 3 ? 'camp-1' : c.lv <= 7 ? 'camp-2' : 'camp-3', sx, sy + z * 0.55, z * (c.lv <= 7 ? 2.7 : 3))) ART.put(g, ART.mapCamp(c.lv), sx, sy + z * 0.3, 24, 36, k);
       if (z >= 9) { const r = Math.max(6, z * 0.26); g.fillStyle = '#5f1214'; g.beginPath(); g.arc(sx - z * 0.45, sy - z * 0.45, r, 0, 7); g.fill(); g.strokeStyle = '#e9b45e'; g.lineWidth = 1.2; g.stroke(); g.fillStyle = '#fff2dc'; g.font = `800 ${Math.round(r * 1.2)}px Barlow, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(c.lv), sx - z * 0.45, sy - z * 0.43); g.textBaseline = 'alphabetic'; }
     } });
   }
@@ -518,10 +540,15 @@ function drawSprites(g, f, z, inView, gcol, P) {
     const mine = c.id === P.id;
     const col = c.guild >= 0 ? f.guilds[c.guild].color : null;
     const k = z / 20 * (0.85 + Math.min(0.4, c.hall / 50)), s = ART.mapCity(c.civ, col, c.hall, mine);
+    const tier = c.hall >= 20 ? 3 : c.hall >= 13 ? 2 : c.hall >= 7 ? 1 : 0, pn = ['hall-3', 'hall-4', 'hall-6', 'hall-8'][tier];
     objs.push({ y: c.y, f: () => {
-      if (mine) { g.strokeStyle = '#f2c14e'; g.lineWidth = 2; g.beginPath(); g.ellipse(sx, sy + z * 0.3, z * 1.1, z * 0.5, 0, 0, 7); g.stroke(); }
-      ART.put(g, s, sx, sy + z * 0.35, 32, 44, k);
-      if (c.shield) { g.fillStyle = 'rgba(130,190,255,.16)'; g.strokeStyle = 'rgba(160,210,255,.7)'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(sx, sy - z * 0.2, z * 1.05, z * 0.95, 0, Math.PI, 0); g.closePath(); g.fill(); g.stroke(); }
+      // a ring in the guild's colour (gold for you) under the castle, and the guild's banner over it
+      const rc = mine ? '#f2c14e' : col;
+      const pw = z * (2.4 + tier * 0.35);
+      if (rc) { g.strokeStyle = rc; g.lineWidth = mine ? 2.5 : 1.8; g.globalAlpha = mine ? 1 : 0.85; g.beginPath(); g.ellipse(sx, sy + z * 0.4, pw * 0.52, pw * 0.24, 0, 0, 7); g.stroke(); g.globalAlpha = 1; }
+      if (ART.paint(g, pn, sx, sy + z * 0.5, pw)) { if (col) ART.flag(g, sx + pw * 0.28, sy + z * 0.5 - ART.paintH(pn, pw) * 0.62, col, Math.max(8, z * 0.75)); }
+      else ART.put(g, s, sx, sy + z * 0.35, 32, 44, k);
+      if (c.shield) { const r = ART.painted(pn) ? pw * 0.56 : z * 1.05; g.fillStyle = 'rgba(130,190,255,.16)'; g.strokeStyle = 'rgba(160,210,255,.7)'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(sx, sy + z * 0.4, r, r * 0.95, 0, Math.PI, 0); g.closePath(); g.fill(); g.stroke(); }
     } });
     if (z >= 12 || mine) labels.push({ pri: mine ? 1e9 : c.hall, x: sx, y: sy + z * 0.55, text: (c.guild >= 0 ? `[${f.guilds[c.guild].tag}] ` : '') + c.name, col: mine ? '#f2c14e' : '#efe6da', font: `700 ${Math.max(10, Math.round(Math.min(14, z * 0.34)))}px Barlow, sans-serif` });
   }
@@ -566,12 +593,20 @@ function drawArmies(g, f, z, inView, gcol, P) {
     if (m.troops && m.kind !== 'scout') { let best = 0; for (const u of A.UNIT_KEYS) if ((m.troops[u] || 0) > best) { best = m.troops[u]; type = u; } }
     const nx = m.path && m.path.length ? (m.path[0] % N) : m.tx;
     const left = nx < m.x - 0.01;
-    const frame = Math.floor(now / 260 + m.id) % 2;
-    const s = ART.armyToken(type, col, frame);
-    const k = Math.max(0.5, z * (m.kind === 'scout' ? 1.5 : 2.4) / 44);
-    g.save(); g.translate(sx, sy + z * 0.2); if (left) g.scale(-1, 1);
-    ART.put(g, s, 0, 0, 22, 32, k);
-    g.restore();
+    const frames = type === 'sie' ? 4 : 6;
+    const pn = `${type}-walk-${1 + Math.floor(now / 140 + m.id) % frames}`;
+    const pw = Math.max(14, z * (m.kind === 'scout' ? 1.1 : type === 'cav' || type === 'sie' ? 1.9 : 1.5));
+    // a disc in the army's colour under its feet, then the soldier walking
+    g.fillStyle = col; g.globalAlpha = 0.55; g.beginPath(); g.ellipse(sx, sy + z * 0.2, pw * 0.42, pw * 0.16, 0, 0, 7); g.fill(); g.globalAlpha = 1;
+    if (!ART.paint(g, pn, sx, sy + z * 0.2, pw, left)) {
+      const frame = Math.floor(now / 260 + m.id) % 2;
+      const s = ART.armyToken(type, col, frame);
+      const k = Math.max(0.5, z * (m.kind === 'scout' ? 1.5 : 2.4) / 44);
+      g.save(); g.translate(sx, sy + z * 0.2); if (left) g.scale(-1, 1);
+      ART.put(g, s, 0, 0, 22, 32, k);
+      g.restore();
+    }
+    if (m.kind !== 'scout') ART.flag(g, sx - pw * 0.35, sy + z * 0.2, col, Math.max(10, pw * 0.75), now / 300 + m.id);
     if (z >= 10 && m.size && m.kind !== 'scout') {
       const tx = typeof m.size === 'number' ? fmt(m.size) : String(m.size);
       g.font = `800 ${Math.round(Math.min(13, Math.max(10, z * 0.3)))}px Barlow, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -707,6 +742,13 @@ document.addEventListener('click', async e => {
 
 // ================================================================ tile sheet
 // a picture of what stands on the tile, from the map's own sprites
+// a painting for the sheet when there is one, else the drawn picture
+function ppic(name, fallback) {
+  const m = U.art?.pmeta(name);
+  if (!m) return pic(fallback());
+  const w = Math.min(200, m.w), h = Math.round(m.h * w / m.w);
+  return `<img class="aoc-tile-pic" src="${m.src}" alt="" width="${w}" height="${h}">`;
+}
 function pic(c) {
   if (!c) return '';
   let src = '';
@@ -731,7 +773,7 @@ async function openTile(i) {
     const c = t.city;
     title = c.name;
     const gd = c.guild >= 0 ? f.guilds[c.guild] : null;
-    if (U.art) parts.push(pic(U.art.mapCity(c.civ, gd?.color || null, c.hall, c.id === P.id)));
+    if (U.art) parts.push(ppic(['hall-3', 'hall-4', 'hall-6', 'hall-8'][c.hall >= 20 ? 3 : c.hall >= 13 ? 2 : c.hall >= 7 ? 1 : 0], () => U.art.mapCity(c.civ, gd?.color || null, c.hall, c.id === P.id)));
     parts.push(`<div class="aoc-who">${U.banner(gd, 40)}<div><b>${esc(c.name)}</b>${gd ? ` <span class="aoc-tag">[${esc(gd.tag)}]</span>` : ' <span class="aoc-muted">Independent</span>'}
       <div class="aoc-muted">${esc(c.civName)} · Town Hall ${c.hall} · ${fmt(c.power)} power${c.shield ? ' · <span class="aoc-blue">Shielded</span>' : ''}</div>
       ${c.role ? `<div class="aoc-muted">${esc(A.ROLE_NAME?.[c.role] || c.role)} of ${esc(c.guildName)}</div>` : ''}</div></div>`);
@@ -750,13 +792,13 @@ async function openTile(i) {
     }
   } else if (t.camp) {
     title = `Bandit camp, level ${t.camp.lv}`;
-    if (U.art) parts.push(pic(U.art.mapCamp(t.camp.lv)));
+    if (U.art) parts.push(ppic(t.camp.lv <= 3 ? 'camp-1' : t.camp.lv <= 7 ? 'camp-2' : 'camp-3', () => U.art.mapCamp(t.camp.lv)));
     parts.push(`<p class="aoc-p">Beat the bandits for loot and commander experience.${t.camp.reserved ? ` <b>Reserved for you until ${A.clock(t.camp.reserved)}.</b>` : ''}</p><div class="aoc-intel"><span class="aoc-kicker">Garrison</span><div>${U.troopLine(t.camp.troops)}</div></div>`);
     acts.push({ label: 'Attack', kind: 'red', icon: 'sword', onClick: () => U.marchSheet({ kind: 'attack', to: i, name: title, enemy: t.camp.troops, level: t.camp.lv }) });
   } else if (t.node) {
     const n = t.node;
     title = `${A.RES_NAME[n.res]} field, level ${n.lv}`;
-    if (U.art) parts.push(pic(U.art.mapField(n.res)));
+    if (U.art) parts.push(ppic(fieldPaint(n), () => U.art.mapField(n.res)));
     parts.push(`<p class="aoc-p">${n.amount != null ? `${full(n.amount)} of ${full(n.max)} left.` : `Up to ${full(n.max)} when full. Out of sight: you cannot see how much is left.`}${n.busy ? ` ${esc(n.byName || 'Someone')} is gathering here.` : ''}</p>`);
     if (n.busy) acts.push({ label: 'Attack the gatherers', kind: 'red', icon: 'sword', onClick: () => U.marchSheet({ kind: 'attack', to: i, name: `${n.byName || 'the'} gatherers` }) });
     else acts.push({ label: 'Gather', icon: 'pick', onClick: () => U.marchSheet({ kind: 'gather', to: i, name: title, res: n.res }) });
@@ -765,7 +807,7 @@ async function openTile(i) {
     title = mk.name;
     const owner = mk.owner >= 0 ? f.guilds[mk.owner] : null;
     const kindName = mk.kind === 'capital' ? 'The Capital' : mk.kind === 'pass' ? `Pass, level ${mk.tier}` : mk.kind === 'site' ? `Holy site: ${A.SITES[mk.site].name}` : 'Ancient ruins';
-    if (U.art) parts.push(pic(mk.kind === 'ruin' ? U.art.mapRuin() : mk.kind === 'pass' ? U.art.mapPass(owner?.color || null, mk.tier) : mk.kind === 'site' ? U.art.mapSite(mk.site, owner?.color || null) : U.art.mapFort(owner?.color || null, true)));
+    if (U.art) parts.push(ppic(markPaint(mk), () => mk.kind === 'ruin' ? U.art.mapRuin() : mk.kind === 'pass' ? U.art.mapPass(owner?.color || null, mk.tier) : mk.kind === 'site' ? U.art.mapSite(mk.site, owner?.color || null) : U.art.mapFort(owner?.color || null, true)));
     parts.push(`<div class="aoc-who">${mk.kind === 'ruin' ? `<span class="aoc-big-ico">${U.icon('ruin', 34)}</span>` : U.banner(owner, 40)}<div><b>${esc(kindName)}</b> · garrison level ${mk.level}
       <div class="aoc-muted">${owner ? `Held by ${esc(owner.name)} [${esc(owner.tag)}] since ${A.clock(mk.since)}` : mk.kind === 'ruin' ? 'Guarded by old wardens' : 'Held by its neutral garrison'}</div></div></div>`);
     const opensAt = !mk.open && mk.kind !== 'ruin' ? `<p class="aoc-p aoc-opens">${U.icon('lock', 16)} Opens on Day ${Math.floor(mk.opens / A.DAY) + 1}${mk.opens % A.DAY ? ` at ${A.clock(mk.opens).split(' ').pop()}` : ''}.</p>` : '';
@@ -841,6 +883,7 @@ function relocate(x, y) {
 }
 
 // ================================================================ the screen
+window.addEventListener('aoc-art', () => { if (U.current === 'map') schedule(); });
 U.screen('map', {
   mount: mountMap,
   show() { resize(); if (!M.homed && U.F) { M.homed = true; home(false); M.view.z = 9; } schedule(); },

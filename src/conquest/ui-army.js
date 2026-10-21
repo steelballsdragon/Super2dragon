@@ -31,9 +31,6 @@ async function onClick(e) {
   if (b.dataset.trmax) { const u = b.dataset.trmax; K.train[u] = maxTrain(u); const i = document.querySelector(`[data-tn="${u}"]`); if (i) i.value = K.train[u]; updateTrainCost(u); }
   if (b.dataset.train) {
     const u = b.dataset.train;
-    // more than one batch: train a full batch instead of refusing
-    const cap = A.trainBatch(P.b[A.UNITS[u].building] || 0);
-    if (K.train[u] > cap) { K.train[u] = cap; const i = document.querySelector(`[data-tn="${u}"]`); if (i) i.value = cap; U.toast(`The ${A.BUILDINGS[A.UNITS[u].building].name} trains up to ${full(cap)} at a time.`, 'info'); }
     b.disabled = true;
     if (await U.run({ type: 'train', unit: u, n: K.train[u] }, `Training ${full(K.train[u])} ${A.UNITS[u].plural}.`)) { K.train[u] = 0; render(true); } else b.disabled = false;
   }
@@ -43,12 +40,12 @@ async function onClick(e) {
   if (b.dataset.focus) { const [x, y] = b.dataset.focus.split(',').map(Number); U.mapFocus(x, y, 12); }
   void P;
 }
+// there is no limit on how many train at once: the most is what the stock pays for
 function maxTrain(u) {
   const P = U.F.player;
-  const L = P.b[A.UNITS[u].building] || 0;
-  let n = A.trainBatch(L);
+  let n = Infinity;
   for (const r in A.UNITS[u].cost) n = Math.min(n, Math.floor(P.res[r] / A.UNITS[u].cost[r]));
-  return Math.max(0, n);
+  return n === Infinity ? 0 : Math.max(0, n);
 }
 function trainTime(u, n) { const P = U.F.player; const L = P.b[A.UNITS[u].building] || 0; return Math.max(1, Math.round(n * A.UNITS[u].sec / 60 / (1 + 0.1 * L))); }
 function updateTrainCost(u) {
@@ -62,6 +59,8 @@ function updateTrainCost(u) {
 // a drawn soldier of the player's colours for the troop cards
 const soldierPics = new Map();
 function soldierImg(u, civ) {
+  const pm = U.art?.pmeta(`${u}-walk-1`);
+  if (pm) return `<img class="aoc-unit-pic" src="${pm.src}" alt="" width="${Math.round(60 * Math.min(1, pm.w / pm.h))}" height="60">`;
   const key = u + civ;
   if (!soldierPics.has(key)) { let src = ''; try { src = U.art.soldier(u, A.CIV[civ].color, 0, 2).toDataURL('image/png'); } catch (e) { src = ''; } soldierPics.set(key, src); }
   const src = soldierPics.get(key);
@@ -77,9 +76,9 @@ function troopsTab(f) {
     const variant = A.CIV[P.civ].variant.unit === u ? ` · your civilization trains them as <b>${esc(A.CIV[P.civ].variant.name)}</b>` : '';
     const train = !L ? `<p class="aoc-req">Build the ${esc(bld.name)} to train ${esc(U2.plural)}.</p>`
       : busy ? `<p class="aoc-muted">Training ${full(busy.n)}: ${dur(busy.end - f.t)} left.</p>`
-      : `<div class="aoc-trainrow"><input class="aoc-input aoc-num" type="number" inputmode="numeric" min="0" max="${A.trainBatch(L)}" data-tn="${u}" value="${K.train[u] || ''}" placeholder="0" aria-label="${esc(U2.plural)} to train">
+      : `<div class="aoc-trainrow"><input class="aoc-input aoc-num" type="number" inputmode="numeric" min="0" max="${maxTrain(u)}" data-tn="${u}" value="${K.train[u] || ''}" placeholder="0" aria-label="${esc(U2.plural)} to train">
           <button type="button" class="aoc-btn ghost small" data-trmax="${u}">Max</button><button type="button" class="aoc-btn gold small" data-train="${u}">Train</button></div>
-          <div class="aoc-costs" data-tc="${u}"></div><p class="aoc-muted aoc-small">Up to ${full(A.trainBatch(L))} at a time at ${esc(bld.name)} level ${L}.</p>`;
+          <div class="aoc-costs" data-tc="${u}"></div><p class="aoc-muted aoc-small">No limit on how many at once: your stock pays for ${full(maxTrain(u))}. A higher ${esc(bld.name)} trains faster.</p>`;
     return `<div class="aoc-card aoc-unit"><div class="aoc-unit-head">${soldierImg(u, P.civ)}<div><b>${esc(U2.plural)}</b><div class="aoc-muted aoc-small">Attack ${U2.atk} · Defense ${U2.def} · Health ${U2.hp} · Speed ${U2.speed} · Load ${U2.load}${variant}</div></div></div>
       <div class="aoc-kv is-row"><div><span>Home</span><b>${full(P.troops[u])}</b></div><div><span>Away</span><b>${full(P.away[u])}</b></div><div><span>Wounded</span><b>${full(P.wounded[u])}</b></div></div>${train}</div>`;
   }).join('');
@@ -123,6 +122,8 @@ function cmdsTab(f) {
 function portrait(c, s) {
   const civ = A.CIV[c.civ];
   const frame = c.rarity === 'legendary' ? '#e2b04a' : '#a07ad0';
+  const painted = U.art?.heroPortrait(c.id, s, frame);
+  if (painted) return painted;
   return `<svg class="aoc-por" width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true"><rect x="1.5" y="1.5" width="45" height="45" rx="8" fill="${civ.roof}" stroke="${frame}" stroke-width="3"/>
     <circle cx="24" cy="19" r="8" fill="#e4c7a5"/><path d="M10 42c1-9 7-13 14-13s13 4 14 13Z" fill="${civ.color}"/><path d="M15 17c1-6 5-9 9-9s8 3 9 9c-3-2-6-3-9-3s-6 1-9 3Z" fill="${civ.stone}"/>
     <g transform="translate(30 28) scale(.6)">${spec(c.spec)}</g></svg>`;
@@ -177,21 +178,29 @@ U.trainSheet = u => {
   const L = P.b[d.building] || 0;
   if (!L) return U.toast(`Build the ${A.BUILDINGS[d.building].name} first.`, 'bad');
   const busy = P.q.train[u];
-  const cap = A.trainBatch(L), most = maxTrain(u);
-  let n = Math.min(most, Math.max(1, Math.floor(cap / 2)));
+  const most = maxTrain(u), cap = most;
+  let n = Math.min(most, Math.max(1, Math.floor(most / 2)));
   const body = el(`<div class="aoc-trs"><div class="aoc-trs-top"><canvas class="aoc-trs-pic" width="360" height="260" aria-hidden="true"></canvas>
       <div class="aoc-trs-stats"><span>${U.icon('sword', 16)}${d.atk}</span><span>${U.icon('shield', 16)}${d.def}</span><span>${U.icon('herb', 16)}${d.hp}</span><span>${U.icon('clock', 16)}${d.speed}</span><span>${U.icon('pick', 16)}${d.load}</span></div></div>
     <div class="aoc-trs-have"><span>${U.icon(u, 18)}<b>${full(P.troops[u])}</b> at home</span>${civ.variant.unit === u ? `<span class="aoc-gold">${esc(civ.variant.name)}</span>` : ''}</div>
     ${busy ? `<p class="aoc-p">${full(busy.n)} in training: ${dur(busy.end - U.F.t)} left.</p>` : `<div class="aoc-trs-pick"><input type="range" min="0" max="${Math.max(0, most)}" value="${n}" aria-label="How many"><input class="aoc-input aoc-num" type="number" inputmode="numeric" min="0" max="${cap}" value="${n}" aria-label="How many" data-tn="${u}"></div>
-    <div class="aoc-up-cost aoc-trs-cost"></div><p class="aoc-muted aoc-small">Up to ${full(cap)} at a time.</p>`}</div>`);
+    <div class="aoc-up-cost aoc-trs-cost"></div><p class="aoc-muted aoc-small">No limit on how many at once: your stock pays for ${full(most)}.</p>`}</div>`);
   const pic = body.querySelector('canvas');
   const g = pic.getContext('2d');
   g.scale(2, 2);
   const sp = [U.art.soldier(u, civ.color, 0, 3), U.art.soldier(u, civ.color, 1, 3)];
   let k = 0;
-  const anim = () => { g.clearRect(0, 0, 180, 130); for (const [i, x, y] of [[1, 74, 4], [0, 4, 20], [2, 44, 38]]) U.art.put(g, sp[(k + i) % 2], x, y); };
+  // three painted soldiers marching on the spot (the drawn ones until the paintings have loaded)
+  const frames = u === 'sie' ? 4 : 6;
+  const anim = () => {
+    g.clearRect(0, 0, 180, 130);
+    for (const [i, x, y, h] of [[1, 120, 74, 58], [0, 50, 96, 64], [2, 96, 126, 70]]) {
+      const name = `${u}-walk-${1 + (k + i * 2) % frames}`, m = U.art.pmeta(name);
+      if (!m || !U.art.paint(g, name, x, y, h * m.w / m.h)) U.art.put(g, sp[(k + i) % 2], x - 30, y - 70);
+    }
+  };
   anim();
-  const timer = U.reduced ? 0 : setInterval(() => { k++; anim(); }, 420);
+  const timer = U.reduced ? 0 : setInterval(() => { k++; anim(); }, 130);
   const cost = () => {
     const box = body.querySelector('.aoc-trs-cost');
     if (!box) return;

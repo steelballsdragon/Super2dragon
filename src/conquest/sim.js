@@ -757,7 +757,7 @@ function arriveScout(w, m) {
       const est = {};
       for (const u of UNIT_KEYS) est[u] = noisy(rng, d.troops[u] * lieK, acc);
       const resEst = {};
-      for (const r of RES) resEst[r] = noisy(rng, Math.max(0, d.res[r] - protectedAmount(d.b.warehouse || 0)), acc);
+      for (const r of RES) resEst[r] = noisy(rng, Math.max(0, d.res[r] - protectedStock(w, d)), acc);
       const flagged = lie && (g.tech.scouting || 0) >= (d.tech.counter || 0) + 2;
       rep = {
         kind: 'scout', target: { type: 'city', id: d.id }, name: d.name, guild: d.guild, at: w.t, acc: Math.round(acc * 100), troops: est, res: resEst,
@@ -1084,7 +1084,7 @@ function battleCity(w, m) {
     let carry = 0;
     for (const u of UNIT_KEYS) carry += (res.a.end[u] || 0) * UNITS[u].load;
     carry *= 1 + (cityMods(w, g).load || 0);
-    const prot = protectedAmount(d.b.warehouse || 0);
+    const prot = protectedStock(w, d, dm);
     const avail = {};
     let total = 0;
     for (const r of RES) { avail[r] = Math.max(0, d.res[r] - prot) * (0.35 + aSide.plunder); total += avail[r] * RES_VALUE[r]; }

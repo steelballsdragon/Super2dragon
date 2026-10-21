@@ -4,7 +4,7 @@ Age of Conquest is a grand strategy game for phones and browsers. You are one of
 
 It looks and plays like the Last Furnace city game it replaces, a mobile strategy game:
 
-- **City**: your town is drawn as an isometric map. Every building stands on its plot with a level plate under it. Tap a building for its sheet (level, effects of the next level, requirements, cost) and **Upgrade**. Builds with 10 game minutes or less left finish **Free**. Full crates float over the farms, mills, quarries, mines and the market every 4 game hours; tap them to collect. Green arrows mark what you can upgrade right now.
+- **City**: your town is an isometric map of painted buildings: the Town Hall grows through eight stages from a watchtower to a golden palace, and the Farm and Barracks through four. Every building stands on its plot with a level plate under it. Tap a building for its sheet (level, effects of the next level, requirements, cost) and **Upgrade**. Builds with 10 game minutes or less left finish **Free**. Full crates float over the farms, mills, quarries, mines and the market every 4 game hours; tap them to collect. Green arrows mark what you can upgrade right now.
 - **Chapter goals**: a banner at the bottom shows the current goal, its progress and **Go**, which takes you to the right building or place on the map. **Claim** opens the reward pop-up.
 - **World**: the whole kingdom on one painted map. Zone 1, the outer ring, has six regions where everyone starts; Zone 2 has three richer regions; Zone 3 is the heartland around the Ember Throne. Mountain ranges wall every region, and the only ways through are 15 passes (level 1 between Zone 1 regions, level 2 into Zone 2, level 3 into the heartland) that a guild must capture with a rally before its members and allies can march through. 27 holy sites bless every member of the guild that holds them, and bandit camps and fields grow stronger toward the centre. Unexplored land lies under clouds; zoomed out you see the ranges and the region names; the search button lists every pass and holy site. Tap a place to attack, scout, gather, reinforce or call a rally.
 - **Army, Guild, Mail, History, Ranks**: troops and commanders, guild politics and rallies, battle reports that play out with soldiers, the server's chronicle and the rankings.
@@ -25,6 +25,20 @@ Architecture, save format, feature checklist, test results, measured performance
 Every push to `main` or `claude/last-furnace-game` is tested on GitHub, and only when every test passes is `dist/` published to the `gh-pages` branch, which GitHub Pages serves at the link above.
 
 **Installing it like an app:** open the public link on the phone. On Android the start screen shows an **Install the game** button. On iPhone and iPad tap **Share**, then **Add to Home Screen**. You can also save `dist/index.html` and open it from any folder.
+
+## No limits on resources or training
+
+There is no storage limit: resources keep piling up for as long as your buildings produce, and crates can always be collected. The Warehouse (and the Logistics research) now only decides how much of your stock is safe from plunder. You can also train any number of troops at once, as many as your resources pay for; training takes longer the more you train (developer mode's instant switch skips the wait). The AI governors play by the same rules. Still limited: how many troops one army can take on a march (raised by the Town Hall) and how many wounded the Hospital can hold.
+
+## Updating the art
+
+The paintings are cut from the sheets in `art/sheets/` by two scripts (Python 3 with Pillow and NumPy):
+
+```sh
+python3 -I tools/art/manifest.py   # which object on which sheet becomes which sprite, and how to cut it
+python3 -I tools/art/cut.py        # writes art/sprites/*.webp, art/sprites/index.json and art/preview.png
+node build.mjs
+```
 
 ## The new map and old worlds
 
@@ -94,13 +108,16 @@ src/
     data.js, world.js, rules.js, sim.js, ai.js, api.js, bundle.mjs
                          the simulation engine (it runs in a Web Worker, or on the page where workers are blocked)
     ui-core.js           the shell: start screen, saves, top bar, tabs, sheets, toasts, reward pop-ups, the chapter banner
-    ui-art.js            every picture, drawn in code: buildings, walls, trees, castles, camps, soldiers
+    ui-art.js            the pictures: the painted sprites (with their foot points) and, as the fallback, pictures drawn in code
     ui-home.js           the drawn city with its plates, timers, crates, builder and building sheets
     ui-map.js, ui-city.js, ui-army.js, ui-guild.js, ui-battle.js, ui-intel.js, ui-chron.js, ui-misc.js
                          the world map, city panels, army, guilds, battle scenes, reports, history, menu
     ui-dev.js            the hidden developer panel
     ui-guide.js          the welcome and the Tap marker
     ui.css               the look: Last Furnace's navy panels, buttons, plates and banners
+art/sheets/              the art sheets the paintings are cut from
+art/sprites/             the cut sprites (WebP) and index.json (sizes and foot points), inlined by the build
+tools/art/               manifest.py (which object on which sheet becomes which sprite) and cut.py (cuts them out)
 public/icons/            app icons for the installable version
 public/conquest-logo.webp  the Last Furnace: Age of Conquest artwork (inlined by the build)
 build.mjs                puts everything together into index.html and dist/

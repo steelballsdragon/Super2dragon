@@ -22,7 +22,14 @@ This document covers what is built, how it works, how to run and test it, what i
 
 ### What you see
 
-Everything is drawn by the game itself with canvas paths (no image files besides the logo), in each civilization's colors and roof style:
+**Painted art.** The pictures come from art sheets supplied for the game (in `art/sheets/`). A cutting tool (`tools/art/`) finds each object on a sheet, removes the sheet's background (a plain colour, or for the busy sheets a model of the glowing background around each object), softens the outline, and writes 128 transparent WebP sprites (`art/sprites/`, 1.6 MB), each with the foot point it stands on. The build inlines them, so the game is still one file. The pictures that were drawn in code stay as the fallback for anything without a painting and for the moment before the paintings have decoded:
+- **City:** the Town Hall in eight stages (from a watchtower to a golden palace), the Farm and the Barracks in four stages each, the Watchtower in three, and one painting each for the Lumber Mill, Quarry, Iron Mine, Market, Warehouse, Stables, Archery Range, Siege Workshop, Academy and Hospital. The City Wall is still drawn in code. A painted LEVEL UP! accent pops over a building that finishes a level.
+- **World map:** cities as castles of four sizes with a ring and a banner in their guild's colour, the Capital, passes (gatehouses with gold level pips), sanctums, altars and shrines, three kinds of ruins, bandit camps in three sizes, and the five resource fields (food and iron in two styles).
+- **Soldiers:** infantry, cavalry, archers and siege engines walk across the map and fight in the battle scenes with walking, attacking and falling frames.
+- **Commanders:** Kael, Amara, Temur, Veyra and Orun have painted portraits. The other seven still use drawn ones.
+- **Interface:** painted icons for Food, Wood, Stone, Iron and Gold everywhere they appear, VICTORY and DEFEAT banners in battles, a treasure chest on reward pop-ups.
+
+What is still drawn in code: the terrain, trees, walls, villagers, smoke, the empty plots and the seven other commanders, in each civilization's colors and roof style:
 - **Your city** is the home screen: an isometric town where every building stands on its own plot at its real level, from an empty plot with a sign to a towered keep. Walls go from a wooden palisade to stone with towers and a gatehouse. The building under construction wears scaffolding with a swinging hammer and a timer; soldiers drill in the yard in proportion to the troops you have at home; villagers walk the roads; smoke rises from chimneys; green arrows mark what you can upgrade right now; a shield is a dome of light over the town; the light follows the game clock. Every building has a plate with its level (a lock and the Town Hall level it needs when it cannot be built yet). Tap a building for its sheet: a picture, *Lv n > Lv n+1*, the effects of the next level, requirements with checks, the cost, and its own buttons (Train, Research, Trade, Heal, Shield and so on). A builder chip shows Idle, the time left, or Free; side buttons with red dots open Mail, Goals, the Guild, the commanders and, in developer mode, the Developer panel.
 - **Free finish and crates** are rules of the simulation, the same for everyone: a build, research, training or healing with 10 game minutes or less left can be finished at once, and each producing building fills a crate every 4 game hours with an hour of its output. The AI governors collect their crates and finish nearly done queues free too.
 - **The world map** is the whole kingdom (see below), painted terrain with shores, forests of small trees, mountain peaks with snow, hills, tundra, fords and the paved roads of the passes. Zoomed in, cities are castles that grow with their Town Hall in their guild's color, passes are gatehouses with gold pips for their level, holy sites are sanctums, altars and shrines, the Capital is a gilded keep, and bandit camps, resource fields and ruins have their own pictures. Unexplored land lies under clouds; explored land out of sight is dimmed. Zoomed out, the mountain ranges stand above the clouds and each region is named with its zone, so the shape of the kingdom is always readable. A readout shows the region, zone and coordinates of the middle of the screen; the globe button shows the whole kingdom; the search button lists every pass and holy site with who holds it. Armies march as small banners of soldiers of their main troop type along dashed routes, and battles you can see flash where they happen.
@@ -71,7 +78,7 @@ Why this design:
 ### Simulation design
 
 - **The clock.** The world advances in game minutes. Each minute it processes queues (buildings, research, training, healing, the Grand Exchange), moves armies, launches rallies, lets governors and guilds whose turn has come decide, and runs world events and the Throne check. Every 30 minutes power and rankings are recomputed. Every hour territory is recomputed and camps respawn. Each day it saves history snapshots and collects guild contributions. Offline catch-up runs in 5-minute steps.
-- **The economy** is settled lazily and exactly. A governor's stock is brought up to date only when the simulation touches it (a decision, a battle, a scout). Production is integrated over the elapsed time with storage caps and food upkeep, and starvation causes desertion. World events that change production settle the governors they affect at their start and end, so results never depend on when someone looked.
+- **The economy** is settled lazily and exactly. A governor's stock is brought up to date only when the simulation touches it (a decision, a battle, a scout). Production is integrated over the elapsed time with food upkeep, and starvation causes desertion. There is no storage limit: stock grows for as long as production runs. The Warehouse and Logistics research only keep part of it safe from plunder. World events that change production settle the governors they affect at their start and end, so results never depend on when someone looked.
 - **Three simulation tiers.** Every governor keeps its full state, and the tier only changes how often it decides:
   - **Active**: within 40 tiles of you, in your guild, or in your guild's wars.
   - **Strategic**: at war elsewhere.
@@ -104,7 +111,7 @@ src/conquest/
                  identity, the kingdom's regions, pass levels, holy sites and their blessings
   world.js       random numbers, the kingdom layout (zones, regions, ranges, passes), terrain generation,
                  pass-aware pathfinding, occupancy and spatial buckets, vision
-  rules.js       bonuses, production, storage, upkeep, power, army strength, the battle resolver, scout accuracy
+  rules.js       bonuses, production, protected stock, upkeep, power, army strength, the battle resolver, scout accuracy
   sim.js         world creation, the clock, queues, marches, battles, rallies, landmarks, territory, events,
                  the chronicle, the Age, the Coalition War scenario
   ai.js          governor decisions, guild planning, diplomacy, coalitions, succession, collapse and refounding
@@ -215,10 +222,10 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | Ten servers, 6,000 governors, cross-server play | Planned | the engine is server-agnostic (identity in `SERVER`); not built or measured |
 | Game modes | Partial | Eternal Conquest, and the Coalition War demonstration campaign. The other nine modes are planned |
 | World map | Done | a 384 by 384 kingdom in the Rise of Kingdoms layout: 3 zones, 10 regions walled by mountain ranges, 15 passes in 3 levels, 27 holy sites with blessings, the Capital, 18 ruins, 600 bandit camps and 1,200 resource fields that grow stronger toward the centre; lakes, rivers with fords, forests, hills, tundra; chunked painting, a whole-kingdom view with region names, clouds over unexplored land, a Find list, pan and pinch zoom; territory overlay with drawn borders |
-| City building and economy | Done | 15 buildings to level 25 with costs, times and prerequisites; production, storage caps, food upkeep, desertion when food runs out, protected stock |
+| City building and economy | Done | 15 buildings to level 25 with costs, times and prerequisites; production with no storage limit, food upkeep, desertion when food runs out, stock protected from plunder |
 | Resources | Partial | food, wood, stone, iron, gold. Influence, rare materials and taxation are planned |
 | Research | Done | 16 technologies in three branches (economy, military doctrine, intelligence), capped by the Academy, with prerequisites |
-| Troops | Done | infantry, cavalry, archers, siege; training batches, upkeep, wounded, healing, a hospital limit, morale. Experience is held by commanders, not troops |
+| Troops | Done | infantry, cavalry, archers, siege; training in any number the stock pays for (the time grows with the number), upkeep, wounded, healing, a hospital limit, morale. Experience is held by commanders, not troops |
 | Commanders | Partial | 12 fully implemented: rarity, story, civilization, specialty, active skill, two passives, ultimate (level 30), 3-branch talents, skill levels, pairings and synergies, rivals, recruitment goals for player and AI alike, City Steward and Defender roles. Equipment and the other 28 commanders are planned |
 | Civilizations | Partial | 12, each with bonuses, real costs, a troop variant, a starting commander, preferred terrain, colors and city style, and lore. Culture, stability, reforms and cultural exchange are planned |
 | Combat | Done | rounds, counters, terrain, walls, towers, durability, morale, routs, pursuit, ambushes in forests, commander skills; deterministic, replayable, explained |
@@ -255,12 +262,12 @@ Run on 2026-10-21 in this repository (`node tests/all.mjs`):
 | conquest-demo | 5 of 5 passed |
 | conquest-ui | 17 of 17 passed |
 | conquest-dev | 10 of 10 passed |
-| conquest-robust | 6 of 6 passed (two game days at 64x: at most 762 DOM nodes, a 23 MB page heap, the town still drawing in under 3 ms a frame) |
+| conquest-robust | 6 of 6 passed (two game days at 64x: at most 751 DOM nodes, a 26 MB page heap with the paintings loaded, the town still drawing in under 4 ms a frame) |
 
 All five suites together take about 4 minutes.
 
 The engine suite covers:
-- production, storage and upkeep, building and research prerequisites, training and healing, the market
+- production with no storage limit, protected stock and upkeep, building and research prerequisites, training and healing, the market
 - pathfinding, travel time and scouting
 - the kingdom: 10 regions in 3 zones, 15 passes of the right levels joining the right regions, nothing crossing a range without a pass, each pass reachable from both sides; only the holding guild and its allies march through; holy-site blessings (and the same blessing twice counting once); opening days; camps stronger toward the centre
 - replay determinism, counters, numbers, terrain and walls, commander skills, explanations
@@ -270,7 +277,7 @@ The engine suite covers:
 - sacking and recovery, the Throne and Grand Exchange victories, rallies capturing holy sites
 - invalid and malicious commands, guild-mate and ally protection, double reward claims, developer gating
 - save tampering, refusing old-map saves with a reason, determinism, save and load continuity, offline catch-up, and a speed check (one game day in under 20 seconds)
-- Free finish (refused too early, works in the last 10 minutes), crates (an hour of output once, refilled after 4 hours, never into full storage), the AI using both, goal progress and chapters, and the developer switches (only in developer mode, saved with the world)
+- Free finish (refused too early, works in the last 10 minutes), crates (an hour of output once, refilled after 4 hours, even into a very large stock), the AI using both, goal progress and chapters, and the developer switches (only in developer mode, saved with the world)
 
 The demonstration campaign test:
 - An AI guild starts with 34% of the server's power, the level 1 passes out of its region and 5 holy sites (its own region's and a sanctum in each neighbouring region).
@@ -284,6 +291,7 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 
 | Measure | Result |
 |---|---|
+| Size of the game | 2.9 MB in one file (the 128 paintings are 1.6 MB of WebP, inlined as text); the drawn-only version was 0.8 MB |
 | Generate the kingdom's terrain | 157 ms in Node (the interface does it once per world, on the loading screen) |
 | Create a world (600 governors, map, history) | 144 ms in Node including the terrain, 372 ms to the first frame in Chromium |
 | Simulation cost per game minute, full server | 1.8 ms on day 1, 2.1 ms on day 3, 2.8 ms on day 7 (about 870 armies in the field) |
@@ -305,7 +313,7 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 - The kingdom copies the shape of a Rise of Kingdoms kingdom (zones, regions, passes, holy sites), not all of its systems: there are no alliance flags or player-built fortresses (territory comes from cities and landmarks), no teleport items, and no Lost Kingdom. An army already marching keeps going through a pass that changes hands on the way; new marches respect the new owner.
 - Rally battles use the rally leader's bonuses (civilization, research, commanders) for the whole army; joiners contribute troops, not bonuses.
 - Battles are fought by army totals over rounds, not by units on a battlefield. The battle scene animates those rounds with representative soldiers (up to 34 a side), so a figure is a share of the army, not one unit.
-- The art is drawn in code: clean and consistent, but simpler than a commercial game's painted art. There is no sound.
+- The paintings were cut from flat art sheets, so they have no separate animation layers (soldiers have 3 to 6 frames per action; buildings do not move). The terrain, trees, walls and seven commanders are still drawn in code. The city's buildings are paintings of different sizes placed on square plots, so large Town Hall stages overlap the plots behind them. There is no sound.
 - There is no shop, no gems and no speed-up items: Free finish (10 game minutes) is the only way to hurry, and it is the same for the AI. The Last Furnace city game's heroes, stages, shop and events went with it.
 - No supply lines, fatigue or combat weather; no equipment; no caravans, loans, tribute or sanctions; no spies or sabotage beyond false reports and discovering secret pacts.
 - Culture, stability, public order and civilization reforms are not modeled.

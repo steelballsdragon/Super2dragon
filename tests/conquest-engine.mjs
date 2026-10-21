@@ -146,7 +146,7 @@ await test('offline time is simulated on load, capped by the player\'s setting',
 });
 
 // ---------------------------------------------------------------- economy
-await test('production follows the formulas and stops at the storage limit', () => {
+await test('production follows the formulas and never stops: there is no storage limit', () => {
   const w = fresh();
   const g = w.govs[P];
   A.settle(w, g, w.t);
@@ -155,9 +155,13 @@ await test('production follows the formulas and stops at the storage limit', () 
   A.settle(w, g, w.t + 60);
   check(Math.abs((g.res.wood - before.wood) - prod.wood) < 1e-6, 'one hour of wood');
   check(Math.abs((g.res.food - before.food) - (prod.food - A.upkeepPerHour(g))) < 1e-6, 'food is production minus upkeep');
-  A.settle(w, g, w.t + 60 * 200);
-  const cap = A.storage(w, g, A.cityMods(w, g));
-  check(g.res.wood <= cap + 1e-6 && g.res.wood > cap - 1, `wood should stop at the cap ${cap}, has ${g.res.wood}`);
+  const wood = g.res.wood, t1 = g.at;
+  A.settle(w, g, t1 + 60 * 200);
+  check(Math.abs(g.res.wood - wood - prod.wood * 200) < 1e-3, `200 hours of wood should all arrive (${wood} + ${prod.wood * 200}, has ${g.res.wood})`);
+  // the Warehouse only keeps part of the stock safe; Logistics adds to that
+  const safe = A.protectedStock(w, g);
+  g.b.warehouse = 5; g.tech.logistics = 3; g._mv = (g._mv || 0) + 1;
+  check(A.protectedStock(w, g) > safe * 2, 'a Warehouse and Logistics keep more safe');
 });
 await test('troops eat food; when it runs out soldiers desert', () => {
   const w = fresh();
@@ -204,12 +208,14 @@ await test('research needs the Academy level and earlier technologies', () => {
   g.tech.agri = 3;
   check(!A.researchCheck(w, g, 'agri').allowed, 'a technology cannot pass the Academy level');
 });
-await test('training: batch limit, cost, completion; healing returns wounded troops', () => {
+await test('training: any number you can pay for, cost, completion; healing returns wounded troops', () => {
   const w = fresh();
   const g = w.govs[P];
   g.res = { food: 1e6, wood: 1e6, stone: 1e6, iron: 1e6, gold: 1e6 };
-  const max = A.trainBatch(g.b.barracks);
-  check(!cmd(w, { type: 'train', unit: 'inf', n: max + 1 }).ok, 'over the batch limit');
+  // no limit on how many at once: a big batch is refused only when the stock cannot pay for it, and takes longer
+  const big = A.trainCheck(w, g, 'inf', 20000), small = A.trainCheck(w, g, 'inf', 100);
+  check(big.ok && big.minutes > small.minutes * 100, `20,000 infantry at Barracks 1: ${JSON.stringify(big)}`);
+  check(!A.trainCheck(w, g, 'inf', 200000).ok, 'trained more than the stock pays for');
   check(!cmd(w, { type: 'train', unit: 'cav', n: 10 }).ok, 'no stables yet');
   check(!cmd(w, { type: 'train', unit: 'inf', n: -5 }).ok, 'negative count');
   const inf = g.troops.inf;
@@ -689,10 +695,11 @@ await test('a full crate gives an hour of output once, then refills after four h
   check(!cmd(w, { type: 'collect', id: 'farm' }).ok, 'refilled early');
   A.advance(w, 5);
   check(cmd(w, { type: 'collect', id: 'farm' }).ok, 'did not refill after four hours');
+  // there is no storage limit: a crate goes in however much is in stock
   A.advance(w, A.CRATE.every);
   A.settle(w, g, w.t);
-  g.res.food = A.storage(w, g, A.cityMods(w, g));
-  check(!cmd(w, { type: 'collect', id: 'farm' }).ok, 'collected into full storage');
+  g.res.food = 5e7;
+  check(cmd(w, { type: 'collect', id: 'farm' }).ok && g.res.food > 5e7, 'a crate was refused into a big stock');
 });
 await test('AI governors collect their crates and finish queues free too', () => {
   const w = world(202);

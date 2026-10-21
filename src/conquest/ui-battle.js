@@ -12,6 +12,20 @@ const COL = { a: '#c0463c', d: '#3f68b8' };
 const FIGS = 34;     // soldiers drawn per side at full strength
 const ROWS = 5;
 
+// painted soldier frames (art/sprites): how many of each, and how wide each type is drawn at scale 1
+const FRAMES = { inf: { walk: 6, attack: [1, 3, 4, 5], fall: 3 }, cav: { walk: 6, attack: [1, 2, 3, 4], fall: 3 }, arc: { walk: 6, attack: [3, 4], fall: 3 }, sie: { walk: 4, attack: [3], fall: 2 } };
+const PW = { inf: 30, cav: 40, arc: 28, sie: 40 };
+function paintFrame(f, t, alive, fighting) {
+  const F = FRAMES[f.u];
+  if (!alive) return `${f.u}-fall-${Math.min(F.fall, 1 + Math.floor((t - f.dead) / 140))}`;
+  if (fighting) {
+    // archers and siege engines loose their shots now and then; the melee swings in a loop
+    if (f.u === 'sie') return Math.floor(t / 600 + f.seed) % 3 === 0 ? 'sie-attack-3' : 'sie-walk-4';
+    if (f.u === 'arc') return Math.floor(t / 260 + f.seed) % 3 === 0 ? 'arc-walk-1' : `arc-attack-${F.attack[Math.floor(t / 260 + f.seed) % 2]}`;
+    return `${f.u}-attack-${F.attack[Math.floor(t / 150 + f.seed) % F.attack.length]}`;
+  }
+  return `${f.u}-walk-${1 + Math.floor(t / 110 + f.seed) % F.walk}`;
+}
 function layout(units, side) {
   const tot = A.troopsTotal(units) || 1;
   const order = ['inf', 'cav', 'arc', 'sie'];
@@ -142,14 +156,24 @@ U.battleScene = r => {
       const alive = f.dead < 0;
       const fleeing = t > TFLEE - 300 && f.side === loser;
       const [x, y, k] = figPos(f, alive ? t : f.dead, alive, fleeing);
-      const frame = alive ? Math.floor(t / 180 + f.seed) % 2 : 0;
-      const spr = ART.soldier(f.u, COL[f.side], frame, 1);
-      g.save();
-      g.translate(x, y);
-      if (f.side === 'd' ? !fleeing || !alive : fleeing && alive) g.scale(-1, 1);
-      if (!alive) { const fall = Math.min(1, (t - f.dead) / 300); g.globalAlpha = 1 - 0.55 * fall; g.rotate((f.side === 'a' ? -1 : 1) * fall * 1.45); }
-      ART.put(g, spr, 0, 0, 15, 26, k);
-      g.restore();
+      const flip = f.side === 'd' ? !fleeing || !alive : fleeing && alive;
+      // painted soldiers: walking in, fighting while the lines are engaged, falling when they die
+      const fighting = alive && !fleeing && t > T0 && t < TEND + 400;
+      const pn = paintFrame(f, t, alive, fighting);
+      g.fillStyle = COL[f.side]; g.globalAlpha = alive ? 0.5 : 0.25; g.beginPath(); g.ellipse(x, y, 7 * k, 2.4 * k, 0, 0, 7); g.fill(); g.globalAlpha = 1;
+      if (!alive) g.globalAlpha = 1 - 0.45 * Math.min(1, (t - f.dead) / 900);
+      const drawn = pn && ART.paint(g, pn, x, y + 1 * k, PW[f.u] * k, flip);
+      g.globalAlpha = 1;
+      if (!drawn) {
+        const frame = alive ? Math.floor(t / 180 + f.seed) % 2 : 0;
+        const spr = ART.soldier(f.u, COL[f.side], frame, 1);
+        g.save();
+        g.translate(x, y);
+        if (flip) g.scale(-1, 1);
+        if (!alive) { const fall = Math.min(1, (t - f.dead) / 300); g.globalAlpha = 1 - 0.55 * fall; g.rotate((f.side === 'a' ? -1 : 1) * fall * 1.45); }
+        ART.put(g, spr, 0, 0, 15, 26, k);
+        g.restore();
+      }
     }
     // arrows and stones
     if (t > T0 && t < TEND) {
@@ -216,6 +240,14 @@ U.battleScene = r => {
       const u = Math.min(1, (t - TEND - 300) / 400);
       const bw = Math.min(W * 0.8, 300), bh = 50, bx = W / 2 - bw / 2, by = Hh * 0.36 - (1 - u) * 20;
       g.globalAlpha = u;
+      const banner = won ? 'banner-victory' : 'banner-defeat';
+      let ly = by + bh + 4;
+      if (ART.painted(banner) && ART.pimg(banner)) {
+        // the painted banner hangs over the field; the loot sits under it
+        const bwid = Math.min(W * 0.3, Hh * 0.42, 120);
+        ART.paint(g, banner, W / 2, by + bh + 6, bwid);
+        ly = by + bh + 10;
+      } else {
       const rib = g.createLinearGradient(0, by, 0, by + bh);
       if (won) { rib.addColorStop(0, '#f6d58e'); rib.addColorStop(0.5, '#d9993f'); rib.addColorStop(1, '#8a5a1e'); } else { rib.addColorStop(0, '#d8564a'); rib.addColorStop(0.5, '#8a2420'); rib.addColorStop(1, '#4a0e0e'); }
       g.fillStyle = rib;
@@ -224,16 +256,17 @@ U.battleScene = r => {
       g.font = '800 28px "Lilita One", "Arial Black", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillStyle = won ? '#2a1606' : '#fff0e8';
       g.fillText(won ? (view === 'd' ? 'DEFENDED' : 'VICTORY') : 'DEFEAT', W / 2, by + bh / 2 + 1);
+      }
       const loot = r.extra?.plunder;
       if (loot && t > TEND + 700) {
         const items = Object.entries(loot).filter(([, v]) => v > 0);
         const step = Math.min(68, (W - 20) / Math.max(1, items.length));
         let x = W / 2 - items.length * step / 2;
         g.fillStyle = 'rgba(12,9,7,.82)'; g.beginPath();
-        if (g.roundRect) g.roundRect(x - 6, by + bh + 4, items.length * step + 8, 26, 13); else g.rect(x - 6, by + bh + 4, items.length * step + 8, 26);
+        if (g.roundRect) g.roundRect(x - 6, ly, items.length * step + 8, 26, 13); else g.rect(x - 6, ly, items.length * step + 8, 26);
         g.fill();
         g.font = '800 12px Barlow, sans-serif';
-        for (const [res2, v] of items) { ART.put(g, U.iconCanvas(res2), x, by + bh + 8, 0, 0, 0.8); g.textAlign = 'left'; g.fillStyle = '#fff4e0'; g.fillText(`${view === 'a' ? '+' : '-'}${fmt(v)}`, x + 20, by + bh + 18); x += step; }
+        for (const [res2, v] of items) { if (!ART.paint(g, 'icon-' + res2, x + 8, ly + 22, 18)) ART.put(g, U.iconCanvas(res2), x, ly + 4, 0, 0, 0.8); g.textAlign = 'left'; g.fillStyle = '#fff4e0'; g.fillText(`${view === 'a' ? '+' : '-'}${fmt(v)}`, x + 20, ly + 14); x += step; }
       }
       g.globalAlpha = 1;
     }

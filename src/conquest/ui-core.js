@@ -237,8 +237,8 @@ U.toast = (text, kind = 'info') => {
 U.reward = (items, title = 'Reward') => new Promise(res => {
   const list = Object.entries(items || {}).filter(([, v]) => v > 0);
   const wrap = el(`<div class="aoc-reward" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="aoc-scrim"></div>
-    <div class="aoc-reward-card" tabindex="-1"><div class="aoc-reward-rays" aria-hidden="true"></div><div class="aoc-reward-title">${esc(title)}</div>
-      <div class="aoc-reward-grid">${list.map(([r, v]) => `<div class="aoc-reward-item"><span class="aoc-tile">${U.icon(r, 40)}<b>${fmt(v)}</b></span><span class="aoc-reward-name">${esc(A.RES_NAME[r] || r)}</span></div>`).join('')}</div>
+    <div class="aoc-reward-card" tabindex="-1"><div class="aoc-reward-rays" aria-hidden="true"></div>${U.art?.pmeta('chest-2') ? `<img class="aoc-reward-chest" src="${U.art.pmeta('chest-2').src}" alt="" width="96" height="90">` : ''}<div class="aoc-reward-title">${esc(title)}</div>
+      <div class="aoc-reward-grid">${list.map(([r, v]) => `<div class="aoc-reward-item"><span class="aoc-tile">${U.resIcon(r, 40)}<b>${fmt(v)}</b></span><span class="aoc-reward-name">${esc(A.RES_NAME[r] || r)}</span></div>`).join('')}</div>
       <button type="button" class="aoc-btn gold wide aoc-reward-ok">OK</button></div></div>`);
   const done = () => { wrap.remove(); res(); };
   wrap.querySelector('.aoc-reward-ok').addEventListener('click', done);
@@ -247,6 +247,8 @@ U.reward = (items, title = 'Reward') => new Promise(res => {
   try { wrap.querySelector('.aoc-reward-ok').focus({ preventScroll: true }); } catch (e) { /* ignore */ }
 });
 U.layer = () => document.getElementById('aoc-layer') || document.body;
+// the avatar redraws once the commander paintings have loaded
+window.addEventListener('aoc-art', () => { const p = document.querySelector('.aoc-me-pic'); if (p) p._civ = null; });
 U.reduced = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 // ================================================================ saves: IndexedDB with gzip, browser storage as a fallback
@@ -472,7 +474,6 @@ function updateShell(f) {
   root.querySelectorAll('.aoc-chip').forEach(b => {
     const r = b.dataset.res;
     setText(b.querySelector('.aoc-chip-v'), fmt(P.res[r]));
-    b.classList.toggle('is-full', P.res[r] >= P.cap && r !== 'gold');
   });
   setText(root.querySelector('.aoc-power-v'), fmt(P.power));
   setText(root.querySelector('.aoc-me-lv'), String(P.b.hall));
@@ -495,10 +496,10 @@ function resSheet(r) {
       <div><span>In stock</span><b>${full(P.res[r])}</b></div>
       <div><span>Production</span><b>${full(P.prod[r])} per hour</b></div>
       ${r === 'food' ? `<div><span>Troops eat</span><b>${full(P.upkeep)} per hour</b></div><div><span>Net</span><b class="${net < 0 ? 'aoc-bad' : 'aoc-good'}">${net < 0 ? '' : '+'}${full(net)} per hour</b></div>` : ''}
-      <div><span>Storage</span><b>${full(P.cap)}</b></div>
+      <div><span>Storage</span><b>No limit</b></div>
       <div><span>Safe from plunder</span><b>${full(P.protect)}</b></div>
     </div>
-    <p class="aoc-p aoc-muted">One game hour passes every real minute at 1x speed. Production stops at the storage limit; plunder and gathering can go past it.${r === 'food' && net < 0 ? ' Your troops eat more than you grow: when Food runs out, soldiers desert.' : ''}</p>`,
+    <p class="aoc-p aoc-muted">One game hour passes every real minute at 1x speed. There is no storage limit: production never stops. The Warehouse keeps part of your stock safe from plunder.${r === 'food' && net < 0 ? ' Your troops eat more than you grow: when Food runs out, soldiers desert.' : ''}</p>`,
   });
 }
 

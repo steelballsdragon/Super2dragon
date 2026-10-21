@@ -60,7 +60,7 @@ function aiEconomy(w, g, opening) {
   const A = ARCHETYPES[g.arch];
   const m = cityMods(w, g);
   const prod = production(w, g, m);
-  const cap = storage(w, g, m);
+  const safe = protectedStock(w, g, m);
   const net = prod.food - upkeepPerHour(g);
   // building
   if (!g.q.build) {
@@ -76,7 +76,7 @@ function aiEconomy(w, g, opening) {
       if (id !== 'hall') u *= 1 + (g.b.hall - L) / Math.max(1, g.b.hall);
       if (reqBoost[id]) u += reqBoost[id];
       if (id === 'farm' && net < prod.food * 0.15) u *= 3;
-      if (id === 'warehouse' && RES.some(r => g.res[r] > cap * 0.85)) u *= 3;
+      if (id === 'warehouse' && RES.some(r => g.res[r] > safe * 2)) u *= 2.5;
       if (['barracks', 'stables', 'range'].includes(id)) u *= 0.6 + g.t.agg;
       if (id === 'workshop') u *= g.arch === 'rallylead' || g.role === 'leader' || g.role === 'officer' ? 2 : 0.6;
       if (id === 'wall' || id === 'tower') u *= g.st === 'defend' || g.stats.sacked ? 2 : 1;
@@ -134,7 +134,7 @@ function aiEconomy(w, g, opening) {
       // food: new troops may use up to 80% of the remaining surplus
       const surplus = prod.food - upkeepPerHour(g);
       const foodRoom = Math.max(0, Math.floor(surplus * 0.8 / UNITS[u].upkeep));
-      let n = Math.min(Math.round(want), trainBatch(g.b[UNITS[u].building]), foodRoom);
+      let n = Math.min(Math.round(want), foodRoom);
       for (const r in UNITS[u].cost) n = Math.min(n, Math.floor(g.res[r] * 0.6 / UNITS[u].cost[r]));
       if (n >= 30) actTrain(w, g, u, n);
     }
@@ -284,9 +284,10 @@ function aiMilitary(w, g) {
     const army = pickArmy(w, g, 0.25 + g.t.greed * 0.25, null);
     if (army) {
       const m = cityMods(w, g);
-      const cap = storage(w, g, m);
+      // the resource with the fewest hours of production in stock
+      const prod = production(w, g, m);
       let need = 'food', nv = Infinity;
-      for (const r of RES) { const v = g.res[r] / cap * RES_VALUE[r]; if (v < nv) { nv = v; need = r; } }
+      for (const r of RES) { const v = g.res[r] / Math.max(1, prod[r]); if (v < nv) { nv = v; need = r; } }
       const enemyTerr = new Set();
       if (g.guild >= 0) for (const k in w.guilds[g.guild].treaties) if (w.guilds[g.guild].treaties[k].k === 'war') enemyTerr.add(Number(k) + 1);
       let best = null, bd = Infinity;

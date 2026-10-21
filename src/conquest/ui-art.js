@@ -40,6 +40,72 @@ function sprite(key, w, h, draw) {
   if (cache.size > 700) cache.delete(cache.keys().next().value);
   return c;
 }
+// ================================================================ painted art
+// Pictures cut from the art sheets (art/sheets, cut by tools/art/cut.py), inlined by the build as
+// window.AOC_ART = { name: { src, w, h, fx, fy } } where (fx, fy) is the foot point. The pictures drawn in code below
+// stay as the fallback until a painting has loaded, and for anything without one.
+const PAINT = window.AOC_ART || {};
+const pimgs = new Map();
+let paintPing = 0;
+function pimage(name) {
+  const m = PAINT[name];
+  if (!m) return null;
+  let im = pimgs.get(name);
+  if (!im) {
+    im = new Image();
+    im.decoding = 'async';
+    // screens redraw once a batch of paintings has arrived
+    im.onload = () => { if (!paintPing) paintPing = setTimeout(() => { paintPing = 0; window.dispatchEvent(new Event('aoc-art')); }, 80); };
+    im.src = m.src;
+    pimgs.set(name, im);
+  }
+  return im.complete && im.naturalWidth ? im : null;
+}
+ART.painted = name => !!PAINT[name];
+ART.pimg = pimage;
+ART.pmeta = name => PAINT[name] || null;
+// draw a painting with its foot point at (x, y), w pixels wide (mirrored when flip); false while it is not ready
+ART.paint = (g, name, x, y, w, flip) => {
+  const im = pimage(name), m = PAINT[name];
+  if (!im) return false;
+  const k = w / m.w;
+  if (flip) { g.save(); g.translate(x, y); g.scale(-1, 1); g.drawImage(im, -m.fx * k, -m.fy * k, m.w * k, m.h * k); g.restore(); }
+  else g.drawImage(im, x - m.fx * k, y - m.fy * k, m.w * k, m.h * k);
+  return true;
+};
+// the height a painting has when drawn w pixels wide
+ART.paintH = (name, w) => { const m = PAINT[name]; return m ? m.h * w / m.w : 0; };
+// the painted resource icons in the interface (top bar, costs, rewards): a CSS class each, so every image is in the
+// page once however many costs are shown
+{
+  const res = ['food', 'wood', 'stone', 'iron', 'gold'].filter(r => PAINT['icon-' + r]);
+  if (res.length) {
+    const st = document.createElement('style');
+    st.textContent = '.aico-p{display:inline-block;background:center/contain no-repeat;vertical-align:-4px;flex:none}' + res.map(r => `.aico-p-${r}{background-image:url(${PAINT['icon-' + r].src})}`).join('');
+    document.head.appendChild(st);
+    const drawn = U.resIcon;
+    U.resIcon = (r, s = 16) => (res.includes(r) ? `<i class="aico aico-p aico-p-${r}" style="width:${s}px;height:${s}px" aria-hidden="true"></i>` : drawn(r, s));
+  }
+}
+// the commanders with paintings: a CSS class each for portraits in lists and sheets
+{
+  const heroes = Object.keys(PAINT).filter(n => n.startsWith('hero-'));
+  if (heroes.length) {
+    const st = document.createElement('style');
+    st.textContent = heroes.map(n => `.aoc-por-${n.slice(5)}{background-image:url(${PAINT[n].src})}`).join('');
+    document.head.appendChild(st);
+  }
+  // a portrait cut from the top of the painting, s pixels square; null when the commander has no painting
+  ART.heroPortrait = (cmdId, s, frame) => {
+    const m = PAINT['hero-' + cmdId];
+    if (!m) return null;
+    const side = Math.min(m.w, m.h * 0.62), k = s / side;
+    return `<span class="aoc-por aoc-por-p aoc-por-${cmdId}" style="width:${s}px;height:${s}px;background-size:${(m.w * k).toFixed(1)}px auto;background-position:${(-(m.w - side) / 2 * k).toFixed(1)}px 0;border-color:${frame}" aria-hidden="true"></span>`;
+  };
+}
+// decode every painting in the background, so the first screens do not wait for them
+setTimeout(() => { for (const n in PAINT) pimage(n); }, 30);
+
 // draw a sprite with its anchor (ax, ay, in sprite pixels) at x, y
 ART.put = (g, c, x, y, ax = 0, ay = 0, k = 1) => g.drawImage(c, x - ax * k, y - ay * k, c.sw * k, c.sh * k);
 ART.shade = shade; ART.mix = mix; ART.sprite = sprite;
@@ -157,7 +223,33 @@ function roofFor(g, b, civ, rh, col) {
 ART.FOOT = { hall: 3, academy: 2, market: 2, warehouse: 2, barracks: 2, stables: 2, range: 2, workshop: 2, hospital: 2, tower: 2, farm: 2, lumber: 2, quarry: 2, mine: 2, wall: 0 };
 const PAD = 14;
 // a building sprite: returns { c: canvas, ox, oy } where (ox, oy) is the footprint's top corner inside the canvas
+// which painting stands on a plot at a level: [highest level, painting] stages, or one painting for every level
+const PAINT_STAGES = {
+  hall: [[2, 'hall-1'], [4, 'hall-2'], [7, 'hall-3'], [10, 'hall-4'], [13, 'hall-5'], [17, 'hall-6'], [21, 'hall-7'], [99, 'hall-8']],
+  farm: [[5, 'farm-1'], [12, 'farm-2'], [19, 'farm-3'], [99, 'farm-4']],
+  barracks: [[5, 'barracks-1'], [12, 'barracks-2'], [19, 'barracks-3'], [99, 'barracks-4']],
+  tower: [[8, 'tower-1'], [16, 'tower-2'], [99, 'tower-3']],
+  lumber: 'lumber', quarry: 'quarry', mine: 'mine', market: 'market', warehouse: 'warehouse', stables: 'stables', range: 'range',
+  workshop: 'workshop', academy: 'academy', hospital: 'hospital',
+};
+// how wide a painting is drawn, as a share of its plot's width (towers are narrower than their plot)
+const PAINT_FILL = { 'hall-1': 0.42, 'hall-2': 0.4, 'tower-1': 0.46, 'tower-2': 0.36, 'tower-3': 0.46, hospital: 0.78, warehouse: 0.9, academy: 1.05, 'hall-8': 1.08, 'hall-7': 1.08 };
+ART.paintFor = (type, level) => {
+  const st = PAINT_STAGES[type];
+  if (!st || level <= 0) return null;
+  const name = typeof st === 'string' ? st : st.find(([L]) => level <= L)[1];
+  return PAINT[name] ? name : null;
+};
+function paintedBuilding(type, name) {
+  const f = ART.FOOT[type] || 2, m = PAINT[name];
+  const k = f * TW * (PAINT_FILL[name] || 1) / m.w;
+  const c = sprite(`pb:${name}:${f}`, m.w * k, m.h * k, g => g.drawImage(pimage(name), 0, 0, m.w * k, m.h * k));
+  // the painting's foot point stands on the plot's bottom corner; (ox, oy) is the plot's top corner in the canvas
+  return { c, ox: m.fx * k, oy: m.fy * k - f * TH, w: m.w * k, h: m.h * k };
+}
 ART.building = (type, civId, level, opts = {}) => {
+  const pn = ART.paintFor(type, level);
+  if (pn && pimage(pn)) return paintedBuilding(type, pn);
   const f = ART.FOOT[type] || 2;
   const tier = level <= 0 ? 0 : Math.min(5, 1 + Math.floor(level / 5));
   const maxH = 150;
@@ -594,8 +686,25 @@ ART.clash = (g, x, y, r, t) => {
   g.beginPath(); g.moveTo(-r * 0.5, -r * 0.5); g.lineTo(r * 0.5, r * 0.5); g.moveTo(r * 0.5, -r * 0.5); g.lineTo(-r * 0.5, r * 0.5); g.stroke();
   g.restore();
 };
-// a commander portrait as a canvas (for the battle scene)
-ART.portrait = (cmdId, size) => sprite(`por:${cmdId}:${size}`, size, size, g => {
+// a commander portrait as a canvas (for the battle scene): the painting's upper part when the commander has one
+ART.portrait = (cmdId, size) => {
+  const name = 'hero-' + cmdId, im = pimage(name);
+  if (im) {
+    const m = PAINT[name];
+    return sprite(`porp:${cmdId}:${size}`, size, size, g => {
+      const c = A.CMD[cmdId];
+      const gr = g.createLinearGradient(0, 0, 0, size);
+      gr.addColorStop(0, '#2a3f5f'); gr.addColorStop(1, '#0d1a2c');
+      g.fillStyle = gr; g.fillRect(0, 0, size, size);
+      // a square from the top of the figure, wide enough for a rider
+      const side = Math.min(m.w, m.h * 0.62), sx = (m.w - side) / 2;
+      g.drawImage(im, sx, 0, side, side, 0, 0, size, size);
+      g.strokeStyle = c?.rarity === 'legendary' ? '#e2b04a' : '#a07ad0'; g.lineWidth = Math.max(1.5, size / 16); g.strokeRect(0.75, 0.75, size - 1.5, size - 1.5);
+    });
+  }
+  return drawnPortrait(cmdId, size);
+};
+const drawnPortrait = (cmdId, size) => sprite(`por:${cmdId}:${size}`, size, size, g => {
   const c = A.CMD[cmdId]; const civ = A.CIV[c?.civ] || A.CIVS[0];
   const s = size / 48;
   g.scale(s, s);

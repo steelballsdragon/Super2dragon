@@ -12,7 +12,7 @@ function techMods(g) {
   const t = g.tech, m = {};
   const lv = id => t[id] || 0;
   m.food = lv('agri') * 0.05; m.wood = lv('forestry') * 0.05; m.stone = lv('masonry') * 0.04; m.buildSpeed = lv('masonry') * 0.03;
-  m.iron = lv('metal') * 0.05; m.gold = lv('trade') * 0.06; m.tradeFee = -lv('trade') * 0.02; m.storage = lv('logistics') * 0.08; m.load = lv('logistics') * 0.05;
+  m.iron = lv('metal') * 0.05; m.gold = lv('trade') * 0.06; m.tradeFee = -lv('trade') * 0.02; m.protect = lv('logistics') * 0.08; m.load = lv('logistics') * 0.05;
   m.infAtk = m.infDef = lv('drill') * 0.03; m.cavAtk = m.cavDef = lv('horse') * 0.03; m.arcAtk = m.arcDef = lv('archery') * 0.03; m.sieAtk = lv('siegecraft') * 0.05;
   m.capacity = lv('formations') * 0.06; m.heal = lv('medicine') * 0.06; m.hospital = lv('medicine') * 0.05;
   m.scoutAcc = lv('scouting') * 0.08; m.scoutSpeed = lv('scouting') * 0.05; m.counter = lv('counter') * 0.06; m.speed = lv('carto') * 0.03;
@@ -95,7 +95,8 @@ function computeCityMods(w, g) {
 }
 
 // ================================================================ economy
-function storage(w, g, m) { return Math.round(storageCap(g.b.warehouse || 0, g.b.hall) * (1 + (m.storage || 0))); }
+// there is no storage limit: the Warehouse (and Logistics) only keep part of the stock safe from plunder
+function protectedStock(w, g, m) { return Math.round(protectedAmount(g.b.warehouse || 0) * (1 + ((m || cityMods(w, g)).protect || 0))); }
 function troopsTotal(t) { return (t.inf || 0) + (t.cav || 0) + (t.arc || 0) + (t.sie || 0); }
 function upkeepPerHour(g) {
   let u = 0;
@@ -132,12 +133,9 @@ function settle(w, g, now) {
   if (dt <= 0) { g.at = Math.max(g.at, now); return; }
   const m = cityMods(w, g);
   const prod = production(w, g, m);
-  const cap = storage(w, g, m);
   const up = upkeepPerHour(g);
   for (const r of RES) {
-    let v = g.res[r];
-    const add = prod[r] * dt;
-    if (v < cap) v = Math.min(cap, v + add);
+    let v = g.res[r] + prod[r] * dt;
     if (r === 'food') v -= up * dt;
     g.res[r] = v;
   }
@@ -163,12 +161,10 @@ function projectRes(w, g, now) {
   const dt = Math.max(0, (now - g.at) / 60);
   const m = cityMods(w, g);
   const prod = production(w, g, m);
-  const cap = storage(w, g, m);
   const up = upkeepPerHour(g);
   const out = {};
   for (const r of RES) {
-    let v = g.res[r];
-    if (v < cap) v = Math.min(cap, v + prod[r] * dt);
+    let v = g.res[r] + prod[r] * dt;
     if (r === 'food') v = Math.max(0, v - up * dt);
     out[r] = v;
   }
