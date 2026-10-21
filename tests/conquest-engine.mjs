@@ -261,6 +261,11 @@ await test('the kingdom: six Zone 1 regions, three in Zone 2 and the heartland, 
   A.REGIONS.forEach((r, k) => check(r.zone === zones[k] && A.zoneOfRegion(k) === zones[k], `region ${r.name} is in the wrong zone`));
   const passes = w.marks.filter(m => m.kind === 'pass');
   check(passes.length === 15, `expected 15 passes, found ${passes.length}`);
+  // every landmark is placed on every map (these seeds once lost one)
+  for (const seed of [101, 3189639203, 591706100, 1605610326]) {
+    const c = A.createWorld({ seed, name: 'x' }).marks.reduce((o, m) => (o[m.kind] = (o[m.kind] || 0) + 1, o), {});
+    check(c.capital === 1 && c.pass === 15 && c.site === 27 && c.ruin === 18, `seed ${seed}: ${JSON.stringify(c)}`);
+  }
   check([1, 2, 3].map(l => passes.filter(m => m.tier === l).length).join() === '6,6,3', 'six level 1, six level 2 and three level 3 passes');
   for (const m of passes) {
     const [ra, rb] = m.links;

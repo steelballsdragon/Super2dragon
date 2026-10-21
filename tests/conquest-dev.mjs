@@ -71,8 +71,9 @@ await step('developer mode is off and hidden by default', async () => {
   const r = await page.evaluate(() => window.AOCUI.host.cmd({ type: 'dev:res' }));
   check(!r.ok, 'a developer command worked without developer mode');
   check(await page.evaluate(() => window.AOCUI.host.cmd({ type: 'dev:unlimited', on: true }).then(x => x.ok)) === false, 'the unlimited switch worked without developer mode');
+  const s0 = await page.evaluate(() => window.AOCUI.lastSave || 0);
   await page.evaluate(() => window.AOCUI.host.post({ type: 'save' }));
-  await page.waitForFunction(() => window.AOCUI.saveState === 'saved', null, { timeout: 8000 });
+  await page.waitForFunction(s0 => window.AOCUI.saveState === 'saved' && window.AOCUI.lastSave > s0, s0, { timeout: 15000 });
 });
 
 await step('six taps on the logo do nothing, seven turn it on, and it stays on after a reload', async () => {
@@ -143,7 +144,9 @@ await step('troops, every commander, the whole map, a shield and finished timers
   await page.click('[data-sw="instant"]');
   await page.waitForFunction(() => document.querySelector('[data-sw="instant"]').getAttribute('aria-checked') === 'false');
   check((await page.evaluate(() => window.AOCUI.host.cmd({ type: 'train', unit: 'cav', n: 500 }))).ok, 'training refused');
-  check(!!(await P()).q.train.cav, 'training finished at once with instant off');
+  // the queue shows in the next frame (8 game minutes of training at Stables 25); with instant on it never would
+  const queued = await page.waitForFunction(() => !!window.AOCUI.F.player.q.train.cav, null, { timeout: 4000 }).then(() => true, () => false);
+  check(queued, 'training finished at once with instant off');
   await devAct('dev:finish');
   await page.waitForFunction(() => !window.AOCUI.F.player.q.train.cav);
 });
@@ -160,8 +163,9 @@ await step('time skips move the clock and the world keeps up', async () => {
 
 await step('the switches are saved with the world and come back after a reload', async () => {
   await closeSheets();
+  const s0 = await page.evaluate(() => window.AOCUI.lastSave || 0);
   await page.evaluate(() => window.AOCUI.host.post({ type: 'save' }));
-  await page.waitForFunction(() => window.AOCUI.saveState === 'saved' && Date.now() - window.AOCUI.lastSave < 4000, null, { timeout: 8000 });
+  await page.waitForFunction(s0 => window.AOCUI.saveState === 'saved' && window.AOCUI.lastSave > s0, s0, { timeout: 15000 });
   await page.reload();
   await page.click('#aoc-continue');
   await page.waitForFunction(() => window.AOCUI.F && window.AOCUI.current === 'city', null, { timeout: 30000 });

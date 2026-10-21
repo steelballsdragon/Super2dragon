@@ -305,8 +305,10 @@ await step('history and rankings: the chronicle, the real population and the sim
 
 await step('the world is saved, survives a reload, and continues', async () => {
   const before = await F();
+  // wait for this save to be stored, not an earlier autosave
+  const s0 = await page.evaluate(() => window.AOCUI.lastSave || 0);
   await page.evaluate(() => window.AOCUI.host.post({ type: 'save' }));
-  await page.waitForFunction(() => window.AOCUI.saveState === 'saved' && Date.now() - window.AOCUI.lastSave < 5000, null, { timeout: 8000 });
+  await page.waitForFunction(s0 => window.AOCUI.saveState === 'saved' && window.AOCUI.lastSave > s0, s0, { timeout: 15000 });
   await page.reload();
   await page.waitForSelector('#aoc-continue:not([hidden])');
   check((await page.locator('.aoc-savecard').textContent()).includes('Uitest'), 'save card does not show the governor');

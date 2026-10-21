@@ -57,8 +57,10 @@ async function found(name) {
   await page.evaluate(() => window.AOCUI.closeSheets());
 }
 async function saveNow() {
+  // wait for this save to be stored, not an earlier autosave
+  const s0 = await page.evaluate(() => window.AOCUI.lastSave || 0);
   await page.evaluate(() => window.AOCUI.host.post({ type: 'save' }));
-  await page.waitForFunction(() => window.AOCUI.saveState === 'saved' && Date.now() - window.AOCUI.lastSave < 4000, null, { timeout: 8000 });
+  await page.waitForFunction(s0 => window.AOCUI.saveState === 'saved' && window.AOCUI.lastSave > s0, s0, { timeout: 15000 });
 }
 // write a record straight into the game's IndexedDB store
 const putRecord = (key, text) => page.evaluate(([k, t]) => new Promise((res, rej) => {

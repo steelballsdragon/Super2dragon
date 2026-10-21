@@ -94,19 +94,23 @@ function placeLandmarks(w) {
     w.map.occ[idx(m.x, m.y)] = OCC_MARK + m.id;
     return m;
   };
-  // the nearest free tile of the region, away from the ranges and from other landmarks
+  // the nearest free tile of the region, away from the ranges and from other landmarks; the search widens and
+  // the spacing relaxes until a tile is found, so every landmark is always placed
   const put = (kind, name, x, y, extra) => {
-    let best = null, bd = Infinity;
-    for (let dy = -16; dy <= 16; dy++) for (let dx = -16; dx <= 16; dx++) {
-      const nx = x + dx, ny = y + dy, d = Math.abs(dx) + Math.abs(dy);
-      if (d >= bd || !inMap(nx, ny) || nx < 5 || ny < 5 || nx > N - 6 || ny > N - 6) continue;
-      const i = idx(nx, ny);
-      const t = w.map.ter[i];
-      if (!passable(w, i) || t === T.ford || t === T.pass || w.map.occ[i] || w.map.reg[i] !== extra.region) continue;
-      if (wallNear(w, nx, ny, 4) || w.marks.some(m => dist(m.x, m.y, nx, ny) < 9)) continue;
-      bd = d; best = [nx, ny];
+    for (const [R, wall, gap] of [[16, 4, 9], [30, 3, 7], [60, 2, 5], [N, 1, 3]]) {
+      let best = null, bd = Infinity;
+      for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) {
+        const nx = x + dx, ny = y + dy, d = Math.abs(dx) + Math.abs(dy);
+        if (d >= bd || !inMap(nx, ny) || nx < 5 || ny < 5 || nx > N - 6 || ny > N - 6) continue;
+        const i = idx(nx, ny);
+        const t = w.map.ter[i];
+        if (!passable(w, i) || t === T.ford || t === T.pass || w.map.occ[i] || w.map.reg[i] !== extra.region) continue;
+        if (wallNear(w, nx, ny, wall) || w.marks.some(m => dist(m.x, m.y, nx, ny) < gap)) continue;
+        bd = d; best = [nx, ny];
+      }
+      if (best) return add(kind, name, best[0], best[1], extra);
     }
-    return best ? add(kind, name, best[0], best[1], extra) : null;
+    return null;
   };
   const at = (a, r) => [Math.round(CX + Math.cos(a) * r), Math.round(CY + Math.sin(a) * r)];
   const shuffled = arr => { const o = arr.slice(); for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; } return o; };

@@ -20,6 +20,10 @@ const mb = b => Math.round(b / 1048576 * 10) / 10;
 global.gc?.();
 const heap0 = process.memoryUsage().heapUsed;
 let t0 = performance.now();
+A.generateTerrain(424242);
+out.terrainMs = Math.round(ms(t0));
+out.map = { tiles: A.MAP_N, regions: A.REGIONS.length };
+t0 = performance.now();
 const worlds = [1, 2, 3].map(s => A.createWorld({ seed: 9000 + s, name: 'Bench' }));
 out.createMs = Math.round(ms(t0) / 3);
 const w = worlds[0];
@@ -68,9 +72,10 @@ w._pathCache = new Map();
 const e0 = A.PF.expanded;
 t0 = performance.now();
 let n = 0, len = 0;
-for (let k = 0; k < 300; k++) { const a = w.govs[(k * 7) % 600], b = w.govs[(k * 13 + 5) % 600]; const p = A.findPath(w, A.idx(a.x, a.y), A.idx(b.x, b.y)); if (p) { n++; len += p.length; } }
+// between any two cities with every pass open: most of these cross several regions
+for (let k = 0; k < 300; k++) { const a = w.govs[(k * 7) % 600], b = w.govs[(k * 13 + 5) % 600]; const p = A.findPath(w, A.idx(a.x, a.y), A.idx(b.x, b.y), A.ALL_GATES); if (p) { n++; len += p.length; } }
 const pt = ms(t0);
-out.path = { searches: 300, avgTiles: Math.round(len / n), avgMs: Math.round(pt / 300 * 100) / 100, expandedPerSearch: Math.round((A.PF.expanded - e0) / 300) };
+out.path = { searches: 300, found: n, avgTiles: Math.round(len / n), avgMs: Math.round(pt / 300 * 100) / 100, expandedPerSearch: Math.round((A.PF.expanded - e0) / 300) };
 
 // in the browser: worker round trips and the top speed the worker sustains
 const require = createRequire(import.meta.url);
@@ -82,7 +87,6 @@ if (chromium) {
   await page.route(/fonts\.(googleapis|gstatic)\.com/, x => x.abort());
   await page.addInitScript(() => { try { localStorage.setItem('last-furnace-dev', '1'); } catch (e) { /* ignore */ } });
   await page.goto(pathToFileURL(join(HERE, '..', 'dist', 'index.html')).href);
-  await page.click('#start-mode-conquest');
   await page.click('#aoc-new');
   const tc = Date.now();
   await page.click('#aoc-found');

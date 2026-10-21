@@ -1,12 +1,12 @@
 # Last Furnace: Age of Conquest
 
-Age of Conquest is a grand strategy game for phones and browsers. You are one of 600 governors on the Ashen Crown server; the other 599 are simulated, each with its own personality, memory, economy and army, playing by the same rules as you. Ten guilds sign pacts, betray them, form coalitions and wage war over fortresses and the Ember Throne. Build your city, scout through the fog of war, train troops, lead commanders, join or found a guild, call rallies, and win the Age by holding the Throne or building the Grand Exchange. A demonstration campaign, *The Coalition War*, starts on Day 3 with one guild dominating the server.
+Age of Conquest is a grand strategy game for phones and browsers. You are one of 600 governors on the Ashen Crown server; the other 599 are simulated, each with its own personality, memory, economy and army, playing by the same rules as you. The world is a kingdom of 384 by 384 tiles laid out like a Rise of Kingdoms kingdom, and ten guilds sign pacts, betray them, form coalitions and wage war over its passes, its holy sites and the Ember Throne. Build your city, scout through the fog of war, train troops, lead commanders, join or found a guild, call rallies, and win the Age by holding the Throne or building the Grand Exchange. A demonstration campaign, *The Coalition War*, starts on Day 3 with one guild dominating the server.
 
 It looks and plays like the Last Furnace city game it replaces, a mobile strategy game:
 
 - **City**: your town is drawn as an isometric map. Every building stands on its plot with a level plate under it. Tap a building for its sheet (level, effects of the next level, requirements, cost) and **Upgrade**. Builds with 10 game minutes or less left finish **Free**. Full crates float over the farms, mills, quarries, mines and the market every 4 game hours; tap them to collect. Green arrows mark what you can upgrade right now.
 - **Chapter goals**: a banner at the bottom shows the current goal, its progress and **Go**, which takes you to the right building or place on the map. **Claim** opens the reward pop-up.
-- **World**: a painted map with castles in guild colors, fortresses, camps, fields and armies on the march. Tap a place to attack, scout, gather, reinforce or call a rally.
+- **World**: the whole kingdom on one painted map. Zone 1, the outer ring, has six regions where everyone starts; Zone 2 has three richer regions; Zone 3 is the heartland around the Ember Throne. Mountain ranges wall every region, and the only ways through are 15 passes (level 1 between Zone 1 regions, level 2 into Zone 2, level 3 into the heartland) that a guild must capture with a rally before its members and allies can march through. 27 holy sites bless every member of the guild that holds them, and bandit camps and fields grow stronger toward the centre. Unexplored land lies under clouds; zoomed out you see the ranges and the region names; the search button lists every pass and holy site. Tap a place to attack, scout, gather, reinforce or call a rally.
 - **Army, Guild, Mail, History, Ranks**: troops and commanders, guild politics and rallies, battle reports that play out with soldiers, the server's chronicle and the rankings.
 
 The simulated governors get the same conveniences: they collect their crates and finish nearly done builds free too.
@@ -25,6 +25,10 @@ Architecture, save format, feature checklist, test results, measured performance
 Every push to `main` or `claude/last-furnace-game` is tested on GitHub, and only when every test passes is `dist/` published to the `gh-pages` branch, which GitHub Pages serves at the link above.
 
 **Installing it like an app:** open the public link on the phone. On Android the start screen shows an **Install the game** button. On iPhone and iPad tap **Share**, then **Add to Home Screen**. You can also save `dist/index.html` and open it from any folder.
+
+## The new map and old worlds
+
+Worlds made before the kingdom map (on the old 128-tile map) cannot be opened by this version: the start screen explains it and offers a new world, and the old save stays on the device until you start one.
 
 ## Saving
 
@@ -75,11 +79,11 @@ node build.mjs
 node tests/all.mjs
 ```
 
-- `tests/conquest-engine.mjs` checks the rules and the simulation in Node: the 600-governor and 10-guild invariants, the economy, crates, Free finish, prerequisites, pathfinding, combat counters and replays, fog of war, guild politics, saves, offline time, victory, the developer switches, and that invalid commands are refused.
-- `tests/conquest-demo.mjs` runs the Coalition War campaign: a coalition forms against the dominant guild, the war changes the map, and the player's intervention changes the outcome.
-- `tests/conquest-ui.mjs` plays the opening of a world through the interface: the start screen, the Tap marker, the building sheet, Free finish, a crate, the chapter banner and its reward, training, an attack from the map and its battle scene, guilds, history and a reload, with the simulation in its worker and on the page, in portrait and landscape.
+- `tests/conquest-engine.mjs` checks the rules and the simulation in Node: the 600-governor and 10-guild invariants, the economy, crates, Free finish, prerequisites, the kingdom's zones, ranges and passes, holy-site blessings, pathfinding, combat counters and replays, fog of war, guild politics, saves, offline time, victory, the developer switches, and that invalid commands are refused.
+- `tests/conquest-demo.mjs` runs the Coalition War campaign: a coalition forms against the dominant guild, the war over passes and holy sites changes the map, and the player's intervention changes the outcome.
+- `tests/conquest-ui.mjs` plays the opening of a world through the interface: the start screen, the Tap marker, the building sheet, Free finish, a crate, the chapter banner and its reward, training, an attack from the map and its battle scene, the whole-kingdom view and the Find list, a pass's sheet, guilds, history and a reload, with the simulation in its worker and on the page, in portrait and landscape.
 - `tests/conquest-dev.mjs` checks the hidden 7-tap switch (six taps do nothing, it survives a reload) and every control on the Developer panel.
-- `tests/conquest-robust.mjs` damages saves on purpose (the backup loads; with every copy damaged nothing is deleted), blocks storage (the game still plays), and runs two game days at 64x checking that the page stays small and keeps drawing.
+- `tests/conquest-robust.mjs` damages saves on purpose (the backup loads; with every copy damaged nothing is deleted), opens a world from the old smaller map (it is explained and kept), blocks storage (the game still plays), and runs two game days at 64x checking that the page stays small and keeps drawing.
 
 ## Project layout
 

@@ -4,7 +4,8 @@ Age of Conquest is a grand strategy game in one page. It replaced the Last Furna
 
 - You are one of 600 governors on a server; the other 599 are simulated.
 - Each simulated governor has its own personality, memory, economy and army. It makes its own decisions under the same rules and with the same resources as you.
-- Ten guilds sign pacts, betray them, form coalitions, fight over fortresses and race for the Ember Throne.
+- Ten guilds sign pacts, betray them, form coalitions, fight over passes and holy sites and race for the Ember Throne.
+- The world is a kingdom of 384 by 384 tiles laid out like a Rise of Kingdoms kingdom: three zones, ten regions walled by mountains, and 15 passes that a guild must capture to march through.
 
 This document covers what is built, how it works, how to run and test it, what it measured, and what comes next.
 
@@ -24,8 +25,21 @@ This document covers what is built, how it works, how to run and test it, what i
 Everything is drawn by the game itself with canvas paths (no image files besides the logo), in each civilization's colors and roof style:
 - **Your city** is the home screen: an isometric town where every building stands on its own plot at its real level, from an empty plot with a sign to a towered keep. Walls go from a wooden palisade to stone with towers and a gatehouse. The building under construction wears scaffolding with a swinging hammer and a timer; soldiers drill in the yard in proportion to the troops you have at home; villagers walk the roads; smoke rises from chimneys; green arrows mark what you can upgrade right now; a shield is a dome of light over the town; the light follows the game clock. Every building has a plate with its level (a lock and the Town Hall level it needs when it cannot be built yet). Tap a building for its sheet: a picture, *Lv n > Lv n+1*, the effects of the next level, requirements with checks, the cost, and its own buttons (Train, Research, Trade, Heal, Shield and so on). A builder chip shows Idle, the time left, or Free; side buttons with red dots open Mail, Goals, the Guild, the commanders and, in developer mode, the Developer panel.
 - **Free finish and crates** are rules of the simulation, the same for everyone: a build, research, training or healing with 10 game minutes or less left can be finished at once, and each producing building fills a crate every 4 game hours with an hour of its output. The AI governors collect their crates and finish nearly done queues free too.
-- **The world map** is painted terrain (shores, forests of small trees, mountain peaks with snow, hills, tundra, fords, passes). Zoomed in, cities are castles that grow with their Town Hall in their guild's color, fortresses and the Capital are walled keeps, and bandit camps, resource fields and ruins have their own pictures. Armies march as small banners of soldiers of their main troop type along dashed routes, and battles you can see flash where they happen.
+- **The world map** is the whole kingdom (see below), painted terrain with shores, forests of small trees, mountain peaks with snow, hills, tundra, fords and the paved roads of the passes. Zoomed in, cities are castles that grow with their Town Hall in their guild's color, passes are gatehouses with gold pips for their level, holy sites are sanctums, altars and shrines, the Capital is a gilded keep, and bandit camps, resource fields and ruins have their own pictures. Unexplored land lies under clouds; explored land out of sight is dimmed. Zoomed out, the mountain ranges stand above the clouds and each region is named with its zone, so the shape of the kingdom is always readable. A readout shows the region, zone and coordinates of the middle of the screen; the globe button shows the whole kingdom; the search button lists every pass and holy site with who holds it. Armies march as small banners of soldiers of their main troop type along dashed routes, and battles you can see flash where they happen.
 - **Battles** in reports play out: the two armies march in, archers loose arrows, siege engines hurl stones at the walls, soldiers fall exactly as the recorded rounds say, commanders' skills flash up with their portraits, and a Victory or Defeat ribbon shows the loot. The written report, its reasons and the replay check are behind Details.
+
+### The kingdom map
+
+The map follows the structure of a Rise of Kingdoms kingdom, researched from the [Rise Of Kingdoms Map Guide](https://riseofkingdomsguides.com/rise-of-kingdoms-map-guide/), [What Are Zones In Rise Of Kingdoms?](https://riseofkingdomsguides.com/rise-of-kingdoms-zones-guide/) and the [Holy Sites wiki](https://riseofkingdoms.fandom.com/wiki/Holy_Sites):
+
+- **Size.** 384 by 384 tiles (nine times the area of the first 128-tile map). With 600 cities, 600 bandit camps and 1,200 resource fields, cities stand about twice as far apart as before.
+- **Three zones, ten regions.** Zone 1 is the outer ring, split into six regions (Frostreach in the north, then Greywatch, Saltmere, Redmarch, Duskwood and Cinderhold clockwise). Every governor and every guild starts there: two guilds in each of the four large corner regions, one in each of the two smaller ones. Zone 2 is a ring of three regions (Emberfall, Ironvale, Ashmoor). Zone 3, the Throne Lands, is the heartland with the Ember Throne in its middle.
+- **Mountain ranges and passes.** A range walls every region. The only ways through are 15 passes: six level 1 passes between neighbouring Zone 1 regions, six level 2 passes from each Zone 1 region into the Zone 2 region behind it, and three level 3 passes from Zone 2 into the heartland. A pass is a landmark with a neutral garrison. A guild takes it with a rally from either side; from then on its members, and its allies, march through, and nobody else does. Independents never pass. An army going home may always use any pass.
+- **Opening days.** Level 1 passes can be attacked from Day 2, level 2 from Day 3, level 3 from Day 3 at noon, and the Capital from Day 4.
+- **Holy sites.** 27 of them: two sanctums and an altar in every Zone 1 region, two shrines in every Zone 2 region, and three gilded shrines in the heartland. Each gives a blessing to every member of the guild that holds it, wherever they are: production, gathering, building, research or healing speed for sanctums; troop attack, defense or health for altars; stronger versions, march speed and gold for shrines. As in the game it copies, the same blessing from two sites counts once. Sanctums open on Day 1, altars on Day 2, Zone 2 shrines on Day 3 and the heartland's on Day 4.
+- **Richer toward the centre.** Bandit camps are levels 1 to 4 in Zone 1, 4 to 7 in Zone 2 and 7 to 10 in the heartland; resource fields are levels 1 to 2, 3 to 4 and 5. 18 ruins stand in Zones 1 and 2.
+- **Moving the city.** Anywhere in Zone 1; into Zone 2 or the heartland only once your guild holds a pass that leads there.
+- **The AI plays the same map.** Governors only aim at camps, fields, cities and landmarks their armies can reach. Guilds take the sanctums and altars of their own region first, then value a pass by the holy sites (and, for the strongest, the Throne) beyond it. In a test world the first holy sites fall on Day 3, passes into Zone 2 on Day 5, and the leading guild holds a level 3 pass and makes the Throne its objective by the end of Day 5.
 
 Time runs at **1 game minute per real second** at 1x (a game day is 24 real minutes). You can pause, or play at 2x or 4x; developer mode adds 16x and 64x. While the game is closed, the world keeps going at a tenth of that speed, up to a limit you choose (12 game hours by default). A summary of what happened greets you when you return.
 
@@ -59,7 +73,7 @@ Why this design:
 - **The clock.** The world advances in game minutes. Each minute it processes queues (buildings, research, training, healing, the Grand Exchange), moves armies, launches rallies, lets governors and guilds whose turn has come decide, and runs world events and the Throne check. Every 30 minutes power and rankings are recomputed. Every hour territory is recomputed and camps respawn. Each day it saves history snapshots and collects guild contributions. Offline catch-up runs in 5-minute steps.
 - **The economy** is settled lazily and exactly. A governor's stock is brought up to date only when the simulation touches it (a decision, a battle, a scout). Production is integrated over the elapsed time with storage caps and food upkeep, and starvation causes desertion. World events that change production settle the governors they affect at their start and end, so results never depend on when someone looked.
 - **Three simulation tiers.** Every governor keeps its full state, and the tier only changes how often it decides:
-  - **Active**: within 28 tiles of you, in your guild, or in your guild's wars.
+  - **Active**: within 40 tiles of you, in your guild, or in your guild's wars.
   - **Strategic**: at war elsewhere.
   - **Background**: quiet regions; decides 1.7 times less often.
 
@@ -71,7 +85,8 @@ Why this design:
   - Honorable governors do not prey on much weaker cities without a war or a grudge.
   - Raids must be worth the march.
   - Newcomers get a 2-day shield and three camps of their own.
-- **Pathfinding.** A* runs over the 128 by 128 tile grid with 8-way movement, terrain costs, no corner cutting, typed arrays and a path cache. Returning armies retrace their outbound path. Cities sit in an occupancy grid and 8 by 8 spatial buckets for neighbor queries.
+- **Pathfinding.** Every tile belongs to a region (or to a range, or to a pass road). A march inside one region is a single A* search (8-way movement, terrain costs, no corner cutting, typed arrays). A march between regions first picks its passes with a small shortest-route search over (pass, side) pairs, using only the passes the guild holds or its allies hold, then runs A* stretch by stretch inside each region, which keeps searches short on the big map. A test on the region graph answers "can this army get there at all?" before any search, and paths are cached per start, goal and set of open passes. Returning armies retrace their outbound path. Cities sit in an occupancy grid and 12 by 12 spatial buckets for neighbor queries.
+- **Terrain.** Generated from the world's seed (the same seed always gives the same kingdom): evenly spread noise for elevation, moisture and ridges, so lakes, hills, forests and tundra keep steady shares; rivers run downhill with fords; the ranges follow the zone and region borders, bent by low-frequency noise so they wind; the land on both sides of every pass is cleared; and inside each region every pocket of land is either joined to the rest by a trail or a ford, or filled in. The tests check that every pass joins exactly its two regions and nothing else does.
 - **Combat.** Battles resolve in rounds and are deterministic. They model:
   - attack, defense and health per unit, the counter triangle (30% each way), and siege engines that break walls
   - terrain: plains, forest, hills, fords and passes
@@ -86,7 +101,9 @@ Why this design:
 ```
 src/conquest/
   data.js        tables: units, terrain, buildings, research, 12 civilizations, 12 commanders, archetypes, the server
-  world.js       random numbers, terrain generation, A*, occupancy and spatial buckets, vision
+                 identity, the kingdom's regions, pass levels, holy sites and their blessings
+  world.js       random numbers, the kingdom layout (zones, regions, ranges, passes), terrain generation,
+                 pass-aware pathfinding, occupancy and spatial buckets, vision
   rules.js       bonuses, production, storage, upkeep, power, army strength, the battle resolver, scout accuracy
   sim.js         world creation, the clock, queues, marches, battles, rallies, landmarks, territory, events,
                  the chronicle, the Age, the Coalition War scenario
@@ -98,7 +115,9 @@ src/conquest/
   ui-art.js      every picture: isometric buildings per civilization, walls, trees, castles, camps, fields, soldiers
   ui-home.js     the drawn city (home screen): buildings, walls, troops, villagers; plates, timers, crates, upgrade
                  arrows, the builder and side buttons over it; the building sheet
-  ui-map.js      the world map (canvas): painted terrain, territory, fog, castles, camps, armies, battles; tile actions
+  ui-map.js      the world map (canvas): the kingdom painted in chunks, the zoomed-out view with its ranges and
+                 region names, territory, clouds, castles, passes, holy sites, camps, armies, battles; the Find
+                 list; tile actions
   ui-city.js     city panels: every building, research, market, the Grand Exchange, goals, the shield
   ui-army.js     troops, training (and the training sheet), hospital, armies in the field, commanders, marches
   ui-guild.js    guilds, applying, rallies, members, contributions, diplomacy
@@ -135,7 +154,7 @@ Every push runs all suites on GitHub. The game is published only when they all p
 
 The world is one JSON document. IndexedDB stores it gzipped under `last-furnace-conquest` (keys `main` and `backup`); browser storage is the fallback. A trimmed real example is in [conquest-sample.json](conquest-sample.json).
 
-**Wrapper:** `{ format: "age-of-conquest", v: 1, check: <FNV-1a hash of body>, body: "<world as JSON text>" }`.
+**Wrapper:** `{ format: "age-of-conquest", v: 2, check: <FNV-1a hash of body>, body: "<world as JSON text>" }`. Schema 2 is the kingdom map. A schema 1 save (the old 128-tile map) is refused with an explanation, and the save itself is left untouched until you start a new world.
 
 To load, the save must:
 - have a matching checksum
@@ -146,7 +165,7 @@ To load, the save must:
   - stock is finite and never negative, troop counts are whole and never negative
   - troops away from home match the armies in the field
   - building and research levels are within their caps
-  - no two cities share a tile and no city is on impassable land
+  - no two cities share a tile and no city is on impassable land, a mountain range or a pass road
   - exactly one human governor
 
 **World:**
@@ -157,7 +176,7 @@ To load, the save must:
 | `t`, `age`, `lastDay` | game minutes since the server opened; the current Age |
 | `govs[600]` | governors (below); index = id; the player is id 599 |
 | `guilds[10]` | guilds (below) |
-| `marks` | the Capital, 8 fortresses, 6 ruins: `{ id, kind, name, x, y, owner, since, level, garrison, base, wallDur, wallMax, lastHit, cleared }` |
+| `marks` | the Capital, 15 passes, 27 holy sites, 18 ruins: `{ id, kind (capital, pass, site, ruin), name, x, y, region, opens, owner, since, level (garrison level), garrison, base, wallDur, wallMax, lastHit, cleared }`; passes add `gate, tier, links` (the two regions), holy sites add `site` (sanctum, altar, shrine, temple) and `blessing` |
 | `camps`, `nodes` | bandit camps `{ id, x, y, lv, troops, reserved?, until? }`; resource fields `{ id, x, y, res, lv, amount, max, by }` |
 | `marches` | armies in the field `{ id, kind, owner, troops, c1, c2, path, k, frac, speed, to, target, state, eta, load, wounded, rally, parts }` (paths stored as a start tile plus one letter per step) |
 | `rallies` | `{ id, leader, guild, target, to, launchAt, state, lead }` |
@@ -165,7 +184,7 @@ To load, the save must:
 | `chron`, `chronN` | chronicle entries `{ n, t, k, txt, g, p, x, y, imp, vis }` (public, or secret pacts) |
 | `battles` | the last 200 battle summaries |
 | `reports` | the player's last 60 reports, battle reports with their replay input |
-| `hist` | daily territory maps (32 by 32 cells) and guild power, last 40 days |
+| `hist` | daily territory maps (32 by 32 cells of 12 by 12 tiles) and guild power, last 40 days |
 | `market`, `throne`, `ages` | resource prices; who holds the Capital and since when; finished Ages and their winners |
 | `settings`, `quests`, `exploredRle` | offline cap and notifications; claimed goals; the player's explored map |
 
@@ -195,7 +214,7 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | One 600-governor server, exactly 10 guilds (60 max) | Done | 599 simulated plus you; invariants checked on every load and in tests, including after 5 simulated days |
 | Ten servers, 6,000 governors, cross-server play | Planned | the engine is server-agnostic (identity in `SERVER`); not built or measured |
 | Game modes | Partial | Eternal Conquest, and the Coalition War demonstration campaign. The other nine modes are planned |
-| World map | Done | 128 by 128 tiles: lakes, rivers with fords, mountain ranges with passes, forests, hills, tundra; the Capital, 8 fortresses, 6 ruins, about 80 bandit camps, 260 resource fields; pan and pinch zoom; territory overlay |
+| World map | Done | a 384 by 384 kingdom in the Rise of Kingdoms layout: 3 zones, 10 regions walled by mountain ranges, 15 passes in 3 levels, 27 holy sites with blessings, the Capital, 18 ruins, 600 bandit camps and 1,200 resource fields that grow stronger toward the centre; lakes, rivers with fords, forests, hills, tundra; chunked painting, a whole-kingdom view with region names, clouds over unexplored land, a Find list, pan and pinch zoom; territory overlay with drawn borders |
 | City building and economy | Done | 15 buildings to level 25 with costs, times and prerequisites; production, storage caps, food upkeep, desertion when food runs out, protected stock |
 | Resources | Partial | food, wood, stone, iron, gold. Influence, rare materials and taxation are planned |
 | Research | Done | 16 technologies in three branches (economy, military doctrine, intelligence), capped by the Academy, with prerequisites |
@@ -203,7 +222,7 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | Commanders | Partial | 12 fully implemented: rarity, story, civilization, specialty, active skill, two passives, ultimate (level 30), 3-branch talents, skill levels, pairings and synergies, rivals, recruitment goals for player and AI alike, City Steward and Defender roles. Equipment and the other 28 commanders are planned |
 | Civilizations | Partial | 12, each with bonuses, real costs, a troop variant, a starting commander, preferred terrain, colors and city style, and lore. Culture, stability, reforms and cultural exchange are planned |
 | Combat | Done | rounds, counters, terrain, walls, towers, durability, morale, routs, pursuit, ambushes in forests, commander skills; deterministic, replayable, explained |
-| Sieges, rallies, garrisons, reinforcement | Done | rallies on fortresses, the Capital and cities; joiners; garrisons hold landmarks; unguarded landmarks are lost; sacked cities move behind a shield |
+| Sieges, rallies, garrisons, reinforcement | Done | rallies on passes, holy sites, the Capital and cities; joiners; garrisons hold landmarks; unguarded landmarks are lost; landmarks open on set days; sacked cities move behind a shield |
 | Splitting and merging armies, march queues | Partial | several armies at once (more with a higher Town Hall), recall, rallies merge armies; free splitting of an army in the field is planned |
 | Supply lines, fatigue, weather in combat | Planned | weather affects production through world events |
 | Scouting and fog of war | Done | explored and visible tiles; reports are estimates whose error depends on accuracy and age; counterintelligence can plant false reports, which skilled scouts flag; the AI respects fog too |
@@ -232,31 +251,32 @@ Run on 2026-10-21 in this repository (`node tests/all.mjs`):
 
 | Suite | Result |
 |---|---|
-| conquest-engine | 47 of 47 passed |
+| conquest-engine | 51 of 51 passed |
 | conquest-demo | 5 of 5 passed |
-| conquest-ui | 16 of 16 passed |
+| conquest-ui | 17 of 17 passed |
 | conquest-dev | 10 of 10 passed |
-| conquest-robust | 5 of 5 passed (two game days at 64x: at most 760 DOM nodes, a 10 MB page heap, the town still drawing in under 4 ms a frame) |
+| conquest-robust | 6 of 6 passed (two game days at 64x: at most 762 DOM nodes, a 23 MB page heap, the town still drawing in under 3 ms a frame) |
 
-All five suites together take about 3 minutes.
+All five suites together take about 4 minutes.
 
 The engine suite covers:
 - production, storage and upkeep, building and research prerequisites, training and healing, the market
 - pathfinding, travel time and scouting
+- the kingdom: 10 regions in 3 zones, 15 passes of the right levels joining the right regions, nothing crossing a range without a pass, each pass reachable from both sides; only the holding guild and its allies march through; holy-site blessings (and the same blessing twice counting once); opening days; camps stronger toward the centre
 - replay determinism, counters, numbers, terrain and walls, commander skills, explanations
 - fog of war in the views, the inspector's secrecy, report accuracy, and the AI scouting before attacking
 - guild limits, succession, war, peace and betrayal, collapse and refounding
 - memory surviving saves, no negative stock for anyone
-- sacking and recovery, the Throne and Grand Exchange victories, rallies capturing fortresses
+- sacking and recovery, the Throne and Grand Exchange victories, rallies capturing holy sites
 - invalid and malicious commands, guild-mate and ally protection, double reward claims, developer gating
-- save tampering, determinism, save and load continuity, offline catch-up, and a speed check (one game day in under 20 seconds)
+- save tampering, refusing old-map saves with a reason, determinism, save and load continuity, offline catch-up, and a speed check (one game day in under 20 seconds)
 - Free finish (refused too early, works in the last 10 minutes), crates (an hour of output once, refilled after 4 hours, never into full storage), the AI using both, goal progress and chapters, and the developer switches (only in developer mode, saved with the world)
 
 The demonstration campaign test:
-- An AI guild starts with 33% of the server's power.
+- An AI guild starts with 34% of the server's power, the level 1 passes out of its region and 5 holy sites (its own region's and a sanctum in each neighbouring region).
 - A four-guild coalition forms against it.
-- In 36 hours, 7 landmarks change hands and over 3,000 tiles of territory move.
-- In a copy of the same world where you join the coalition and call a rally, guild mates join you and you take a fortress. Without you, the hegemon still holds it.
+- In 36 hours, 16 landmarks change hands and over 7,000 tiles of territory move.
+- In a copy of the same world where you join a coalition guild of your region and call a rally, guild mates join you and you take a holy site back. Without you, the hegemon still holds it.
 
 ## Measured performance
 
@@ -264,23 +284,25 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 
 | Measure | Result |
 |---|---|
-| Create a world (600 governors, map, history) | about 40 ms in Node once warm (about 150 ms the first time), 166 ms to the first frame in Chromium |
-| Simulation cost per game minute, full server | 2.1 ms on day 1, 3.3 ms on day 3, 4.8 ms on day 7 (about 1,100 armies in the field) |
-| Throughput | 200 to 470 game minutes per second in Node; the browser worker sustains the 64x developer speed (63 game minutes per second). At 1x the simulation uses well under 1% of one core |
-| Offline catch-up | one game day in 5.3 s (12 game hours by default, about 2.7 s) |
-| Memory | about 10 MB of JavaScript heap for the world after 8 game days (browser: 10 MB) |
-| Save size after 8 days | 3.5 MB of JSON, 479 KB gzipped (what is stored) |
-| Save and load | 43 ms and 48 ms (load includes regenerating the map and the integrity checks) |
-| Command round trip, page to worker and back | 0.1 to 0.2 ms |
-| Path search | 0.5 ms for an 87-tile path across the map |
+| Generate the kingdom's terrain | 157 ms in Node (the interface does it once per world, on the loading screen) |
+| Create a world (600 governors, map, history) | 144 ms in Node including the terrain, 372 ms to the first frame in Chromium |
+| Simulation cost per game minute, full server | 1.8 ms on day 1, 2.1 ms on day 3, 2.8 ms on day 7 (about 870 armies in the field) |
+| Throughput | 350 to 540 game minutes per second in Node; the browser worker sustains the 64x developer speed (63 game minutes per second). At 1x the simulation uses well under 1% of one core |
+| Offline catch-up | one game day in 3.5 s (12 game hours by default, about 1.8 s) |
+| Memory | about 33 MB of JavaScript heap in Node after 8 game days, most of it the big map's typed arrays and the path cache (browser page: 11 MB, the worker holds the world) |
+| Save size after 8 days | 3.2 MB of JSON, 433 KB gzipped (what is stored) |
+| Save and load | 41 ms and 128 ms (load includes regenerating the kingdom's terrain and the integrity checks) |
+| Command round trip, page to worker and back | 0.3 ms |
+| Path search | 1.2 ms on average for a 242-tile march between two random cities with every pass open (most cross several regions) |
 | Drawing the city | 1.5 ms per frame (median; 2.2 ms at the 95th percentile zoomed out) with Town Hall 25 and every building, on a 390 by 844 screen at 3x density in headless Chromium; the town redraws at about 30 frames a second while it is on screen |
-| Drawing the world map | painted terrain is made once per world (16 pixels per tile); armies and battle flashes keep 60 frames a second in the same test |
+| Drawing the world map | terrain is painted in chunks of 32 by 32 tiles (16 pixels per tile) as they come into view, at most 4 a frame and 48 kept; a 4-pixels-per-tile painting of the whole kingdom stands in when zoomed out. In headless Chromium on a phone-sized screen a frame takes under 1 ms of script at every zoom, up to about 4 ms fully zoomed in |
 
 6,000 governors (ten servers) has not been measured, so this document makes no claim about it. At the measured cost, ten servers would need roughly ten times the CPU at 1x, which looks feasible on a desktop, but that is an estimate, not a result.
 
 ## Known limitations
 
 - One server, one mode, and a demonstration campaign. Cross-server features, the other modes, the sandbox, the spectator view and the scenario editor are not built.
+- The kingdom copies the shape of a Rise of Kingdoms kingdom (zones, regions, passes, holy sites), not all of its systems: there are no alliance flags or player-built fortresses (territory comes from cities and landmarks), no teleport items, and no Lost Kingdom. An army already marching keeps going through a pass that changes hands on the way; new marches respect the new owner.
 - Rally battles use the rally leader's bonuses (civilization, research, commanders) for the whole army; joiners contribute troops, not bonuses.
 - Battles are fought by army totals over rounds, not by units on a battlefield. The battle scene animates those rounds with representative soldiers (up to 34 a side), so a figure is a share of the army, not one unit.
 - The art is drawn in code: clean and consistent, but simpler than a commercial game's painted art. There is no sound.
