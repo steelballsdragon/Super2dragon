@@ -53,6 +53,10 @@ function think(w, g) {
 // ---------------------------------------------------------------- economy
 const BASE_UTIL = { hall: 3, farm: 1.4, lumber: 1.3, quarry: 1, mine: 0.8, market: 0.8, warehouse: 0.7, barracks: 0.8, stables: 0.55, range: 0.65, workshop: 0.25, academy: 1.1, hospital: 0.6, wall: 0.8, tower: 0.4 };
 function aiEconomy(w, g, opening) {
+  // the same conveniences the player has: full crates are collected, nearly finished queues are finished free
+  for (const id of BUILDING_KEYS) if (BUILDINGS[id].produces && (g.b[id] || 0) > 0 && w.t >= (g.crate[id] || 0)) actCollect(w, g, id);
+  for (const k of ['build', 'research', 'heal']) if (g.q[k] && g.q[k].end - w.t <= FREE_FINISH) g.q[k].end = w.t;
+  for (const u of UNIT_KEYS) if (g.q.train[u] && g.q.train[u].end - w.t <= FREE_FINISH) g.q.train[u].end = w.t;
   const A = ARCHETYPES[g.arch];
   const m = cityMods(w, g);
   const prod = production(w, g, m);

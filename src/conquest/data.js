@@ -357,6 +357,10 @@ const THRONE_OPENS = 3 * DAY;      // the Capital can be attacked from Day 4
 const THRONE_HOLD = 3 * DAY;       // a guild that holds the Capital this long wins the Age
 const EXCHANGE = { hall: 20, market: 20, cost: { gold: 1500000, stone: 2000000, wood: 2000000 }, minutes: 2 * DAY };
 const NEWCOMER_SHIELD = 2 * DAY;
+// a queue this close to its end can be finished at once, free (players and AI governors alike)
+const FREE_FINISH = 10;
+// every producing building fills a crate every 4 game hours with 1 hour of its output; tap it to collect
+const CRATE = { every: 4 * HOUR, hours: 1 };
 const SHIELD = { minutes: 8 * HOUR, cooldown: 24 * HOUR };
 
 // ================================================================ names

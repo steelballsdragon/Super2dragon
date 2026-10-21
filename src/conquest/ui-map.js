@@ -243,7 +243,7 @@ function draw() {
         if (mk.kind === 'capital') { g.fillStyle = '#f2c14e'; g.beginPath(); g.moveTo(sx - s * 0.6, sy - s * 1.2); g.lineTo(sx - s * 0.6, sy - s * 1.7); g.lineTo(sx - s * 0.3, sy - s * 1.45); g.lineTo(sx, sy - s * 1.8); g.lineTo(sx + s * 0.3, sy - s * 1.45); g.lineTo(sx + s * 0.6, sy - s * 1.7); g.lineTo(sx + s * 0.6, sy - s * 1.2); g.closePath(); g.fill(); }
       }
       if (z >= 4.5) {
-        g.font = `700 ${Math.max(10, Math.round(Math.min(15, z * 0.42)))}px Cinzel, Georgia, serif`;
+        g.font = `700 ${Math.max(10, Math.round(Math.min(15, z * 0.42)))}px "Lilita One", "Arial Black", sans-serif`;
         g.textAlign = 'center';
         const label = mk.name + (mk.owner >= 0 ? ` [${f.guilds[mk.owner].tag}]` : '');
         g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.75)'; g.strokeText(label, sx, sy + s * 1.1 + 12);
@@ -337,7 +337,7 @@ function drawSprites(g, f, z, inView, gcol, P) {
     const col = mk.owner >= 0 ? f.guilds[mk.owner].color : null;
     if (mk.kind === 'ruin') { const s = ART.mapRuin(), k = z * 1.6 / 36; objs.push({ y: mk.y, f: () => ART.put(g, s, sx, sy + z * 0.3, 24, 36, k) }); }
     else { const cap = mk.kind === 'capital', s = ART.mapFort(col, cap), k = z * (cap ? 3.6 : 2.7) / 60; objs.push({ y: mk.y + 0.5, f: () => ART.put(g, s, sx, sy + z * 0.5, 48, 66, k) }); }
-    labels.push({ pri: 1e8 + mk.level, x: sx, y: sy + z * (mk.kind === 'capital' ? 1.5 : mk.kind === 'fortress' ? 1.2 : 0.8), text: mk.name + (mk.owner >= 0 ? ` [${f.guilds[mk.owner].tag}]` : ''), col: col || '#e7dccd', font: `700 ${Math.max(10, Math.round(Math.min(15, z * 0.42)))}px Cinzel, Georgia, serif` });
+    labels.push({ pri: 1e8 + mk.level, x: sx, y: sy + z * (mk.kind === 'capital' ? 1.5 : mk.kind === 'fortress' ? 1.2 : 0.8), text: mk.name + (mk.owner >= 0 ? ` [${f.guilds[mk.owner].tag}]` : ''), col: col || '#e7dccd', font: `700 ${Math.max(10, Math.round(Math.min(15, z * 0.42)))}px "Lilita One", "Arial Black", sans-serif` });
   }
   objs.sort((a, b) => a.y - b.y);
   for (const o of objs) o.f();
@@ -407,17 +407,15 @@ function request() { if (!M.raf) M.raf = requestAnimationFrame(draw); }
 function mountMap(root) {
   root.innerHTML = `<div class="aoc-map">
     <canvas class="aoc-map-cv" aria-label="World map. Drag to move, pinch or use the buttons to zoom, tap a place to see it."></canvas>
-    <div class="aoc-quest" hidden></div>
+    <div class="aoc-map-bottom"><div class="aoc-quest" hidden></div></div>
     <div class="aoc-map-tools">
       <button type="button" class="aoc-iconbtn" data-act="home" aria-label="Center on your city">${U.icon('home', 20)}</button>
       <button type="button" class="aoc-iconbtn" data-act="in" aria-label="Zoom in">${U.icon('plus', 20)}</button>
       <button type="button" class="aoc-iconbtn" data-act="out" aria-label="Zoom out">${U.icon('minus', 20)}</button>
       <button type="button" class="aoc-iconbtn" data-act="layers" aria-label="Show or hide guild territory" aria-pressed="true">${U.icon('layers', 20)}</button>
     </div>
-    <button type="button" class="aoc-world-btn" aria-label="Your city">${U.icon('city', 30)}<span>City</span></button>
     <div class="aoc-map-info" aria-live="polite"></div>
   </div>`;
-  root.querySelector('.aoc-world-btn').addEventListener('click', () => U.go('city'));
   M.cv = root.querySelector('canvas');
   M.ctx = M.cv.getContext('2d', { alpha: false });
   const ro = new ResizeObserver(() => { resize(); schedule(); });
@@ -509,7 +507,8 @@ document.addEventListener('click', async e => {
   if (!b || !b.closest('#aoc')) return;
   b.disabled = true;
   const r = await U.run({ type: 'claimQuest', id: b.dataset.claim });
-  if (r) U.toast('Reward claimed: ' + Object.entries(r.reward).map(([k, v]) => `${fmt(v)} ${A.RES_NAME[k]}`).join(', '), 'good');
+  if (r) U.reward(r.reward, 'Goal reward');
+  else b.disabled = false;
 });
 
 // ================================================================ tile sheet
@@ -520,6 +519,7 @@ function pic(c) {
   try { src = c.toDataURL('image/png'); } catch (e) { return ''; }
   return `<img class="aoc-tile-pic" src="${src}" alt="" width="${c.sw * 1.5}" height="${c.sh * 1.5}">`;
 }
+U.openTile = i => openTile(i);
 async function openTile(i) {
   M.sel = i; schedule();
   const t = await U.host.query('tile', { i });

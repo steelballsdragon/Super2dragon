@@ -1,6 +1,6 @@
 # Last Furnace: Age of Conquest
 
-Age of Conquest is a grand strategy game that lives next to the Last Furnace city builder in the same page.
+Age of Conquest is a grand strategy game in one page. It replaced the Last Furnace city builder (which has been removed) and took over its look and its interactions: navy panels, chunky gold and blue buttons, level plates under buildings, a chapter banner with Go, reward pop-ups, Free finish for nearly done builds, and crates to tap and collect.
 
 - You are one of 600 governors on a server; the other 599 are simulated.
 - Each simulated governor has its own personality, memory, economy and army. It makes its own decisions under the same rules and with the same resources as you.
@@ -13,16 +13,17 @@ This document covers what is built, how it works, how to run and test it, what i
 ## Play it
 
 1. Open the game: https://steelballsdragon.github.io/Super2dragon/ (or the claude.ai link), or open `dist/index.html` from this repository.
-2. On the start screen, tap **Age of Conquest**.
-3. Choose **New world**, then pick how to begin:
+2. The start screen opens straight into Age of Conquest. Tap **Start game** (or **Continue** when there is a world).
+3. Pick how to begin:
    - **Eternal Conquest**: Day 1, with everyone else.
    - **Demonstration: The Coalition War**: Day 3. One guild already dominates.
-4. Pick a civilization and a name, and found your city. After a one-line welcome, a glowing hand points at what to tap for each of the first goals.
+4. Pick a civilization and a name, and found your city. After a one-line welcome, a gold Tap marker points at what to tap for each of the first goals, and the chapter banner at the bottom has **Go**.
 
 ### What you see
 
 Everything is drawn by the game itself with canvas paths (no image files besides the logo), in each civilization's colors and roof style:
-- **Your city** is the home screen: an isometric town where every building stands on its own plot at its real level, from an empty plot with a sign to a towered keep. Walls go from a wooden palisade to stone with towers and a gatehouse. The building under construction wears scaffolding with a swinging hammer and a timer; soldiers drill in the yard in proportion to the troops you have at home; villagers walk the roads; smoke rises from chimneys; green arrows mark what you can upgrade right now; a shield is a dome of light over the town; the light follows the game clock. Tap a building for round buttons (Upgrade, Train, Research, Trade, Heal, Shield and so on).
+- **Your city** is the home screen: an isometric town where every building stands on its own plot at its real level, from an empty plot with a sign to a towered keep. Walls go from a wooden palisade to stone with towers and a gatehouse. The building under construction wears scaffolding with a swinging hammer and a timer; soldiers drill in the yard in proportion to the troops you have at home; villagers walk the roads; smoke rises from chimneys; green arrows mark what you can upgrade right now; a shield is a dome of light over the town; the light follows the game clock. Every building has a plate with its level (a lock and the Town Hall level it needs when it cannot be built yet). Tap a building for its sheet: a picture, *Lv n > Lv n+1*, the effects of the next level, requirements with checks, the cost, and its own buttons (Train, Research, Trade, Heal, Shield and so on). A builder chip shows Idle, the time left, or Free; side buttons with red dots open Mail, Goals, the Guild, the commanders and, in developer mode, the Developer panel.
+- **Free finish and crates** are rules of the simulation, the same for everyone: a build, research, training or healing with 10 game minutes or less left can be finished at once, and each producing building fills a crate every 4 game hours with an hour of its output. The AI governors collect their crates and finish nearly done queues free too.
 - **The world map** is painted terrain (shores, forests of small trees, mountain peaks with snow, hills, tundra, fords, passes). Zoomed in, cities are castles that grow with their Town Hall in their guild's color, fortresses and the Capital are walled keeps, and bandit camps, resource fields and ruins have their own pictures. Armies march as small banners of soldiers of their main troop type along dashed routes, and battles you can see flash where they happen.
 - **Battles** in reports play out: the two armies march in, archers loose arrows, siege engines hurl stones at the walls, soldiers fall exactly as the recorded rounds say, commanders' skills flash up with their portraits, and a Victory or Defeat ribbon shows the loot. The written report, its reasons and the replay check are behind Details.
 
@@ -30,9 +31,7 @@ Time runs at **1 game minute per real second** at 1x (a game day is 24 real minu
 
 ### Developer mode
 
-Developer mode is the same switch as in the city game: tap the Last Furnace logo on the start screen 7 times. In Age of Conquest it adds:
-- 16x and 64x speeds
-- in the menu: 50 million of each resource, +100,000 troops, finish timers, max buildings, every commander at max level, reveal the map, a 7-day shield, and time skips
+Tap the logo on the start screen 7 times quickly to turn it on (7 more turn it off; it is kept on the device). It adds the 16x and 64x speeds and a **Dev** button in the city (also in the menu) that opens the Developer panel: unlimited resources and instant builds and training (two switches saved with the world), max every building, +100,000 of each troop, every commander at max level, finish all timers, reveal the map, a 7-day shield, 50 million of each resource, and time skips. The simulation refuses every developer command when developer mode is off.
 
 ## Architecture, and why
 
@@ -94,9 +93,11 @@ src/conquest/
   ai.js          governor decisions, guild planning, diplomacy, coalitions, succession, collapse and refounding
   api.js         validated actions, player commands, fog-of-war views, saves and checks, the server loop
   bundle.mjs     joins the engine files into one script (for the page, its Web Worker and the Node tests)
-  ui-core.js     interface shell: host (worker or page), saves, title and new-world screens, sheets, toasts, goal banner
+  ui-core.js     interface shell: host (worker or page), saves, developer mode switch, start and new-world screens,
+                 top bar, tabs, sheets, toasts, reward pop-ups, the chapter banner and its Go
   ui-art.js      every picture: isometric buildings per civilization, walls, trees, castles, camps, fields, soldiers
-  ui-home.js     the drawn city (home screen): plots, walls, troops, villagers, timers, tap-to-upgrade, upgrade sheet
+  ui-home.js     the drawn city (home screen): buildings, walls, troops, villagers; plates, timers, crates, upgrade
+                 arrows, the builder and side buttons over it; the building sheet
   ui-map.js      the world map (canvas): painted terrain, territory, fog, castles, camps, armies, battles; tile actions
   ui-city.js     city panels: every building, research, market, the Grand Exchange, goals, the shield
   ui-army.js     troops, training (and the training sheet), hospital, armies in the field, commanders, marches
@@ -104,13 +105,16 @@ src/conquest/
   ui-battle.js   the battle scene played from a report's recorded rounds
   ui-intel.js    reports, battle details and replay checks
   ui-chron.js    chronicle, maps of past territory, power over time, casualties, rankings, server population
-  ui-misc.js     inspector, menu and settings, developer tools, the six-page How to play, the offline summary
-  ui-guide.js    the welcome and the pointing hand for the first goals
-  ui.css         the look: charcoal stone, molten gold, lava, crimson and royal blue (from the artwork)
+  ui-misc.js     inspector, menu and settings, the six-page How to play, the offline summary
+  ui-dev.js      the Developer panel
+  ui-guide.js    the welcome and the Tap marker for the first goals
+  ui.css         the look of Last Furnace: navy panels, chunky type, gold, blue and green buttons, plates, banners
 public/conquest-logo.webp   the Last Furnace: Age of Conquest artwork (inlined by the build)
 tests/conquest-engine.mjs   engine tests (Node)
 tests/conquest-demo.mjs     the Coalition War campaign test (Node)
 tests/conquest-ui.mjs       interface test (Chromium)
+tests/conquest-dev.mjs      developer mode test (Chromium)
+tests/conquest-robust.mjs   damaged saves, blocked storage and a long run (Chromium)
 tests/conquest-bench.mjs    benchmark, writes docs/conquest-bench.json
 ```
 
@@ -212,12 +216,14 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | World events | Partial | harsh winter, drought, forest fires, trade booms, bandit uprisings, rich veins (regional, with civilization and commander immunities). Plague, civil wars and others are planned |
 | Chronicle and history | Done | over 30 kinds of entries, filters, maps of territory by day, guild power over time, casualty records, each governor's and guild's history |
 | Victory and defeat | Done | win the Age by holding the Ember Throne for 3 days or completing the Grand Exchange (an economic victory the AI also pursues). Lose when a rival does; a new Age begins. A sacked city recovers |
-| Achievements, goals, rankings | Done | 13 guided goals, 10 achievements, rankings of governors, warriors and guilds, and the server's real population |
+| Achievements, goals, rankings | Done | 13 guided goals in 4 chapters with progress and Go, 10 achievements, rankings of governors, warriors and guilds, and the server's real population |
 | Inspector | Done | public facts for anyone; personality, goals, reasons, memories and troops only with a scout report under 6 hours old, or for guild mates |
 | Offline progress | Done | simulated on load at a tenth of play speed, capped (0, 6 or 12 hours, 1 or 3 days), then summarized |
 | Saves, backups, migrations, validation | Done | IndexedDB with gzip, a backup every 5 minutes, checksum, schema version with a migration hook, integrity checks |
 | Notifications, accessibility | Done | three notification levels, large text, reduced motion, keyboard map controls, labels on every control, portrait and landscape layouts |
-| Pictures instead of text | Done | the drawn city as the home screen, the painted world map with castles and marching armies, battle scenes, icon-based upgrade and training sheets, a pointing hand instead of a written guide |
+| Pictures instead of text | Done | the drawn city as the home screen, the painted world map with castles and marching armies, battle scenes, icon-based sheets, a Tap marker instead of a written guide |
+| Last Furnace look and interactions | Done | its design system, level plates, builder chip, side buttons with red dots, chapter banner with Go and Claim, reward pop-ups, building sheets with effects and requirements, Free finish and crates (simulation rules shared with the AI) |
+| Developer mode | Done | 7 taps on the start screen logo; unlimited resources and instant switches saved with the world; max buildings, troops, commanders, timers, map, shield, resources, time skips; refused by the simulation outside developer mode |
 | Spectator, sandbox, editor, ironman, seasons, tournaments | Planned | |
 
 ## Test results
@@ -274,6 +280,7 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 - Rally battles use the rally leader's bonuses (civilization, research, commanders) for the whole army; joiners contribute troops, not bonuses.
 - Battles are fought by army totals over rounds, not by units on a battlefield. The battle scene animates those rounds with representative soldiers (up to 34 a side), so a figure is a share of the army, not one unit.
 - The art is drawn in code: clean and consistent, but simpler than a commercial game's painted art. There is no sound.
+- There is no shop, no gems and no speed-up items: Free finish (10 game minutes) is the only way to hurry, and it is the same for the AI. The Last Furnace city game's heroes, stages, shop and events went with it.
 - No supply lines, fatigue or combat weather; no equipment; no caravans, loans, tribute or sanctions; no spies or sabotage beyond false reports and discovering secret pacts.
 - Culture, stability, public order and civilization reforms are not modeled.
 - Offline time runs at a tenth of play speed and is capped. Long caps take several seconds to catch up on slower phones.

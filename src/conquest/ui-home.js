@@ -312,70 +312,14 @@ function draw(now) {
   const hour = (f.t % 1440) / 60;
   const night = hour >= 20 || hour < 5 ? 1 : hour >= 18 ? (hour - 18) / 2 : hour < 7 ? (7 - hour) / 2 : 0;
   if (night > 0) { g.fillStyle = `rgba(14,20,52,${(0.36 * night).toFixed(3)})`; g.fillRect(0, 0, H.w, H.h); }
-  overlays(g, f, t);
+  overlays(g, f);
   H.ms = performance.now() - now;
   schedule();
 }
-function pill(g, x, y, w, h, fill, stroke) {
-  const r = h / 2;
-  g.beginPath(); g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2); g.lineTo(x + r, y + h); g.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5); g.closePath();
-  g.fillStyle = fill; g.fill(); if (stroke) { g.strokeStyle = stroke; g.lineWidth = 1.2; g.stroke(); }
-}
 function topOf(id) { const p = H.tops[id]; return p ? toS(p[0], p[1]) : null; }
-function timer(g, id, start, end, now, kind, icon) {
-  const p = topOf(id);
-  if (!p) return;
-  const k = Math.max(0, Math.min(1, (now - start) / Math.max(1, end - start)));
-  const w = 92, h = 22, x = p[0] - w / 2, y = p[1] - 30;
-  pill(g, x, y, w, h, 'rgba(18,13,10,.88)', kind === 'build' ? '#e9b45e' : kind === 'heal' ? '#7fc77a' : '#9dbbef');
-  g.save(); g.beginPath(); g.rect(x + 22, y + 5, (w - 28) * k, h - 10); g.clip();
-  pill(g, x + 22, y + 5, w - 28, h - 10, kind === 'build' ? '#c9852f' : kind === 'heal' ? '#4f9a4a' : '#3f68b8');
-  g.restore();
-  if (icon) ART.put(g, icon, x + 2, y + 1, 0, 0, 0.66);
-  g.font = '700 11px Barlow, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.8)'; g.strokeText(dur(end - now), x + 22 + (w - 28) / 2, y + h / 2 + 0.5);
-  g.fillStyle = '#fff6e0'; g.fillText(dur(end - now), x + 22 + (w - 28) / 2, y + h / 2 + 0.5);
-}
-function overlays(g, f, t) {
-  const P = f.player, q = P.q, civ = A.CIV[P.civ];
-  if (q.build && q.build.id !== 'wall') timer(g, q.build.id, q.build.start, q.build.end, f.t, 'build', U.iconCanvas('hammer'));
-  if (q.build && q.build.id === 'wall') { const p = toS(...iso(10.5, 21)); H.tops.wall = toW(p[0], p[1] - 40); timer(g, 'wall', q.build.start, q.build.end, f.t, 'build', U.iconCanvas('hammer')); }
-  for (const id in TRAINS) { const u = TRAINS[id], tq = q.train[u]; if (tq) timer(g, id, tq.start, tq.end, f.t, 'train', ART.soldier(u, civ.color, 0, 1)); }
-  if (q.research) timer(g, 'academy', q.research.start, q.research.end, f.t, 'research', U.iconCanvas('scroll'));
-  if (q.heal) timer(g, 'hospital', q.heal.start, q.heal.end, f.t, 'heal', U.iconCanvas('herb'));
-  if (q.exchange) timer(g, 'market', q.exchange.start, q.exchange.end, f.t, 'build', U.iconCanvas('crown'));
-  // green arrows over what can be upgraded right now
-  if (!q.build) {
-    const arrow = ART.upArrow();
-    const bob = Math.sin(t / 260) * 4;
-    for (const id of ORDER) {
-      if (!H.build[id]?.ok || id === 'wall') continue;
-      if ((TRAINS[id] && q.train[TRAINS[id]]) || (id === 'academy' && q.research) || (id === 'hospital' && q.heal)) continue;
-      const p = topOf(id);
-      if (p) ART.put(g, arrow, p[0], p[1] - 6 + bob, 11, 26, 0.9);
-    }
-  }
-  // production rising from the producers now and then
-  const now = performance.now();
-  if (now - H.popAt > 2600) {
-    H.popAt = now;
-    const ids = Object.keys(MAKES).filter(id => P.b[id] > 0 && P.res[MAKES[id]] < P.cap);
-    if (ids.length) { const id = ids[H.popK++ % ids.length]; H.pops.push({ id, r: MAKES[id], v: P.prod[MAKES[id]], t0: now }); }
-  }
-  H.pops = H.pops.filter(p => now - p.t0 < 1800);
-  for (const p of H.pops) {
-    const s = topOf(p.id);
-    if (!s) continue;
-    const k = (now - p.t0) / 1800;
-    g.globalAlpha = k < 0.15 ? k / 0.15 : 1 - Math.max(0, (k - 0.6) / 0.4);
-    const y = s[1] - 8 - k * 34;
-    ART.put(g, U.iconCanvas(p.r), s[0] - 30, y - 9, 0, 0, 0.75);
-    g.font = '800 13px Barlow, sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle';
-    g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.85)'; g.strokeText(`+${fmt(p.v)}/h`, s[0] - 10, y);
-    g.fillStyle = '#ffe9a8'; g.fillText(`+${fmt(p.v)}/h`, s[0] - 10, y);
-    g.globalAlpha = 1;
-  }
+function overlays(g, f) {
   // a golden burst over a building that just finished a level
+  const now = performance.now();
   H.bursts = (H.bursts || []).filter(b => now - b.t0 < 2200);
   for (const b of H.bursts) {
     const p = b.id === 'wall' ? toS(...iso(10.5, 21)) : topOf(b.id);
@@ -384,28 +328,17 @@ function overlays(g, f, t) {
     const cy = p[1] + 20;
     g.save();
     g.globalAlpha = Math.max(0, 1 - k);
-    g.strokeStyle = '#ffd36b'; g.lineWidth = 3;
+    g.strokeStyle = '#ffd862'; g.lineWidth = 3;
     g.beginPath(); g.ellipse(p[0], cy, 20 + k * 90, (20 + k * 90) * 0.45, 0, 0, 7); g.stroke();
     g.lineWidth = 2;
     for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2 + k; const r0 = 14 + k * 40, r1 = r0 + 14; g.beginPath(); g.moveTo(p[0] + Math.cos(a) * r0, cy - 20 + Math.sin(a) * r0 * 0.7); g.lineTo(p[0] + Math.cos(a) * r1, cy - 20 + Math.sin(a) * r1 * 0.7); g.stroke(); }
-    g.font = '800 16px Cinzel, Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = '22px "Lilita One", "Arial Black", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     const y = cy - 50 - k * 30;
-    g.lineWidth = 4; g.strokeStyle = 'rgba(40,20,4,.85)'; g.strokeText(`Level ${b.L}`, p[0], y);
-    g.fillStyle = '#ffe9a8'; g.fillText(`Level ${b.L}`, p[0], y);
+    g.lineWidth = 4; g.strokeStyle = 'rgba(30,18,4,.85)'; g.strokeText(`Lv ${b.L}`, p[0], y);
+    g.fillStyle = '#ffd862'; g.fillText(`Lv ${b.L}`, p[0], y);
     g.restore();
   }
-  // the selected building's name
-  if (H.sel && H.sel !== 'wall') {
-    const p = topOf(H.sel);
-    if (p) {
-      const L = P.b[H.sel] || 0;
-      const label = `${A.BUILDINGS[H.sel].name}${L ? ' ' + L : ''}`;
-      g.font = '700 13px Cinzel, Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      const w = g.measureText(label).width + 18;
-      pill(g, p[0] - w / 2, p[1] - 56, w, 22, 'rgba(18,13,10,.9)', '#e9b45e');
-      g.fillStyle = '#f6d58e'; g.fillText(label, p[0], p[1] - 44.5);
-    }
-  }
+  layoutDom(f);
 }
 function schedule() { if (!H.raf && U.current === 'city') H.raf = requestAnimationFrame(draw); }
 
@@ -460,60 +393,157 @@ H.focus = (id, auto) => {
   H.cam.x = x; H.cam.y = y - 30; clampCam(); schedule();
   if (!auto) H.camAt = performance.now();
 };
+// tapping a building opens its sheet
 function select(id) {
   H.sel = id;
-  const bar = document.querySelector('.aoc-screen-city .aoc-bbar');
-  if (!bar) return;
-  if (!id) { bar.hidden = true; return; }
-  renderBar();
-  bar.hidden = false;
+  if (id) U.buildingSheet(id);
 }
 H.select = select;
-function actsFor(id) {
-  const P = U.F.player, q = P.q, L = P.b[id] || 0;
-  const out = [];
-  if (q.build?.id === id) out.push({ a: 'cancel', label: 'Cancel', icon: 'close', kind: 'is-red' });
-  else out.push({ a: 'up', label: L ? 'Upgrade' : 'Build', icon: 'up', kind: 'is-gold', id: 'aoc-bbar-up' });
-  if (L > 0) {
-    if (TRAINS[id]) out.push({ a: 'train', label: 'Train', icon: TRAINS[id] });
-    if (id === 'academy') out.push({ a: 'research', label: 'Research', icon: 'scroll' });
-    if (id === 'market') { out.push({ a: 'trade', label: 'Trade', icon: 'gold' }); out.push({ a: 'wonder', label: 'Wonder', icon: 'crown' }); }
-    if (id === 'hospital') out.push({ a: 'heal', label: 'Heal', icon: 'herb' });
-    if (id === 'tower') out.push({ a: 'world', label: 'Lookout', icon: 'eye' });
+H.open = id => { H.focus(id, true); select(id); };
+
+// ================================================================ the town's overlay: plates, timers, crates, arrows
+// DOM elements over the canvas (crisp text, real buttons), placed every frame from the camera
+const ALL = [...Object.keys(PLOTS), 'wall'];
+// short names for the plates under the buildings
+const SHORT = { workshop: 'Workshop', range: 'Range', tower: 'Tower', lumber: 'Lumber Mill', mine: 'Mine', wall: 'Walls', hall: 'Town Hall' };
+function plateAt(id) {
+  if (id === 'wall') return iso(5.6, 21.4);
+  const [px, py] = PLOTS[id], fs = ART.FOOT[id];
+  return iso(px + fs * 0.92, py + fs * 0.92);
+}
+function buildDom(root) {
+  const box = root.querySelector('.aoc-wui');
+  box.innerHTML = ALL.map(id => `<div class="aoc-bui" data-b="${id}">
+    <button type="button" class="aoc-plate" data-plate="${id}" aria-label="${esc(A.BUILDINGS[id].name)}"><span class="aoc-plate-lv"></span><span class="aoc-plate-n">${esc(SHORT[id] || A.BUILDINGS[id].name)}</span></button>
+    <button type="button" class="aoc-timer" data-timer="${id}" hidden><span class="aoc-timer-i">${U.icon('hammer', 16)}</span><span class="aoc-timer-t"></span><span class="aoc-timer-bar"><i></i></span></button>
+    <button type="button" class="aoc-bubble" data-crate="${id}" hidden aria-label="Collect"></button>
+    <span class="aoc-up" hidden aria-hidden="true">${U.icon('arrow_up', 18)}</span>
+  </div>`).join('');
+  H.dom = {};
+  for (const id of ALL) {
+    const n = box.querySelector(`[data-b="${id}"]`);
+    H.dom[id] = { n, plate: n.querySelector('.aoc-plate'), lv: n.querySelector('.aoc-plate-lv'), timer: n.querySelector('.aoc-timer'), tt: n.querySelector('.aoc-timer-t'), bar: n.querySelector('.aoc-timer-bar i'), bubble: n.querySelector('.aoc-bubble'), up: n.querySelector('.aoc-up'), key: '' };
   }
-  if (id === 'hall') { out.push({ a: 'list', label: 'Buildings', icon: 'castle' }); out.push({ a: 'goals', label: 'Goals', icon: 'star' }); }
-  if (id === 'wall') out.push({ a: 'shield', label: 'Shield', icon: 'shield' });
-  out.push({ a: 'info', label: 'Info', icon: 'info' });
-  return out;
 }
-function renderBar() {
-  const bar = document.querySelector('.aoc-screen-city .aoc-bbar');
-  const id = H.sel;
-  if (!bar || !id || !U.F) return;
-  const P = U.F.player, L = P.b[id] || 0;
-  const make = MAKES[id];
-  const extra = make && L ? `<span class="aoc-bbar-x">${U.resIcon(make, 15)}+${fmt(P.prod[make])}/h</span>` : TRAINS[id] && L ? `<span class="aoc-bbar-x">${U.icon(TRAINS[id], 15)}${fmt(P.troops[TRAINS[id]])}</span>` : id === 'wall' ? `<span class="aoc-bbar-x">${U.icon('shield', 15)}${fmt(P.wallDur)}</span>` : '';
-  setHtml(bar, `<div class="aoc-bbar-head"><b>${esc(A.BUILDINGS[id].name)}</b><span class="aoc-lv">${L ? 'Lv ' + L : 'Not built'}</span>${extra}</div>
-    <div class="aoc-bbar-row">${actsFor(id).map(a => `<button type="button" class="aoc-rbtn ${a.kind || ''}" data-bact="${a.a}"${a.id ? ` id="${a.id}"` : ''}><span class="aoc-rbtn-i">${U.icon(a.icon, 24)}</span><span>${esc(a.label)}</span></button>`).join('')}</div>`);
+// where each building's pieces go this frame
+function layoutDom() {
+  if (!H.dom) return;
+  for (const id of ALL) {
+    const d = H.dom[id];
+    const [px, py] = toS(...plateAt(id));
+    const top = id === 'wall' ? [px, py - 46 * H.cam.z] : topOf(id) || [px, py - 60];
+    const key = `${Math.round(px)},${Math.round(py)},${Math.round(top[0])},${Math.round(top[1])},${d.timer.hidden ? 0 : 1}`;
+    if (key === d.key) continue;
+    d.key = key;
+    // left and top place them; the stylesheet centres them and animates their transform
+    const at = (n, x, y) => { n.style.left = Math.round(x) + 'px'; n.style.top = Math.round(y) + 'px'; };
+    at(d.plate, px, py);
+    at(d.timer, top[0], top[1] - 6);
+    at(d.bubble, top[0], top[1] - (d.timer.hidden ? 4 : 38));
+    at(d.up, top[0] + 26, top[1] + 6);
+  }
 }
-async function onBar(e) {
-  const b = e.target.closest('[data-bact]');
-  if (!b) return;
-  const id = H.sel, a = b.dataset.bact;
-  if (!id) return;
-  if (a === 'up') U.upgradeSheet(id);
-  if (a === 'cancel') U.confirm({ title: 'Cancel the upgrade?', text: 'Half of what it cost comes back.', ok: 'Cancel upgrade', kind: 'red', onOk: () => U.run({ type: 'cancelBuild' }, 'Upgrade cancelled.') });
-  if (a === 'train') U.trainSheet(TRAINS[id]);
-  if (a === 'research') U.cityPanel('research');
-  if (a === 'trade') U.cityPanel('market');
-  if (a === 'wonder') U.cityPanel('wonder');
-  if (a === 'list') U.cityPanel('build');
-  if (a === 'goals') U.cityPanel('goals');
-  if (a === 'heal') U.healSheet();
-  if (a === 'shield') U.shieldSheet();
-  if (a === 'world') U.go('map');
-  if (a === 'info') U.sheet({ title: A.BUILDINGS[id].name, body: `<p class="aoc-p">${esc(A.BUILDINGS[id].desc)}</p>` });
+// what each building's pieces say: level, timers, Free, full crates, upgrade arrows
+function refreshDom(f) {
+  if (!H.dom) return;
+  const P = f.player, q = P.q;
+  const timers = {};
+  if (q.build) timers[q.build.id] = { start: q.build.start, end: q.build.end, kind: 'build' };
+  for (const id in TRAINS) if (q.train[TRAINS[id]]) timers[id] = timers[id] || { ...q.train[TRAINS[id]], kind: 'train' };
+  if (q.research) timers.academy = timers.academy || { ...q.research, kind: 'research' };
+  if (q.heal) timers.hospital = timers.hospital || { ...q.heal, kind: 'heal' };
+  if (q.exchange) timers.market = timers.market || { ...q.exchange, kind: 'exchange' };
+  for (const id of ALL) {
+    const d = H.dom[id], L = P.b[id] || 0, def = A.BUILDINGS[id];
+    const locked = !L && P.b.hall < def.needHall;
+    const canBuild = !L && !locked;
+    d.plate.classList.toggle('is-locked', locked);
+    d.plate.classList.toggle('is-build', canBuild);
+    setHtml(d.lv, locked ? `${U.icon('lock', 11)}${def.needHall}` : L ? String(L) : U.icon('plus', 11));
+    const tm = timers[id];
+    d.timer.hidden = !tm;
+    if (tm) {
+      const left = tm.end - f.t;
+      const free = tm.kind !== 'exchange' && left <= A.FREE_FINISH;
+      d.timer.classList.toggle('is-free', free);
+      d.timer.dataset.kind = tm.kind;
+      setText(d.tt, free ? 'Free' : dur(left));
+      d.bar.style.width = Math.round(Math.max(0, Math.min(1, (f.t - tm.start) / Math.max(1, tm.end - tm.start))) * 100) + '%';
+      setHtml(d.timer.querySelector('.aoc-timer-i'), U.icon(free ? 'check' : tm.kind === 'build' ? 'hammer' : tm.kind === 'train' ? TRAINS[id] : tm.kind === 'heal' ? 'herb' : tm.kind === 'exchange' ? 'crown' : 'scroll', 16));
+    }
+    const crate = f.crates?.[id];
+    d.bubble.hidden = !(crate && crate.ready);
+    if (crate) setHtml(d.bubble, U.icon(crate.res, 28));
+    d.up.hidden = !(H.build[id]?.ok && !q.build && id !== 'wall');
+  }
+  // the builder: idle, busy with a timer, or ready to finish free
+  const b = document.querySelector('.aoc-screen-city .aoc-builder');
+  if (b) {
+    const busy = q.build, left = busy ? busy.end - f.t : 0, free = busy && left <= A.FREE_FINISH;
+    b.classList.toggle('is-idle', !busy);
+    b.classList.toggle('is-free', !!free);
+    setText(b.querySelector('.aoc-builder-t'), !busy ? 'Idle' : free ? 'Free' : dur(left));
+    b.querySelector('.aoc-builder-bar i').style.width = busy ? Math.round(Math.max(0, Math.min(1, (f.t - busy.start) / Math.max(1, busy.end - busy.start))) * 100) + '%' : '0%';
+    b.setAttribute('aria-label', !busy ? 'Builder idle' : `Building ${A.BUILDINGS[busy.id].name}: ${free ? 'finish free' : dur(left) + ' left'}`);
+  }
+  // side buttons with red dots
+  const side = document.querySelector('.aoc-screen-city .aoc-side');
+  if (side) {
+    U.badge(side.querySelector('[data-side="mail"] .aoc-badge'), f.unread);
+    U.badge(side.querySelector('[data-side="goals"] .aoc-badge'), f.quests.filter(x => x.done && !x.claimed).length);
+    const rallies = (f.rallies || []).filter(r => !r.joined).length;
+    U.badge(side.querySelector('[data-side="guild"] .aoc-badge'), rallies + (P.guild < 0 ? P.invites.length : 0) + (f.applicants || []).length + (f.proposals || []).length);
+    const cmdBtn = side.querySelector('[data-side="cmds"]');
+    if (cmdBtn) U.badge(cmdBtn.querySelector('.aoc-badge'), 0);
+    const dev = side.querySelector('[data-side="dev"]');
+    if (dev) dev.hidden = !U.dev;
+  }
 }
+// a number floating up from where something was collected
+function floatAt(x, y, html, cls = '') {
+  const box = document.querySelector('.aoc-screen-city .aoc-wui');
+  if (!box) return;
+  const n = el(`<span class="aoc-float ${cls}" style="left:${Math.round(x)}px;top:${Math.round(y)}px">${html}</span>`);
+  box.appendChild(n);
+  setTimeout(() => n.remove(), 1400);
+}
+async function onTown(e) {
+  const t = e.target.closest('[data-plate],[data-timer],[data-crate],[data-side],.aoc-builder');
+  if (!t) return;
+  const f = U.F;
+  if (t.dataset.plate) return select(t.dataset.plate);
+  if (t.dataset.crate) {
+    const id = t.dataset.crate;
+    t.disabled = true;
+    const r = await U.run({ type: 'collect', id });
+    t.disabled = false;
+    if (r) { const box = t.getBoundingClientRect(), wr = t.closest('.aoc-wui').getBoundingClientRect(); floatAt(box.left - wr.left + box.width / 2, box.top - wr.top, `${U.icon(r.res, 18)}+${fmt(r.amount)}`); }
+    return;
+  }
+  if (t.dataset.timer) {
+    const id = t.dataset.timer, kind = t.dataset.kind;
+    if (t.classList.contains('is-free')) return freeFinish(kind, id);
+    return select(id);
+  }
+  if (t.classList.contains('aoc-builder')) {
+    const b = f.player.q.build;
+    if (b && b.end - f.t <= A.FREE_FINISH) return freeFinish('build', b.id);
+    if (b) return H.open(b.id);
+    return U.cityPanel('build');
+  }
+  const side = t.dataset.side;
+  if (side === 'mail') U.go('intel');
+  if (side === 'goals') U.cityPanel('goals');
+  if (side === 'guild') U.go('guild');
+  if (side === 'cmds') U.go('army', 'cmds');
+  if (side === 'dev') U.devPanel?.();
+}
+async function freeFinish(kind, id) {
+  const r = await U.run({ type: 'free', q: kind, unit: kind === 'train' ? TRAINS[id] : '' });
+  if (r) U.toast(kind === 'build' ? 'Finished free.' : 'Done.', 'good');
+  return r;
+}
+U.freeFinish = freeFinish;
 
 // ================================================================ the upgrade sheet
 function preview(id, L) {
@@ -521,7 +551,7 @@ function preview(id, L) {
   const top = spriteTop(s.c);
   const h = s.c.sh - top;
   const c = document.createElement('canvas');
-  const k = Math.min(1, 150 / s.c.sw, 130 / h);
+  const k = Math.min(1, 132 / s.c.sw, 104 / h);
   c.width = Math.round(s.c.sw * k * 2); c.height = Math.round(h * k * 2);
   c.style.width = c.width / 2 + 'px'; c.style.height = c.height / 2 + 'px';
   c.className = 'aoc-up-pic';
@@ -547,37 +577,115 @@ H.thumb = (id, L) => {
   thumbs.set(key, url);
   return url;
 };
-function gains(id, L) {
-  const P = U.F.player;
-  const n = L + 1;
-  if (id === 'hall') return [['castle', `Buildings up to ${n}`]];
-  if (TRAINS[id]) return [[TRAINS[id], `${full(A.trainBatch(L))} → ${full(A.trainBatch(n))} per batch`]];
-  if (MAKES[id]) return [[MAKES[id], `+${fmt(P.prod[MAKES[id]])}/h now`]];
-  if (id === 'academy') return [['scroll', `Research up to level ${n}`]];
-  if (id === 'wall') return [['shield', `${fmt(P.wallMax)} durability now`]];
-  if (id === 'warehouse') return [['shield', `${fmt(P.protect)} safe now`]];
-  if (id === 'hospital') return [['herb', `${fmt(P.hosp)} beds now`]];
-  if (id === 'tower') return [['eye', `Sight ${P.vision} tiles now`]];
-  return [];
+// what the next level changes, from the same formulas the simulation uses
+const FACTOR = { food: 1, wood: 1, stone: 0.8, iron: 0.6, gold: 0.35 };
+function effects(id, L) {
+  const P = U.F.player, n = L + 1, rows = [];
+  const row = (label, a, b) => rows.push([label, String(a), String(b)]);
+  if (id === 'hall') { row('Building level cap', `Lv ${L}`, `Lv ${n}`); row('Storage', fmt(A.storageCap(P.b.warehouse || 0, L)), fmt(A.storageCap(P.b.warehouse || 0, n))); row('Sight', `${A.visionRadius(P.b.tower || 0, L)} tiles`, `${A.visionRadius(P.b.tower || 0, n)} tiles`); }
+  if (MAKES[id]) {
+    const r = MAKES[id], base = x => A.BASE_PRODUCTION[r] + A.productionAt(x) * FACTOR[r], k = P.prod[r] / Math.max(1, base(L));
+    row(`${A.RES_NAME[r]} per hour`, fmt(P.prod[r]), fmt(base(n) * k));
+    row('Crate (every 4 hours)', fmt(P.prod[r] * A.CRATE.hours), fmt(base(n) * k * A.CRATE.hours));
+  }
+  if (TRAINS[id]) { row('Trains at a time', fmt(A.trainBatch(L)), fmt(A.trainBatch(n))); row('Training speed', `+${L * 10}%`, `+${n * 10}%`); }
+  if (id === 'warehouse') { row('Storage', fmt(A.storageCap(L, P.b.hall)), fmt(A.storageCap(n, P.b.hall))); row('Safe from plunder', fmt(A.protectedAmount(L)), fmt(A.protectedAmount(n))); }
+  if (id === 'hospital') row('Beds', fmt(A.hospitalCap(L)), fmt(A.hospitalCap(n)));
+  if (id === 'wall') row('Durability', fmt(A.wallDurability(L)), fmt(A.wallDurability(n)));
+  if (id === 'tower') row('Sight', `${A.visionRadius(L, P.b.hall)} tiles`, `${A.visionRadius(n, P.b.hall)} tiles`);
+  if (id === 'academy') row('Research up to', `Lv ${L}`, `Lv ${n}`);
+  return rows;
 }
-U.upgradeSheet = async id => {
-  const checks = await U.host.query('build');
-  const c = checks.find(x => x.id === id);
-  const P = U.F.player, L = P.b[id] || 0;
-  if (!c) return;
-  const body = el(`<div class="aoc-up"><div class="aoc-up-pics"></div>
-    <div class="aoc-up-lv"><span>${L ? 'Lv ' + L : 'New'}</span>${U.icon('next', 18)}<b>Lv ${L + 1}</b></div>
-    <div class="aoc-up-gain">${gains(id, L).map(([i, t]) => `<span>${U.icon(i, 16)}${esc(t)}</span>`).join('')}</div>
-    ${c.allowed ? `<div class="aoc-up-cost">${Object.entries(c.cost).map(([r, v]) => `<span class="aoc-up-c${(P.res[r] || 0) < v ? ' is-short' : ''}">${U.resIcon(r, 26)}<b>${fmt(v)}</b><i>${fmt(P.res[r] || 0)}</i></span>`).join('')}<span class="aoc-up-c">${U.icon('clock', 26)}<b>${dur(c.minutes)}</b></span></div>` : ''}
-    ${c.ok ? '' : `<p class="aoc-up-err">${esc(c.err)}</p>`}</div>`);
-  const pics = body.querySelector('.aoc-up-pics');
-  pics.appendChild(preview(id, L));
-  if (c.allowed) { pics.appendChild(el(`<span class="aoc-up-arrow">${U.icon('next', 28)}</span>`)); pics.appendChild(preview(id, L + 1)); }
-  U.sheet({
-    title: A.BUILDINGS[id].name, body,
-    actions: [{ label: L ? 'Upgrade' : 'Build', id: 'aoc-up-go', icon: 'up', disabled: !c.ok, onClick: async () => { if (await U.run({ type: 'build', id }, `${A.BUILDINGS[id].name}: building started.`)) { H.buildSig = ''; select(null); } } }],
+function requirements(id, L) {
+  const P = U.F.player, n = L + 1, out = [];
+  if (n > A.MAX_LEVEL) return out;
+  const need = (name, have, lv) => out.push({ name, lv, met: have >= lv });
+  if (!L && A.BUILDINGS[id].needHall > 1) need(A.BUILDINGS.hall.name, P.b.hall, A.BUILDINGS[id].needHall);
+  else if (id !== 'hall') need(A.BUILDINGS.hall.name, P.b.hall, n);
+  for (const [b, lv] of A.buildingReq(id, n)) need(A.BUILDINGS[b].name, P.b[b] || 0, lv);
+  return out;
+}
+// what a building can do besides upgrading
+function extras(id) {
+  const P = U.F.player, L = P.b[id] || 0, out = [];
+  if (L > 0) {
+    if (TRAINS[id]) out.push(['train', 'Train', TRAINS[id]]);
+    if (id === 'academy') out.push(['research', 'Research', 'scroll']);
+    if (id === 'market') { out.push(['trade', 'Trade', 'gold']); out.push(['wonder', 'Grand Exchange', 'crown']); }
+    if (id === 'hospital') out.push(['heal', 'Heal', 'herb']);
+    if (id === 'tower') out.push(['world', 'Look out', 'map']);
+  }
+  if (id === 'hall') { out.push(['list', 'All buildings', 'city']); out.push(['goals', 'Goals', 'star']); }
+  if (id === 'wall') out.push(['shield', 'Peace shield', 'shield']);
+  return out;
+}
+function doExtra(a, id) {
+  if (a === 'train') U.trainSheet(TRAINS[id]);
+  if (a === 'research') U.cityPanel('research');
+  if (a === 'trade') U.cityPanel('market');
+  if (a === 'wonder') U.cityPanel('wonder');
+  if (a === 'list') U.cityPanel('build');
+  if (a === 'goals') U.cityPanel('goals');
+  if (a === 'heal') U.healSheet();
+  if (a === 'shield') U.shieldSheet();
+  if (a === 'world') { U.closeSheets(); U.go('map'); }
+}
+// the building sheet, in the Last Furnace style: picture, levels, progress, effects, requirements, cost
+U.buildingSheet = id => {
+  if (!A.BUILDINGS[id]) return null;
+  const body = el('<div class="aoc-bsheet"><p class="aoc-muted">Loading</p></div>');
+  let sig = '', busy = false;
+  const render = async () => {
+    if (busy) return;
+    busy = true;
+    let checks;
+    try { checks = await U.host.query('build'); } finally { busy = false; }
+    if (h.closed) return;
+    const P = U.F.player, f = U.F, L = P.b[id] || 0, c = checks.find(x => x.id === id) || {};
+    const up = P.q.build && P.q.build.id === id ? P.q.build : null;
+    const maxed = L >= A.MAX_LEVEL;
+    sig = JSON.stringify([L, !!up, c.ok, c.err]);
+    const reqs = requirements(id, L), eff = maxed ? [] : effects(id, L);
+    body.innerHTML = `<div class="aoc-bs-top"><div class="aoc-bs-pic"></div><div class="aoc-bs-info">
+        <div class="aoc-bs-lv"><span>${L ? 'Lv ' + L : 'New'}</span>${maxed ? '' : `${U.icon('chevron_right', 18)}<span class="aoc-bs-next">Lv ${L + 1}</span>`}</div>
+        <p class="aoc-bs-desc">${esc(A.BUILDINGS[id].desc)}</p></div></div>
+      ${up ? `<div class="aoc-panel aoc-bs-prog"><div class="aoc-bs-prog-h"><b>Upgrading to Lv ${up.L}</b><span class="aoc-bs-left">${U.icon('clock', 16)}<span></span></span></div><div class="aoc-progress gold"><i></i></div></div>` : ''}
+      ${eff.length ? `<h3 class="aoc-h4">Effects</h3><div class="aoc-panel aoc-effects">${eff.map(([lab, a, b]) => `<div class="aoc-eff"><span>${esc(lab)}</span><b>${esc(a)}${U.icon('chevron_right', 13)}<span class="aoc-good">${esc(b)}</span></b></div>`).join('')}</div>` : ''}
+      ${!up && reqs.length ? `<h3 class="aoc-h4">Requirements</h3><div class="aoc-reqs">${reqs.map(r => `<div class="aoc-req aoc-panel${r.met ? ' is-met' : ''}">${U.icon(r.met ? 'check' : 'lock', 16)}<span>${esc(r.name)} <b>Lv ${r.lv}</b></span></div>`).join('')}</div>` : ''}
+      ${!up && !maxed && c.cost ? `<h3 class="aoc-h4">Cost</h3><div class="aoc-costrow"><div class="aoc-costs">${Object.entries(c.cost).map(([r, v]) => `<span class="aoc-rchip${(P.res[r] || 0) < v ? ' is-short' : ''}">${U.resIcon(r, 18)}${fmt(v)}</span>`).join('')}</div><span class="aoc-rchip">${U.icon('clock', 16)}${dur(c.minutes)}</span></div>` : ''}
+      ${maxed ? '<p class="aoc-p aoc-good">At the highest level.</p>' : ''}
+      ${!up && !maxed && !c.ok && c.err ? `<p class="aoc-up-err">${esc(c.err)}</p>` : ''}
+      ${extras(id).length ? `<div class="aoc-bs-extra">${extras(id).map(([a, label, icon]) => `<button type="button" class="aoc-btn blue small" data-bx="${a}">${U.icon(icon, 18)}<span>${esc(label)}</span></button>`).join('')}</div>` : ''}`;
+    if (PLOTS[id]) body.querySelector('.aoc-bs-pic').appendChild(preview(id, L));
+    else body.querySelector('.aoc-bs-pic').innerHTML = U.icon('shield', 64);
+    tick(f);
+    if (up) h.setActions([{ label: 'Free', id: 'aoc-free', kind: 'green', icon: 'check', disabled: up.end - f.t > A.FREE_FINISH, keep: true, onClick: async () => { await freeFinish('build', id); } }]);
+    else if (maxed) h.setActions([]);
+    else h.setActions([{ label: L ? 'Upgrade' : 'Build', id: 'aoc-up-go', kind: 'gold', icon: 'arrow_up', disabled: !c.ok, onClick: async () => { const r = await U.run({ type: 'build', id }, `${A.BUILDINGS[id].name}: building started.`); H.buildSig = ''; return r ? true : false; } }]);
+  };
+  // the timer and the Free button stay live while the sheet is open
+  const tick = f => {
+    const up = f.player.q.build && f.player.q.build.id === id ? f.player.q.build : null;
+    if (!up) return;
+    const left = up.end - f.t;
+    setText(body.querySelector('.aoc-bs-left span'), left <= A.FREE_FINISH ? 'Free now' : dur(left));
+    const bar = body.querySelector('.aoc-progress i');
+    if (bar) bar.style.width = Math.round(Math.max(0, Math.min(1, (f.t - up.start) / Math.max(1, up.end - up.start))) * 100) + '%';
+    const fb = document.getElementById('aoc-free');
+    if (fb) fb.disabled = left > A.FREE_FINISH;
+  };
+  body.addEventListener('click', e => { const b = e.target.closest('[data-bx]'); if (b) doExtra(b.dataset.bx, id); });
+  const h = U.sheet({ title: A.BUILDINGS[id].name, body, onClose: () => { off(); if (H.sel === id) H.sel = null; } });
+  const off = U.onFrame(f => {
+    const P = f.player, L = P.b[id] || 0, up = P.q.build && P.q.build.id === id;
+    const now = JSON.stringify([L, !!up]);
+    const okNow = H.build[id]?.ok;
+    if (!sig.startsWith(now.slice(0, -1)) || (okNow !== undefined && !up && JSON.parse(sig)[2] !== okNow)) render(); else tick(f);
   });
+  render();
+  return h;
 };
+U.upgradeSheet = U.buildingSheet;
 
 // ================================================================ the screen
 function refreshChecks(f) {
@@ -589,18 +697,27 @@ function refreshChecks(f) {
 }
 function mount(root) {
   root.innerHTML = `<div class="aoc-town">
-    <canvas class="aoc-town-cv" aria-label="Your city. Drag to look around, pinch or scroll to zoom, tap a building to use it."></canvas>
-    <div class="aoc-quest" hidden></div>
-    <button type="button" class="aoc-world-btn" data-go="map" aria-label="World map">${U.icon('map', 30)}<span>World</span></button>
-    <div class="aoc-bbar" role="group" aria-label="Building" hidden></div>
+    <canvas class="aoc-town-cv" aria-label="Your city. Drag to look around, pinch or scroll to zoom, tap a building to open it."></canvas>
+    <div class="aoc-wui"></div>
+    <div class="aoc-town-top">
+      <button type="button" class="aoc-builder is-idle"><span class="aoc-builder-i">${U.icon('hammer', 18)}</span><span class="aoc-builder-t">Idle</span><span class="aoc-builder-bar"><i></i></span></button>
+      <div class="aoc-side">
+        <button type="button" class="aoc-sidebtn" data-side="mail"><span class="aoc-sidebtn-i">${U.icon('mail', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Mail</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="goals"><span class="aoc-sidebtn-i">${U.icon('chest', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Goals</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="guild"><span class="aoc-sidebtn-i">${U.icon('guild', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Guild</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="cmds"><span class="aoc-sidebtn-i">${U.icon('hero', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Heroes</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="dev" hidden><span class="aoc-sidebtn-i">${U.icon('dev', 26)}</span><span class="aoc-sidebtn-l">Dev</span></button>
+      </div>
+    </div>
+    <div class="aoc-town-bottom"><div class="aoc-quest" hidden></div></div>
     <div class="aoc-sr" role="group" aria-label="Buildings">${ORDER.map(id => `<button type="button" data-sel="${id}">${esc(A.BUILDINGS[id].name)}</button>`).join('')}</div>
   </div>`;
   H.cv = root.querySelector('canvas');
   H.g = H.cv.getContext('2d', { alpha: false });
-  new ResizeObserver(() => { resize(); schedule(); }).observe(H.cv.parentElement);
-  root.querySelector('.aoc-bbar').addEventListener('click', onBar);
-  root.querySelector('.aoc-world-btn').addEventListener('click', () => U.go('map'));
-  root.querySelector('.aoc-sr').addEventListener('click', e => { const b = e.target.closest('[data-sel]'); if (b) { H.focus(b.dataset.sel); select(b.dataset.sel); } });
+  buildDom(root);
+  new ResizeObserver(() => { resize(); H.dom && Object.values(H.dom).forEach(d => { d.key = ''; }); schedule(); }).observe(H.cv.parentElement);
+  root.querySelector('.aoc-town').addEventListener('click', onTown);
+  root.querySelector('.aoc-sr').addEventListener('click', e => { const b = e.target.closest('[data-sel]'); if (b) H.open(b.dataset.sel); });
   const cv = H.cv;
   cv.addEventListener('pointerdown', e => {
     cv.setPointerCapture?.(e.pointerId);
@@ -623,7 +740,7 @@ function mount(root) {
     const tap = H.drag && H.drag.moved < 8 && H.pointers.size === 1 && e.type === 'pointerup';
     H.pointers.delete(e.pointerId);
     if (H.pointers.size < 2) H.pinch = null;
-    if (tap) select(pick(e.offsetX, e.offsetY));
+    if (tap) { const id = pick(e.offsetX, e.offsetY); if (id) select(id); }
     if (!H.pointers.size) H.drag = null;
   };
   cv.addEventListener('pointerup', end);
@@ -642,16 +759,19 @@ function mount(root) {
     if (k) { H.cam.x += k[0] / H.cam.z; H.cam.y += k[1] / H.cam.z; clampCam(); e.preventDefault(); }
     if (e.key === '+' || e.key === '=') { H.cam.z *= 1.2; clampCam(); }
     if (e.key === '-') { H.cam.z /= 1.2; clampCam(); }
-    if (e.key === 'Escape') select(null);
   });
 }
 U.screen('city', {
   mount,
-  show() { resize(); if (!H.homed) { H.homed = true; homeCam(); } H.buildSig = ''; if (U.F) refreshChecks(U.F); schedule(); },
-  hide() { select(null); },
+  show() { resize(); if (!H.homed) { H.homed = true; homeCam(); } H.buildSig = ''; if (U.F) { refreshChecks(U.F); refreshDom(U.F); } schedule(); },
+  hide() { H.sel = null; },
   update(f) {
     const b = f.player.b;
     if (H.prevB) for (const id in b) if ((b[id] || 0) > (H.prevB[id] || 0)) (H.bursts = H.bursts || []).push({ id, L: b[id], t0: performance.now() });
     H.prevB = { ...b };
-    refreshChecks(f); U.questBar(document.querySelector('.aoc-screen-city .aoc-quest'), f); if (H.sel) renderBar(); schedule(); },
+    refreshChecks(f);
+    refreshDom(f);
+    U.questBar(document.querySelector('.aoc-screen-city .aoc-quest'), f);
+    schedule();
+  },
 });

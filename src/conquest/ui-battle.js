@@ -194,7 +194,7 @@ U.battleScene = r => {
       g.fillRect(x, y, w, 32);
       g.strokeStyle = '#e9b45e'; g.lineWidth = 1.5; g.strokeRect(x + 0.5, y + 0.5, w - 1, 31);
       if (b.cmd) g.drawImage(ART.portrait(b.cmd, 28), x + 2, y + 2, 28, 28);
-      g.fillStyle = '#ffe9a8'; g.font = '700 12px Cinzel, Georgia, serif'; g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillStyle = '#ffe9a8'; g.font = '700 12px "Lilita One", "Arial Black", sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle';
       g.fillText(b.name, x + 36, y + 16.5, w - 40);
       g.globalAlpha = 1;
     }
@@ -209,7 +209,7 @@ U.battleScene = r => {
       g.fillStyle = COL[s]; g.fillRect(bx, 46, bw * Math.min(1, m / 100), 5);
     };
     hud('a', 10, 'left'); hud('d', W - 10, 'right');
-    if (st.k > 0 && t < TEND) { g.textAlign = 'center'; g.font = '700 12px Cinzel, Georgia, serif'; g.fillStyle = '#e9b45e'; g.fillText(`Round ${st.k}`, W / 2, 22); }
+    if (st.k > 0 && t < TEND) { g.textAlign = 'center'; g.font = '700 12px "Lilita One", "Arial Black", sans-serif'; g.fillStyle = '#e9b45e'; g.fillText(`Round ${st.k}`, W / 2, 22); }
     // the result
     if (t > TEND + 300) {
       const won = res.winner === view;
@@ -221,7 +221,7 @@ U.battleScene = r => {
       g.fillStyle = rib;
       g.beginPath(); g.moveTo(bx - 14, by + 6); g.lineTo(bx, by); g.lineTo(bx + bw, by); g.lineTo(bx + bw + 14, by + 6); g.lineTo(bx + bw, by + bh); g.lineTo(bx, by + bh); g.closePath(); g.fill();
       g.strokeStyle = won ? '#fff1c4' : '#ffb0a0'; g.lineWidth = 1.5; g.stroke();
-      g.font = '800 28px Cinzel, Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '800 28px "Lilita One", "Arial Black", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
       g.fillStyle = won ? '#2a1606' : '#fff0e8';
       g.fillText(won ? (view === 'd' ? 'DEFENDED' : 'VICTORY') : 'DEFEAT', W / 2, by + bh / 2 + 1);
       const loot = r.extra?.plunder;

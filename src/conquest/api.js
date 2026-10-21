@@ -22,6 +22,52 @@ function buildCheck(w, g, id) {
   if (!canAfford(g, cost)) return { allowed: true, ok: false, err: 'Not enough resources.', cost, minutes, L };
   return { allowed: true, ok: true, err: '', cost, minutes, L };
 }
+// ---------------------------------------------------------------- free finish (any queue within FREE_FINISH minutes)
+const FREE_KINDS = ['build', 'research', 'heal', 'train'];
+function freeQueue(g, kind, unit) {
+  if (kind === 'train') return own(g.q.train, unit) ? g.q.train[unit] : null;
+  return FREE_KINDS.includes(kind) ? g.q[kind] : null;
+}
+function freeCheck(w, g, kind, unit) {
+  const q = freeQueue(g, kind, unit);
+  if (!q) return { ok: false, err: 'Nothing to finish.' };
+  if (q.end - w.t > FREE_FINISH) return { ok: false, err: `It is free when ${FREE_FINISH} minutes or less are left.`, left: q.end - w.t };
+  return { ok: true };
+}
+function actFree(w, g, kind, unit) {
+  const c = freeCheck(w, g, kind, unit);
+  if (!c.ok) return c;
+  freeQueue(g, kind, unit).end = w.t;
+  processQueues(w);
+  return { ok: true };
+}
+// ---------------------------------------------------------------- crates at producing buildings
+function crateCheck(w, g, id) {
+  if (!own(BUILDINGS, id) || !BUILDINGS[id].produces) return { ok: false, err: 'That building makes nothing to collect.' };
+  if (!((g.b[id] || 0) > 0)) return { ok: false, err: 'Build it first.' };
+  if (w.t < (g.crate[id] || 0)) return { ok: false, err: 'The crate is not full yet.', ready: g.crate[id] };
+  const r = BUILDINGS[id].produces, m = cityMods(w, g);
+  const amount = Math.max(1, Math.floor(production(w, g, m)[r] * CRATE.hours));
+  const room = r === 'gold' ? Infinity : storage(w, g, m) - g.res[r];
+  if (room < 1) return { ok: false, err: `Your ${RES_NAME[r]} storage is full.` };
+  return { ok: true, res: r, amount: Math.min(amount, Math.floor(room)) };
+}
+function actCollect(w, g, id) {
+  settle(w, g, w.t);
+  const c = crateCheck(w, g, id);
+  if (!c.ok) return c;
+  g.res[c.res] += c.amount;
+  g.crate[id] = w.t + CRATE.every;
+  return { ok: true, res: c.res, amount: c.amount };
+}
+function crateView(w, g) {
+  const out = {};
+  for (const id of BUILDING_KEYS) if (BUILDINGS[id].produces && (g.b[id] || 0) > 0) out[id] = { ready: w.t >= (g.crate[id] || 0), at: g.crate[id] || 0, res: BUILDINGS[id].produces };
+  return out;
+}
+// developer mode: resources that never run out, and queues that finish as they start
+function devRefill(w) { const P = w.govs[PLAYER]; for (const r of RES) if (P.res[r] < 50e6) P.res[r] = 50e6; }
+function devFinishNow(w) { const P = w.govs[PLAYER]; for (const k of ['build', 'research', 'heal']) if (P.q[k]) P.q[k].end = w.t; for (const u of UNIT_KEYS) if (P.q.train[u]) P.q.train[u].end = w.t; processQueues(w); }
 function actBuild(w, g, id) {
   settle(w, g, w.t);
   const c = buildCheck(w, g, id);
@@ -223,21 +269,24 @@ function actExchange(w, g) {
 }
 
 // ================================================================ quests and achievements (the player)
+// goals in chapters; prog(g) is [how far, how far is needed] for the progress bar
+const CHAPTERS = ['First Stones', 'Into the Wild', 'Under a Banner', 'A City of Note'];
 const QUESTS = [
-  { id: 'hall2', text: 'Raise the Town Hall to level 2', how: 'City: Buildings, Town Hall. No building can pass its level.', check: g => g.b.hall >= 2, reward: { food: 2500, wood: 2500 } },
-  { id: 'farm2', text: 'Upgrade the Farm to level 2', how: 'City: Buildings, Farm. Troops eat Food.', check: g => g.b.farm >= 2, reward: { wood: 1500, stone: 600 } },
-  { id: 'warehouse', text: 'Build a Warehouse', how: 'Protects part of your stock from plunder.', check: g => (g.b.warehouse || 0) >= 1, reward: { stone: 1200 } },
-  { id: 'train', text: 'Train 200 Infantry', how: 'City: Barracks.', check: g => g.stats.trained.inf >= 200, reward: { food: 3000, wood: 1000 } },
-  { id: 'scout', text: 'Send a scout', how: 'Map: tap a bandit camp or a city, then Scout.', check: g => g.stats.scouts >= 1, reward: { gold: 400 } },
-  { id: 'camp', text: 'Defeat a bandit camp', how: 'Map: tap a camp of your level, then Attack.', check: g => g.stats.camps >= 1, reward: { food: 4000, wood: 4000 } },
-  { id: 'gather', text: 'Gather from a resource field', how: 'Map: tap a field, then Gather.', check: g => g.stats.gathered >= 1, reward: { iron: 900 } },
-  { id: 'research', text: 'Research a technology', how: 'Build the Academy (Town Hall 3), then research.', check: g => TECH_KEYS.some(t => g.tech[t] > 0), reward: { gold: 900 } },
-  { id: 'guild', text: 'Join a guild', how: 'Guilds tab: apply to a guild near you.', check: g => g.guild >= 0, reward: { gold: 1500, food: 5000 } },
-  { id: 'hall5', text: 'Raise the Town Hall to level 5', how: 'Needs walls and more resources.', check: g => g.b.hall >= 5, reward: { food: 12000, wood: 12000, stone: 6000, iron: 2500 } },
-  { id: 'wins5', text: 'Win 5 battles', how: 'Camps, ruins and enemy cities all count.', check: g => g.stats.wins >= 5, reward: { gold: 2500, iron: 4000 } },
-  { id: 'rally', text: 'Take part in a guild rally', how: 'Guild tab: join a rally when one is called.', check: g => g.stats.rallies >= 1, reward: { gold: 3000 } },
-  { id: 'hall10', text: 'Raise the Town Hall to level 10', how: 'A city of note.', check: g => g.b.hall >= 10, reward: { food: 60000, wood: 60000, stone: 30000, iron: 12000, gold: 5000 } },
+  { id: 'hall2', ch: 0, text: 'Raise the Town Hall to level 2', how: 'City: Buildings, Town Hall. No building can pass its level.', prog: g => [g.b.hall, 2], reward: { food: 2500, wood: 2500 } },
+  { id: 'farm2', ch: 0, text: 'Upgrade the Farm to level 2', how: 'City: Buildings, Farm. Troops eat Food.', prog: g => [g.b.farm || 0, 2], reward: { wood: 1500, stone: 600 } },
+  { id: 'warehouse', ch: 0, text: 'Build a Warehouse', how: 'Protects part of your stock from plunder.', prog: g => [g.b.warehouse || 0, 1], reward: { stone: 1200 } },
+  { id: 'train', ch: 0, text: 'Train 200 Infantry', how: 'City: Barracks.', prog: g => [g.stats.trained.inf, 200], reward: { food: 3000, wood: 1000 } },
+  { id: 'scout', ch: 1, text: 'Send a scout', how: 'Map: tap a bandit camp or a city, then Scout.', prog: g => [g.stats.scouts, 1], reward: { gold: 400 } },
+  { id: 'camp', ch: 1, text: 'Defeat a bandit camp', how: 'Map: tap a camp of your level, then Attack.', prog: g => [g.stats.camps, 1], reward: { food: 4000, wood: 4000 } },
+  { id: 'gather', ch: 1, text: 'Gather from a resource field', how: 'Map: tap a field, then Gather.', prog: g => [g.stats.gathered, 1], reward: { iron: 900 } },
+  { id: 'research', ch: 1, text: 'Research a technology', how: 'Build the Academy (Town Hall 3), then research.', prog: g => [TECH_KEYS.some(t => g.tech[t] > 0) ? 1 : 0, 1], reward: { gold: 900 } },
+  { id: 'guild', ch: 2, text: 'Join a guild', how: 'Guilds tab: apply to a guild near you.', prog: g => [g.guild >= 0 ? 1 : 0, 1], reward: { gold: 1500, food: 5000 } },
+  { id: 'hall5', ch: 2, text: 'Raise the Town Hall to level 5', how: 'Needs walls and more resources.', prog: g => [g.b.hall, 5], reward: { food: 12000, wood: 12000, stone: 6000, iron: 2500 } },
+  { id: 'wins5', ch: 2, text: 'Win 5 battles', how: 'Camps, ruins and enemy cities all count.', prog: g => [g.stats.wins, 5], reward: { gold: 2500, iron: 4000 } },
+  { id: 'rally', ch: 2, text: 'Take part in a guild rally', how: 'Guild tab: join a rally when one is called.', prog: g => [g.stats.rallies, 1], reward: { gold: 3000 } },
+  { id: 'hall10', ch: 3, text: 'Raise the Town Hall to level 10', how: 'A city of note.', prog: g => [g.b.hall, 10], reward: { food: 60000, wood: 60000, stone: 30000, iron: 12000, gold: 5000 } },
 ];
+for (const q of QUESTS) q.check = g => { const [a, b] = q.prog(g); return a >= b; };
 const ACHIEVEMENTS = [
   { id: 'camps10', name: 'Camp Breaker', text: 'Defeat 10 bandit camps.', check: g => g.stats.camps >= 10 },
   { id: 'wins50', name: 'Warlord', text: 'Win 50 battles.', check: g => g.stats.wins >= 50 },
@@ -252,12 +301,22 @@ const ACHIEVEMENTS = [
 ];
 
 // ================================================================ player commands
+const INSTANT_CMDS = new Set(['build', 'research', 'train', 'heal']);
 function playerCommand(w, cmd, opts = {}) {
+  const r = playerCommandRaw(w, cmd, opts);
+  // developer mode's instant switch finishes what was just started
+  if (r && r.ok && w.devSw?.instant && opts.dev && INSTANT_CMDS.has(cmd.type)) devFinishNow(w);
+  if (r && r.ok && w.devSw?.unlimited && opts.dev) devRefill(w);
+  return r;
+}
+function playerCommandRaw(w, cmd, opts) {
   const P = w.govs[PLAYER];
   if (!cmd || typeof cmd !== 'object' || typeof cmd.type !== 'string') return { ok: false, err: 'Bad command.' };
   settle(w, P, w.t);
   const a = cmd;
   switch (a.type) {
+    case 'free': return actFree(w, P, String(a.q), String(a.unit || ''));
+    case 'collect': return actCollect(w, P, String(a.id));
     case 'build': return actBuild(w, P, String(a.id));
     case 'research': return actResearch(w, P, String(a.id));
     case 'train': return actTrain(w, P, String(a.unit), a.n);
@@ -489,10 +548,12 @@ function devCommand(w, a) {
     case 'dev:troops': for (const u of UNIT_KEYS) P.troops[u] += 100000; return { ok: true };
     case 'dev:finish': for (const k of ['build', 'research', 'heal', 'exchange']) if (P.q[k]) P.q[k].end = w.t; for (const u of UNIT_KEYS) if (P.q.train[u]) P.q.train[u].end = w.t; processQueues(w); return { ok: true };
     case 'dev:hall': for (const b of BUILDING_KEYS) P.b[b] = Math.max(P.b[b] || 0, Math.min(MAX_LEVEL, Math.floor(Number(a.level) || 25))); modsChanged(P); P.wallDur = wallMax(P, cityMods(w, P)); return { ok: true };
-    case 'dev:reveal': w.explored.fill(1); return { ok: true };
+    case 'dev:reveal': w.explored.fill(1); updatePlayerVision(w); return { ok: true };
     case 'dev:commanders': for (const c of COMMANDERS) if (!P.cmds[c.id]) P.cmds[c.id] = { lv: 1, xp: 0, sk: [1, 1, 1, 1], tal: {} }; for (const id in P.cmds) { P.cmds[id].lv = CMD_MAX_LEVEL; } modsChanged(P); return { ok: true };
     case 'dev:skip': { const m = clamp(Math.floor(Number(a.minutes) || 60), 1, 7 * DAY); advance(w, m); return { ok: true }; }
     case 'dev:shield': P.shield = w.t + 7 * DAY; return { ok: true };
+    case 'dev:unlimited': w.devSw.unlimited = !!a.on; if (w.devSw.unlimited) devRefill(w); return { ok: true };
+    case 'dev:instant': w.devSw.instant = !!a.on; if (w.devSw.instant) devFinishNow(w); return { ok: true };
     default: return { ok: false, err: 'Unknown developer command.' };
   }
 }
@@ -565,7 +626,9 @@ function frameView(w, since) {
   out.guilds = w.guilds.map(gd => guildBrief(w, gd));
   out.rallies = P.guild >= 0 ? w.rallies.filter(r => r.guild === P.guild && r.state === 'gathering').map(r => rallyView(w, r)) : [];
   out.events = w.events.map(e => ({ ...e }));
-  out.quests = QUESTS.map(q => ({ id: q.id, text: q.text, how: q.how, reward: q.reward, done: !!q.check(P), claimed: !!w.quests.claimed[q.id] }));
+  out.quests = QUESTS.map(q => { const [a, b] = q.prog(P); return { id: q.id, ch: q.ch, chapter: CHAPTERS[q.ch], text: q.text, how: q.how, reward: q.reward, prog: [Math.min(a, b), b], done: a >= b, claimed: !!w.quests.claimed[q.id] }; });
+  out.crates = crateView(w, P);
+  out.devSw = { ...w.devSw };
   out.unread = w.reports.filter(r => !r.read).length;
   if (P.guild >= 0 && w.guilds[P.guild].leader === PLAYER) { const gd = w.guilds[P.guild]; out.proposals = gd.proposals.map(p => ({ ...p, fromName: w.guilds[p.from].name })); out.applicants = gd.applicants.map(id => publicGov(w, w.govs[id])); }
   out.ages = w.ages.slice();
@@ -797,6 +860,8 @@ function migrate(w, v) {
   if (!w.settings) w.settings = { offlineCap: 12 * HOUR, notify: 'important' };
   if (!w.notes) w.notes = [];
   if (!w.campRespawn) w.campRespawn = [];
+  if (!w.devSw) w.devSw = { unlimited: false, instant: false };
+  for (const g of w.govs || []) if (!g.crate) g.crate = {};
   void v;
 }
 // the integrity checks run on every load and in the tests

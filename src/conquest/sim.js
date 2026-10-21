@@ -25,7 +25,7 @@ function newGovernor(w, id, opts) {
     stats: { wins: 0, losses: 0, defWins: 0, defLosses: 0, camps: 0, scouts: 0, rallies: 0, traded: 0, healed: 0, trained: { inf: 0, cav: 0, arc: 0, sie: 0 }, kills: 0, deaths: 0, sacked: 0, sackedOthers: 0, gathered: 0, contributed: 0 },
     intel: [], rel: {}, mem: [], log: [],
     st: 'grow', goal: null, next: w.t + rint(w, 1, 40), explore: 16 + Math.round(t.activity * 10), alert: null,
-    power: 0, recruited: 0, tradedToday: 0, tradeDay: 0, lastAttack: null, lastAt: 0,
+    power: 0, recruited: 0, tradedToday: 0, tradeDay: 0, lastAttack: null, lastAt: 0, crate: {},
   };
   g.cmds[CIV[civ].commander] = { lv: 1, xp: 0, sk: [1, 1, 1, 1], tal: {} };
   // AI governors begin with the same base; their head start depends only on how actively they play (activity),
@@ -40,7 +40,7 @@ function createWorld(opts = {}) {
     map: null, govs: [], guilds: [], marks: [], camps: [], nodes: [], marches: [], rallies: [], nid: 1, battleN: 0,
     events: [], nextEventAt: 6 * HOUR + rint({ rs: hash32(seed, 'ev') }, 18, 30) * HOUR, chron: [], chronN: 0, reports: [], battles: [],
     hist: { terr: {}, power: {} }, market: { price: { food: 1, wood: 1, stone: 1, iron: 1, gold: 1 } },
-    player: PLAYER, quests: { claimed: {} }, settings: { offlineCap: 12 * HOUR, notify: 'important' },
+    player: PLAYER, quests: { claimed: {} }, settings: { offlineCap: 12 * HOUR, notify: 'important' }, devSw: { unlimited: false, instant: false },
     throne: { owner: -1, since: 0 }, exchangeBy: null, ages: [], explored: null, dev: !!opts.dev, lastDay: 0, campRespawn: [],
     notes: [], stats: { battles: 0 },
   };
@@ -337,6 +337,7 @@ function step(w, dt) {
   // player resources stay current; everyone else settles when they act or are acted on
   const P = w.govs[PLAYER];
   settle(w, P, w.t);
+  if (w.devSw?.unlimited) devRefill(w);
   processQueues(w);
   moveMarches(w, dt);
   processRallies(w);

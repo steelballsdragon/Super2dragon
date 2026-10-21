@@ -1,16 +1,16 @@
-/* Age of Conquest guide: a short welcome, then a glowing hand that points at the next thing to tap for the current
-   goal (the building, its button, the map, the camp, the button in the sheet), instead of pages of instructions. */
+/* Age of Conquest guide: a short welcome, then a bouncing gold "Tap" marker that points at the next thing to tap for
+   the current goal (the building, the button in its sheet, the map, the camp), instead of pages of instructions. */
 
 const A = window.AOC;
 const U = window.AOCUI;
 const { esc } = U;
 
 U.welcome = () => {
-  const logo = window.LF_ASSETS?.conquestLogo;
+  const logo = U.LOGO;
   U.sheet({
     title: 'Your city stands',
     body: `<div class="aoc-welcome">${logo ? `<img src="${logo}" alt="" width="160" height="160">` : ''}
-      <p class="aoc-p">Six hundred governors, ten guilds, one living world. Follow the hand.</p></div>`,
+      <p class="aoc-p">Six hundred governors, ten guilds, one living world. Tap where the marker points, or Go on the goal at the bottom.</p></div>`,
     actions: [{ label: 'Begin', id: 'aoc-welcome-go', icon: 'play' }],
   });
 };
@@ -26,12 +26,7 @@ function rectPoint(node) {
   if (!r.width || !r.height) return null;
   return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
-function tab(id) {
-  // the big round button switches between the city and the world
-  if (id === 'map' && U.current === 'city') return rectPoint(document.querySelector('.aoc-screen-city .aoc-world-btn'));
-  if (id === 'city' && U.current === 'map') return rectPoint(document.querySelector('.aoc-screen-map .aoc-world-btn'));
-  return rectPoint(document.querySelector(`#aoc-tab-${id}`));
-}
+function tab(id) { return rectPoint(document.querySelector(`#aoc-tab-${id}`)); }
 function nearest(list, P) {
   let best = null, bd = Infinity;
   for (const o of list) { const d = Math.hypot(o.x - P.x, o.y - P.y); if (d < bd) { bd = d; best = o; } }
@@ -49,8 +44,11 @@ function target() {
   const sheet = sheets[sheets.length - 1];
   if (sheet) {
     if (sheet.querySelector('#aoc-welcome-go')) return null;
-    const go = sheet.querySelector('#aoc-up-go:not(:disabled), #aoc-train-go, #aoc-march-go:not(:disabled), [data-tech]:not(:disabled), [data-claim]');
+    const go = sheet.querySelector('#aoc-up-go:not(:disabled), #aoc-free:not(:disabled), #aoc-train-go, #aoc-march-go:not(:disabled), [data-tech]:not(:disabled), [data-claim]');
     if (go) return rectPoint(go);
+    // a building sheet whose building does what the goal needs
+    const bx = q.id === 'train' ? '[data-bx="train"]' : q.id === 'research' ? '[data-bx="research"]' : null;
+    if (bx && sheet.querySelector(bx)) return rectPoint(sheet.querySelector(bx));
     const want = MAP_GOAL[q.id];
     if (want) { const b = [...sheet.querySelectorAll('.aoc-sheet-actions .aoc-btn')].find(x => x.textContent.trim().startsWith(want)); if (b) return rectPoint(b); }
     if (q.id === 'guild') return rectPoint(sheet.querySelector('[data-apply]'));
@@ -64,14 +62,7 @@ function target() {
     if (P.q.build && q.id !== 'train' && q.id !== 'research') return null;
     if (q.id === 'train' && P.q.train.inf) return null;
     if (q.id === 'research' && P.q.research) return null;
-    if (q.id === 'research' && !(P.b.academy > 0) && P.b.hall < A.BUILDINGS.academy.needHall) {
-      if (H.sel === 'hall') return rectPoint(document.querySelector('#aoc-bbar-up'));
-      return H.where('hall');
-    }
-    if (H.sel === bld) {
-      const sel = q.id === 'train' ? '[data-bact="train"]' : q.id === 'research' && P.b.academy > 0 ? '[data-bact="research"]' : '#aoc-bbar-up';
-      return rectPoint(document.querySelector(sel));
-    }
+    if (q.id === 'research' && !(P.b.academy > 0) && P.b.hall < A.BUILDINGS.academy.needHall) return H.where('hall');
     const p = H.where(bld);
     const r = document.querySelector('.aoc-town-cv')?.getBoundingClientRect();
     if (p && r && (p.x < r.left + 20 || p.x > r.right - 20 || p.y < r.top + 20 || p.y > r.bottom - 20)) {
@@ -95,14 +86,12 @@ function target() {
   return null;
 }
 
-// ---------------------------------------------------------------- the hand
+// ---------------------------------------------------------------- the Tap marker
 function handEl() {
   if (G.el && G.el.isConnected) return G.el;
   const layer = document.getElementById('aoc-layer');
   if (!layer) return null;
-  G.el = U.el(`<div class="aoc-hand" aria-hidden="true" hidden><i class="aoc-hand-ring"></i><svg class="aoc-hand-svg" width="54" height="64" viewBox="0 0 54 64">
-    <path d="M17 4c3 0 5 2 5 5v18l3-1c2-4 8-4 9 1l2-.5c2-3 7-3 8 1.5 3-1.5 7 0 7 4v12c0 9-6 16-15 16H28c-5 0-8-2-11-6L6 40c-2-3-1-6 2-7 2-1 5 0 7 2l-3-3V9c0-3 2-5 5-5Z" fill="#fff6e0" stroke="#3a1e08" stroke-width="2.6" stroke-linejoin="round"/>
-    <path d="M22 26v9M30 26v9M38 27v8" stroke="#c9a36a" stroke-width="2" stroke-linecap="round"/></svg></div>`);
+  G.el = U.el(`<div class="aoc-hand" aria-hidden="true" hidden><i class="aoc-hand-ring"></i><span class="aoc-tap"><span class="aoc-tap-t">Tap</span><svg class="aoc-tap-a" width="22" height="16" viewBox="0 0 22 16"><path d="M2 2h18L11 14Z" fill="#ffd862" stroke="#6b3d06" stroke-width="2" stroke-linejoin="round"/></svg></span></div>`);
   layer.appendChild(G.el);
   return G.el;
 }
@@ -114,8 +103,8 @@ function tick() {
   if (!p) { h.hidden = true; G.at = null; return; }
   const lr = h.parentElement.getBoundingClientRect();
   h.hidden = false;
-  // point down from above, unless the target is near the top of the screen
-  h.classList.toggle('is-down', p.y - lr.top > 150);
+  // the marker sits above what it points at, or below when that is near the top of the screen
+  h.classList.toggle('is-below', p.y - lr.top < 130);
   h.style.transform = `translate(${Math.round(p.x - lr.left)}px, ${Math.round(p.y - lr.top)}px)`;
   G.at = p;
 }

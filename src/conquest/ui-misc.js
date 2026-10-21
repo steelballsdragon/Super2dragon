@@ -51,15 +51,10 @@ U.menu = () => {
     <div class="aoc-chips" data-set="notify">${[['all', 'Everything'], ['important', 'Important only'], ['off', 'Attacks and victories only']].map(([v, l]) => `<button type="button" class="aoc-btn ${f.settings.notify === v ? 'gold' : 'ghost'} tiny" data-v="${v}">${l}</button>`).join('')}</div>
     <h3 class="aoc-h4">Text size</h3>
     <div class="aoc-chips" data-set="text"><button type="button" class="aoc-btn ghost tiny" data-v="normal">Normal</button><button type="button" class="aoc-btn ghost tiny" data-v="large">Large</button></div>
-    ${U.dev ? `<h3 class="aoc-h4">Developer tools</h3><div class="aoc-chips aoc-dev">
-      <button type="button" class="aoc-btn ghost tiny" data-dev="dev:res">50M resources</button><button type="button" class="aoc-btn ghost tiny" data-dev="dev:troops">+100K troops</button>
-      <button type="button" class="aoc-btn ghost tiny" data-dev="dev:finish">Finish timers</button><button type="button" class="aoc-btn ghost tiny" data-dev="dev:hall">Max buildings</button>
-      <button type="button" class="aoc-btn ghost tiny" data-dev="dev:commanders">All commanders, max level</button><button type="button" class="aoc-btn ghost tiny" data-dev="dev:reveal">Reveal map</button>
-      <button type="button" class="aoc-btn ghost tiny" data-dev="dev:shield">7-day shield</button><button type="button" class="aoc-btn ghost tiny" data-skip="60">+1 hour</button>
-      <button type="button" class="aoc-btn ghost tiny" data-skip="360">+6 hours</button><button type="button" class="aoc-btn ghost tiny" data-skip="1440">+1 day</button></div>` : ''}
+    ${U.dev ? `<h3 class="aoc-h4">Developer</h3><div class="aoc-chips"><button type="button" class="aoc-btn blue small" data-act="devpanel">${U.icon('dev', 18)}<span>Developer panel</span></button></div>` : ''}
     <h3 class="aoc-h4">Game</h3>
     <div class="aoc-chips"><button type="button" class="aoc-btn ghost small" data-act="guide">How to play</button><button type="button" class="aoc-btn ghost small" data-act="save">Save now</button>
-      <button type="button" class="aoc-btn ghost small" data-act="back">Back to Last Furnace</button><button type="button" class="aoc-btn red small" data-act="new">Start a new world</button></div>
+      <button type="button" class="aoc-btn ghost small" data-act="back">Start screen</button><button type="button" class="aoc-btn red small" data-act="new">Start a new world</button></div>
   </div>`);
   const h = U.sheet({ title: 'Menu', body });
   body.addEventListener('click', async e => {
@@ -69,8 +64,7 @@ U.menu = () => {
     if (set === 'offlineCap') { await U.run({ type: 'settings', offlineCap: Number(b.dataset.v) }, 'Saved.'); h.close(); U.menu(); }
     else if (set === 'notify') { await U.run({ type: 'settings', notify: b.dataset.v }, 'Saved.'); h.close(); U.menu(); }
     else if (set === 'text') { document.getElementById('aoc').classList.toggle('is-large', b.dataset.v === 'large'); U.LS.set('aoc-text', b.dataset.v); }
-    if (b.dataset.dev) await U.run({ type: b.dataset.dev, level: 25 }, 'Done.');
-    if (b.dataset.skip) { b.disabled = true; await U.run({ type: 'dev:skip', minutes: Number(b.dataset.skip) }, `Skipped ${dur(Number(b.dataset.skip))}.`); b.disabled = false; }
+    if (b.dataset.act === 'devpanel') { h.close(); U.devPanel(); }
     if (b.dataset.act === 'guide') { h.close(); U.intro(); }
     if (b.dataset.act === 'save') { U.host.post({ type: 'save' }); U.toast('Saved.', 'good'); }
     if (b.dataset.act === 'back') U.backToStart();
@@ -81,8 +75,8 @@ U.menu = () => {
 // ================================================================ the first-time guide
 const GUIDE = [
   ['A living world', 'You are one of 600 governors on the Ashen Crown server. The other 599 are simulated: each has a personality, remembers who helped or hurt it, and makes its own decisions with the same rules and resources as you. Ten guilds compete for fortresses and the Ember Throne.'],
-  ['Time', 'At 1x one game minute passes every real second (a game day is 24 minutes). Pause or speed up at the top. Building, research and marches take game time; the goals on the map show what to do first.'],
-  ['Your city', 'Upgrade the Town Hall to raise every other building\'s limit. Farms and mills feed your growth; troops eat Food every hour. A Warehouse protects part of your stock from raiders.'],
+  ['Time', 'At 1x one game minute passes every real second (a game day is 24 minutes). Pause or speed up at the top. Building, research and marches take game time; anything with 10 minutes or less left can be finished free. The chapter banner at the bottom shows what to do first, and Go takes you there.'],
+  ['Your city', 'Tap a building to open it and upgrade it. The Town Hall sets every other building\'s limit. Farms, mills, quarries, mines and the market fill a crate every 4 hours: tap it to collect. Troops eat Food every hour. A Warehouse protects part of your stock from raiders.'],
   ['Armies and fog', 'Tap the map to send armies: attack bandit camps for loot, gather at resource fields, scout before you attack. You only see what your city, your armies and your guild can see; scout reports are estimates and grow stale.'],
   ['Combat', 'Infantry beat cavalry, cavalry beat archers, archers beat infantry. Terrain, walls, morale and commander skills matter: a smaller, better-matched army can win. Every battle report explains the result and can be replayed.'],
   ['Guilds and the Age', 'Join a guild for protection, shared vision and rallies. Guilds sign pacts, betray them, form coalitions and go to war. Hold the Ember Throne for 3 days, or build the Grand Exchange, to win the Age.'],

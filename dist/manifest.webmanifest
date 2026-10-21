@@ -1,7 +1,7 @@
 {
-  "name": "Last Furnace",
-  "short_name": "Last Furnace",
-  "description": "Keep the great furnace burning, grow a snowbound city, recruit heroes and push into the frozen wastes.",
+  "name": "Last Furnace: Age of Conquest",
+  "short_name": "Age of Conquest",
+  "description": "Six hundred governors, ten guilds and one living world: build your city, raise armies, join a guild and take the Throne.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

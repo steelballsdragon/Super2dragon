@@ -233,7 +233,7 @@ function render(force) {
   setHtml(box, html);
   if (K.tab === 'troops') for (const u of A.UNIT_KEYS) updateTrainCost(u);
 }
-U.screen('army', { mount, show: () => render(true), update: () => render(false) });
+U.screen('army', { mount, show: tab => { if (tab) K.tab = tab; render(true); }, update: () => render(false) });
 
 // ================================================================ the march sheet
 // o: { kind, to, name, intel?, enemy?, level?, res? }

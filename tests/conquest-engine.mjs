@@ -550,6 +550,72 @@ await test('developer commands only work in developer mode', () => {
   check(cmd(w, { type: 'dev:res' }, true).ok && w.govs[P].res.gold >= 50e6, 'did not work in developer mode');
 });
 
+// ---------------------------------------------------------------- conveniences shared by players and the AI
+await test('a queue in its last minutes finishes free; earlier it is refused', () => {
+  const w = fresh(), g = w.govs[P];
+  check(cmd(w, { type: 'build', id: 'hall' }).ok, 'build refused');
+  g.q.build.end = w.t + 60;
+  const early = cmd(w, { type: 'free', q: 'build' });
+  check(!early.ok && /free when/.test(early.err), `free too early: ${JSON.stringify(early)}`);
+  A.advance(w, 60 - A.FREE_FINISH);
+  check(g.q.build && g.b.hall === 1, 'finished by itself');
+  check(cmd(w, { type: 'free', q: 'build' }).ok && g.b.hall === 2 && !g.q.build, 'free finish did not complete the level');
+  check(!cmd(w, { type: 'free', q: 'build' }).ok, 'free with nothing building');
+  for (const bad of [{ q: '__proto__' }, { q: 'train', unit: 'constructor' }, { q: 'exchange' }]) check(!cmd(w, { type: 'free', ...bad }).ok, `accepted ${JSON.stringify(bad)}`);
+});
+await test('a full crate gives an hour of output once, then refills after four hours', () => {
+  const w = fresh(), g = w.govs[P];
+  A.settle(w, g, w.t);
+  const per = A.production(w, g, A.cityMods(w, g)).food;
+  const before = g.res.food;
+  const r = cmd(w, { type: 'collect', id: 'farm' });
+  check(r.ok && r.res === 'food' && r.amount === Math.floor(per * A.CRATE.hours) && g.res.food === before + r.amount, `crate gave ${JSON.stringify(r)} (an hour is ${per})`);
+  check(!cmd(w, { type: 'collect', id: 'farm' }).ok, 'collected twice');
+  for (const id of ['quarry', 'barracks', 'hall', '__proto__', 'toString']) check(!cmd(w, { type: 'collect', id }).ok, `collected from ${id}`);
+  A.advance(w, A.CRATE.every - 5);
+  check(!cmd(w, { type: 'collect', id: 'farm' }).ok, 'refilled early');
+  A.advance(w, 5);
+  check(cmd(w, { type: 'collect', id: 'farm' }).ok, 'did not refill after four hours');
+  A.advance(w, A.CRATE.every);
+  A.settle(w, g, w.t);
+  g.res.food = A.storage(w, g, A.cityMods(w, g));
+  check(!cmd(w, { type: 'collect', id: 'farm' }).ok, 'collected into full storage');
+});
+await test('AI governors collect their crates and finish queues free too', () => {
+  const w = world(202);
+  A.advance(w, 8 * A.HOUR);
+  const ai = w.govs.filter(g => !g.human);
+  const collected = ai.filter(g => Object.values(g.crate).some(t => t > 0)).length;
+  check(collected > 300, `only ${collected} of ${ai.length} AI governors collected a crate`);
+  check(ai.every(g => A.RES.every(r => g.res[r] >= 0)), 'negative stock');
+});
+await test('goals show their progress and sit in chapters', () => {
+  const w = fresh();
+  let q = A.frameView(w, {}).quests;
+  check(q[0].id === 'hall2' && q[0].prog[0] === 1 && q[0].prog[1] === 2 && !q[0].done && q[0].chapter === A.CHAPTERS[0], JSON.stringify(q[0]));
+  check(q.every(x => Number.isInteger(x.ch) && A.CHAPTERS[x.ch] && x.prog.length === 2), 'a goal without a chapter or progress');
+  cmd(w, { type: 'build', id: 'hall' });
+  A.advance(w, 30);
+  q = A.frameView(w, {}).quests;
+  check(q[0].done && q[0].prog[0] === 2, `hall2 not done: ${JSON.stringify(q[0])}`);
+  check(cmd(w, { type: 'claimQuest', id: 'hall2' }).ok && !cmd(w, { type: 'claimQuest', id: 'hall2' }).ok, 'claim once');
+});
+await test('developer switches keep resources full and finish queues at once, only in developer mode, and are saved', () => {
+  const w = fresh(), g = w.govs[P];
+  check(!cmd(w, { type: 'dev:unlimited', on: true }).ok && !cmd(w, { type: 'dev:instant', on: true }).ok, 'worked without developer mode');
+  check(!w.devSw.unlimited && !w.devSw.instant, 'switched without developer mode');
+  check(cmd(w, { type: 'dev:unlimited', on: true }, true).ok && A.RES.every(r => g.res[r] >= 50e6), 'resources not filled');
+  check(cmd(w, { type: 'dev:instant', on: true }, true).ok, 'instant refused');
+  check(cmd(w, { type: 'build', id: 'hall' }, true).ok && g.b.hall === 2 && !g.q.build, 'the build was not instant');
+  check(cmd(w, { type: 'train', unit: 'inf', n: 100 }, true).ok && !g.q.train.inf, 'training was not instant');
+  check(A.RES.every(r => g.res[r] >= 50e6), 'resources ran down after spending');
+  A.advance(w, 10);
+  check(A.RES.every(r => g.res[r] >= 50e6), 'resources ran down over time');
+  const back = A.deserialize(A.serialize(w, 1));
+  check(back.ok && back.world.devSw.unlimited && back.world.devSw.instant, 'the switches were not saved');
+  check(cmd(w, { type: 'dev:instant', on: false }, true).ok && cmd(w, { type: 'build', id: 'farm' }, true).ok && g.q.build, 'instant did not switch off');
+});
+
 // ---------------------------------------------------------------- performance
 await test('one simulated game day of the full server takes under 20 seconds', () => {
   const w = world(808);

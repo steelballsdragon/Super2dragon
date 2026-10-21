@@ -1,7 +1,7 @@
 {
-  "name": "last-furnace",
+  "name": "age-of-conquest",
   "private": true,
-  "description": "A mobile-style frozen city builder in one HTML file.",
+  "description": "Last Furnace: Age of Conquest, a 600-governor grand strategy game in one HTML file.",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

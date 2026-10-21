@@ -11,14 +11,14 @@ const EXPORTS = [
   'RES', 'RES_NAME', 'RES_VALUE', 'UNITS', 'UNIT_KEYS', 'COUNTER', 'TERRAIN', 'T', 'BUILDINGS', 'BUILDING_KEYS', 'TECHS', 'TECH_KEYS', 'TECH_MAX', 'CIVS', 'CIV',
   'COMMANDERS', 'CMD', 'SYNERGY', 'TALENT_STATS', 'TALENT_NAME', 'RECRUIT', 'ARCHETYPES', 'SERVER', 'GUILD_MAX', 'GUILD_COUNT', 'GOVERNORS', 'OFFICERS_MAX',
   'THRONE_OPENS', 'THRONE_HOLD', 'EXCHANGE', 'SHIELD', 'NEWCOMER_SHIELD', 'MAP_N', 'HOUR', 'DAY', 'MAX_LEVEL', 'CMD_MAX_LEVEL', 'ULTIMATE_LEVEL', 'GUILD_TECH',
-  'QUESTS', 'ACHIEVEMENTS', 'PLAYER', 'SCHEMA', 'EVENTS', 'ROLE_NAME',
+  'QUESTS', 'CHAPTERS', 'ACHIEVEMENTS', 'PLAYER', 'SCHEMA', 'EVENTS', 'ROLE_NAME', 'FREE_FINISH', 'CRATE',
   // formulas
-  'buildingCost', 'buildingMinutes', 'buildingReq', 'productionAt', 'storageCap', 'protectedAmount', 'hospitalCap', 'wallDurability', 'visionRadius',
+  'buildingCost', 'buildingMinutes', 'buildingReq', 'productionAt', 'BASE_PRODUCTION', 'storageCap', 'protectedAmount', 'hospitalCap', 'wallDurability', 'visionRadius',
   'marchCapacity', 'marchSlots', 'trainBatch', 'techCost', 'techMinutes', 'cmdXpToNext', 'skillCost', 'clock', 'roman', 'troopsTotal', 'troopPower',
   // engine
   'createWorld', 'createServer', 'step', 'advance', 'serialize', 'deserialize', 'validateWorld', 'playerCommand', 'frameView', 'inspect', 'guildDetail',
   'rankings', 'chronicleView', 'historyView', 'tileView', 'diagnostics', 'fight', 'explainBattle', 'findPath', 'pathCost', 'settle', 'production',
-  'cityMods', 'storage', 'upkeepPerHour', 'computePower', 'armySide', 'neutralSide', 'startMarch', 'startRally', 'joinRally', 'actBuild', 'buildCheck',
+  'cityMods', 'storage', 'upkeepPerHour', 'computePower', 'armySide', 'neutralSide', 'startMarch', 'startRally', 'joinRally', 'actBuild', 'buildCheck', 'actFree', 'freeCheck', 'actCollect', 'crateCheck',
   'actResearch', 'researchCheck', 'actTrain', 'trainCheck', 'actHeal', 'actTrade', 'actShield', 'actRelocate', 'actContribute', 'applyToGuild',
   'joinGuild', 'leaveGuild', 'declareWar', 'makePeace', 'treaty', 'setTreaty', 'succession', 'collapseGuild', 'refoundGuild', 'thinkGuild', 'think',
   'scoutAccuracy', 'intelOn', 'garrisonOf', 'marchPos', 'makeRng', 'hash32', 'generateTerrain', 'recomputeTerritory', 'updatePlayerVision', 'idx', 'tx', 'ty',

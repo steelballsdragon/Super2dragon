@@ -1,4 +1,4 @@
-# Builds Last Furnace, runs every test suite, and publishes dist/ to the gh-pages branch (GitHub Pages)
+# Builds Age of Conquest, runs every test suite, and publishes dist/ to the gh-pages branch (GitHub Pages)
 # only when all tests pass. Public link: https://steelballsdragon.github.io/Super2dragon/
 name: Test and publish the game
 
