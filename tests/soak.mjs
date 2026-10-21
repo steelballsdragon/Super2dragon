@@ -110,6 +110,7 @@ async function climb(label, viewport) {
   });
   let worst = { nodes: 0, heapMB: 0, saveKB: 0 };
   for (let target = 2; target <= 30; target++) {
+    if (target % 4 === 0) await p.evaluate(() => { const now = Game.now(); Object.assign(Game.S.city.wx, { start: now - 15000, end: now + 30000, drop: 18, warned: true }); });
     const f = await within(p.evaluate(PLAY_LEVEL, target), 30000, `${label} Furnace ${target}`);
     check(f === target, `${label}: could not reach Furnace ${target} (stuck at ${f})`);
     await within(p.clock.runFor(6500), 30000, `${label} battle at Furnace ${target}`);   // battle animation, real loop, rAF
@@ -142,13 +143,78 @@ async function climb(label, viewport) {
 }
 
 console.log(`soak: ${FILE}`);
-await step('portrait phone (3x density): Furnace 1 to 30 with reloads at 17 and 30', async () => {
+// SOAK_QUICK=1 skips the two long climbs (handy while working on the other steps)
+const QUICK = process.env.SOAK_QUICK === '1';
+if (!QUICK) await step('portrait phone (3x density): Furnace 1 to 30 with reloads at 17 and 30', async () => {
   const w = await climb('portrait', { width: 390, height: 844 });
   console.log(`       peak: ${w.nodes} DOM nodes, ${w.heapMB} MB heap, ${w.saveKB} KB save`);
 });
-await step('landscape phone (3x density): Furnace 1 to 30 with reloads at 17 and 30', async () => {
+if (!QUICK) await step('landscape phone (3x density): Furnace 1 to 30 with reloads at 17 and 30', async () => {
   const w = await climb('landscape', { width: 844, height: 390 });
   console.log(`       peak: ${w.nodes} DOM nodes, ${w.heapMB} MB heap, ${w.saveKB} KB save`);
+});
+
+await step('full-strength blizzard: snow stays bounded and the page keeps answering', async () => {
+  const problems = [];
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3 });
+  const p = await openGame(ctx, problems, 'blizzard');
+  await p.goto(URL);
+  await passStart(p);
+  const base = await p.evaluate(() => Game.city._snowCount());
+  // a blizzard already at full strength (the ramp is 12 s), lasting two minutes
+  await p.evaluate(() => { const now = Game.now(); Object.assign(Game.S.city.wx, { start: now - 20000, end: now + 120000, drop: 20, warned: true }); });
+  for (let i = 0; i < 8; i++) {
+    await p.waitForTimeout(500);
+    const n = await within(p.evaluate(() => Game.city._snowCount()), 4000, 'a blizzard');
+    check(n <= Math.max(900, base * 3), `snow grew to ${n} flakes (base ${base})`);
+  }
+  // the blizzard survives a reload (it is saved) and must not freeze the next start either
+  await p.evaluate(() => Game.save());
+  await p.reload();
+  await passStart(p);
+  await p.waitForTimeout(2000);
+  const n = await within(p.evaluate(() => Game.city._snowCount()), 4000, 'a blizzard after reload');
+  check(n <= Math.max(900, base * 3), `after reload snow grew to ${n} flakes`);
+  check(!problems.length, problems.join('\n'));
+  await ctx.close();
+});
+
+await step('map canvas: no reallocation on tab switches, and a dropped canvas rebuilds itself', async () => {
+  const problems = [];
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3 });
+  const p = await openGame(ctx, problems, 'canvas');
+  // count pixel-buffer reallocations (every width/height assignment allocates on iOS)
+  await p.addInitScript(() => {
+    window.__canvasSets = 0;
+    for (const prop of ['width', 'height']) {
+      const d = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, prop);
+      Object.defineProperty(HTMLCanvasElement.prototype, prop, { get: d.get, set(v) { if (this.classList?.contains('city-canvas')) window.__canvasSets++; d.set.call(this, v); }, configurable: true });
+    }
+  });
+  await p.goto(URL);
+  await passStart(p);
+  await p.waitForTimeout(500);
+  const before = await p.evaluate(() => window.__canvasSets);
+  for (let i = 0; i < 100; i++) await p.evaluate(() => { Game.navigate('heroes'); Game.navigate('city'); });
+  await p.waitForTimeout(300);
+  const sets = (await p.evaluate(() => window.__canvasSets)) - before;
+  check(sets === 0, `200 tab switches reallocated the map canvas ${sets} times`);
+  const opaque = () => p.evaluate(() => { const c = document.querySelector('.city-canvas'); return c.getContext('2d').getImageData(5, 5, 1, 1).data[3] === 255; });
+  // 1) the context reports lost: within a few seconds a fresh canvas replaces it and draws
+  const first = await p.evaluate(() => { const c = document.querySelector('.city-canvas'); c.__old = true; c.getContext('2d').isContextLost = () => true; return true; });
+  check(first, 'could not mark the canvas lost');
+  await p.waitForFunction(() => !document.querySelector('.city-canvas').__old, null, { timeout: 9000 });
+  await p.waitForTimeout(300);
+  check(await opaque(), 'rebuilt canvas is not drawing');
+  // 2) the context answers but shows nothing
+  await p.evaluate(() => { const c = document.querySelector('.city-canvas'); c.__old2 = true; const g = c.getContext('2d'); const real = g.getImageData.bind(g); g.getImageData = (...a) => { const d = real(...a); d.data[3] = 0; return d; }; });
+  await p.waitForFunction(() => !document.querySelector('.city-canvas').__old2, null, { timeout: 6000 });
+  await p.waitForTimeout(300);
+  check(await opaque(), 'canvas rebuilt after blank pixels is not drawing');
+  check(await p.evaluate(() => document.querySelectorAll('.city-canvas').length) === 1, 'old canvases left in the page');
+  const errs = problems.filter(x => !/map canvas rebuilt/.test(x));
+  check(!errs.length, errs.join('\n'));
+  await ctx.close();
 });
 
 await step('corrupt main save: the backup loads and the broken copy is kept', async () => {

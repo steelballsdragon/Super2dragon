@@ -1128,3 +1128,7 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 @media (orientation: landscape) and (max-height: 640px) {
   .start-logo { width: min(400px, 40vw); max-height: 62vh; object-fit: contain; }
 }
+
+/* installed on the home screen: the strip under the tab bar (home indicator) takes the tab bar's color */
+@media (display-mode: standalone) { html { background: var(--tab-bot); } }
+html.lf-standalone { background: var(--tab-bot); }

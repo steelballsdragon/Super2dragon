@@ -131,7 +131,7 @@ const APP_HEAD = `<link rel="manifest" href="manifest.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Last Furnace">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.LF_APP = true; if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>`;
+<script>window.LF_APP = true; if (navigator.standalone) document.documentElement.classList.add('lf-standalone'); if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>`;
 const standalone = `<!doctype html>
 <html lang="en">
 <head>

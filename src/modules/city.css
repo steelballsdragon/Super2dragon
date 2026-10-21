@@ -18,6 +18,7 @@
 }
 .city-view.is-dragging { cursor: grabbing; }
 .city-canvas { position: absolute; left: 0; top: 0; display: block; }
+.city-view { background: linear-gradient(180deg, #dbe6ef, #c6d5e3); }
 .city-world {
   position: absolute;
   left: 0;

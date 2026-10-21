@@ -1145,6 +1145,10 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
   .start-logo { width: min(400px, 40vw); max-height: 62vh; object-fit: contain; }
 }
 
+/* installed on the home screen: the strip under the tab bar (home indicator) takes the tab bar's color */
+@media (display-mode: standalone) { html { background: var(--tab-bot); } }
+html.lf-standalone { background: var(--tab-bot); }
+
 /* ===== modules/city.css ===== */
 /* Last Furnace city module (owner: city agent): the town view, its overlay chrome and the building sheets. */
 
@@ -1166,6 +1170,7 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 }
 .city-view.is-dragging { cursor: grabbing; }
 .city-canvas { position: absolute; left: 0; top: 0; display: block; }
+.city-view { background: linear-gradient(180deg, #dbe6ef, #c6d5e3); }
 .city-world {
   position: absolute;
   left: 0;
@@ -3710,7 +3715,7 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Last Furnace">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>window.LF_APP = true; if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<script>window.LF_APP = true; if (navigator.standalone) document.documentElement.classList.add('lf-standalone'); if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 </head>
 <body>
 <div class="app" id="app">
@@ -7017,7 +7022,9 @@ const View = (() => {
     v.root = el.querySelector('.city-root');
     v.viewEl = el.querySelector('.city-view');
     v.canvas = el.querySelector('.city-canvas');
+    watchCanvas(v.canvas);
     v.ctx = v.canvas.getContext('2d');
+    v.canvasTimer = setInterval(checkCanvas, 3000);
     v.world = el.querySelector('.city-world');
     v.hits = el.querySelector('.city-hits');
     v.ui = el.querySelector('.city-wui');
@@ -7170,6 +7177,44 @@ const View = (() => {
   }
 
   // ------------------------------------------------ size
+  // Safari can drop a canvas's pixels (memory pressure, app in the background). The context then reports lost,
+  // or keeps answering while showing nothing. Either way the map is rebuilt on a fresh canvas.
+  function rebuildCanvas(why) {
+    const now = performance.now();
+    v.rebuilds = (v.rebuilds || []).filter(t => now - t < 60000);
+    v.rebuilds.push(now);
+    if (v.rebuilds.length >= 3) v.dprCap = 1;   // still failing: use less memory
+    console.warn('[city] map canvas rebuilt:', why);
+    const fresh = document.createElement('canvas');
+    fresh.className = 'city-canvas';
+    fresh.setAttribute('aria-hidden', 'true');
+    watchCanvas(fresh);
+    const old = v.canvas;
+    old.replaceWith(fresh);
+    old.width = 0; old.height = 0;
+    v.canvas = fresh;
+    v.ctx = fresh.getContext('2d');
+    if (v.bg) { v.bg.width = 0; v.bg.height = 0; v.bg = null; }
+    resize();
+  }
+  function watchCanvas(c) {
+    c.addEventListener('contextlost', e => { e.preventDefault(); v.lostAt = performance.now(); });
+    c.addEventListener('contextrestored', () => { v.lostAt = 0; if (v.bg) { v.bg.width = 0; v.bg.height = 0; v.bg = null; } resize(); });
+  }
+  // every few seconds on the City tab: read one pixel; every frame starts with an opaque fill, so a clear pixel
+  // means the canvas is no longer showing what is drawn
+  function checkCanvas() {
+    if (!v.canvas || !v.vw || Game.screen?.() !== 'city' || document.hidden) return;
+    try {
+      if (!v.ctx || v.ctx.isContextLost?.()) {
+        if (!v.lostAt) v.lostAt = performance.now();
+        if (performance.now() - v.lostAt > 1500) { v.lostAt = 0; rebuildCanvas('context lost'); }
+        return;
+      }
+      const px = v.ctx.getImageData(2, 2, 1, 1).data;
+      if (px[3] === 0) rebuildCanvas('blank pixels');
+    } catch (e) { rebuildCanvas('canvas unreadable'); }
+  }
   function resize() {
     if (!v.viewEl) return;
     const r = v.viewEl.getBoundingClientRect();
@@ -7177,15 +7222,17 @@ const View = (() => {
     if (w < 10 || h < 10) return;
     const first = !v.vw;
     v.vw = w; v.vh = h;
-    v.dpr = Math.min(2, window.devicePixelRatio || 1);
+    v.dpr = Math.min(v.dprCap || 2, window.devicePixelRatio || 1);
     if (!v.ctx) v.ctx = v.canvas.getContext('2d');
     v.s = Game.isLandscape?.()
       ? Math.max(clamp(Math.min(w / 446, h / 560), 0.7, 1.2), w / WORLD_W, h / WORLD_H)
       : clamp(w / 446, 0.8, 1.2);
-    v.canvas.width = Math.round(w * v.dpr);
-    v.canvas.height = Math.round(h * v.dpr);
-    v.canvas.style.width = w + 'px';
-    v.canvas.style.height = h + 'px';
+    // Setting width or height allocates a new pixel buffer even at the same size, and iOS Safari frees old
+    // buffers slowly: reassigning on every tab switch eventually blanks the canvas. Only resize on a real change.
+    const cw = Math.round(w * v.dpr); const ch = Math.round(h * v.dpr);
+    if (v.canvas.width !== cw || v.canvas.height !== ch) { v.canvas.width = cw; v.canvas.height = ch; }
+    if (v.canvas.style.width !== w + 'px') v.canvas.style.width = w + 'px';
+    if (v.canvas.style.height !== h + 'px') v.canvas.style.height = h + 'px';
     const k = v.s * v.dpr;
     // redraw the snowfield only when the scale really changed: small size changes reuse it scaled, which keeps
     // phones (iOS caps total canvas memory) from piling up full-size backgrounds
@@ -7213,7 +7260,7 @@ const View = (() => {
   function plazaPoint(a, k = 1) { return [PLAZA.x + Math.cos(a) * PLAZA.rx * k, PLAZA.y + Math.sin(a) * PLAZA.ry * k]; }
 
   function renderBg(k) {
-    k = Math.min(k, 2.4);
+    k = Math.min(k, v.dprCap === 1 ? 1.2 : 1.6);
     if (v.bg) { v.bg.width = 0; v.bg.height = 0; v.bg = null; }
     v.bgK = k;
     const c = document.createElement('canvas');
@@ -7396,8 +7443,8 @@ const View = (() => {
   // ------------------------------------------------ snow and walkers
   function initSnow() {
     v.snow = [];
-    const n = Math.round((v.vw * v.vh) / 2600);
-    for (let i = 0; i < n; i++) v.snow.push(newFlake(true));
+    v.snowBase = Math.min(400, Math.round((v.vw * v.vh) / 2600));
+    for (let i = 0; i < v.snowBase; i++) v.snow.push(newFlake(true));
   }
   function newFlake(anywhere) {
     return { x: Math.random() * v.vw, y: anywhere ? Math.random() * v.vh : -6, r: 0.7 + Math.random() * 1.9, vy: 16 + Math.random() * 26, ph: Math.random() * TAU, a: 0.5 + Math.random() * 0.5 };
@@ -7619,7 +7666,9 @@ const View = (() => {
     ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
     const bz = env.bz;
     const wind = 10 + bz * 140;
-    const n = Math.round(v.snow.length * (0.55 + bz * 1.6));
+    // flakes on screen scale with the blizzard from the fixed base count; scaling from the current count made
+    // a strong blizzard multiply the flakes every frame until the page froze and ran out of memory
+    const n = Math.min(900, Math.round((v.snowBase || 0) * (0.55 + bz * 1.6)));
     while (v.snow.length < n) v.snow.push(newFlake(true));
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
     for (let i = 0; i < Math.min(n, v.snow.length); i++) {
@@ -7872,9 +7921,10 @@ const View = (() => {
     // away from the City tab only the quest banner and shortcut buttons stay in the panel
     v.dock.classList.toggle('is-away', Game.screen?.() !== 'city');
     updateSideBadges();
+    if (v.landState === land) return;
     resize();
     // a rotation changes the view's shape and scale, so frame the town again
-    if (v.landState !== undefined && v.landState !== land) { homeCamera(); applyWorldTransform(); requestDraw(); }
+    if (v.landState !== undefined) { homeCamera(); applyWorldTransform(); requestDraw(); }
     v.landState = land;
   }
   function layoutSide() {
@@ -7948,7 +7998,7 @@ const View = (() => {
 
   return {
     mount, update, start, stop, requestDraw, focus, addSide, removeSide, setBanner, onCollect, onLevelUp, onArrival, offlineNote,
-    applyLayout, updateSideBadges,
+    applyLayout, updateSideBadges, checkCanvas,
     get v() { return v; },
     setHighlight(id) { v.highlight = id && B[id] ? id : null; requestDraw(); },
     mounted: () => !!v.root,
@@ -8434,6 +8484,7 @@ Game.city = {
   isUpgrading: id => !!buildTimer(id),
   canUpgrade: id => canUpgradeNow(id),
   upgrade: id => startUpgrade(id),
+  _snowCount: () => View.v?.snow?.length ?? 0,
   upgradeCost: (id, level) => (B[id] ? upgradeCost(id, level ?? lvl(id) + 1) : null),
   focus: id => View.focus(id),
   highlight: id => View.setHighlight(id),
