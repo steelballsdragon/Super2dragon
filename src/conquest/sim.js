@@ -40,7 +40,7 @@ function createWorld(opts = {}) {
     map: null, govs: [], guilds: [], marks: [], camps: [], nodes: [], marches: [], rallies: [], nid: 1, battleN: 0,
     events: [], nextEventAt: 6 * HOUR + rint({ rs: hash32(seed, 'ev') }, 18, 30) * HOUR, chron: [], chronN: 0, reports: [], battles: [],
     hist: { terr: {}, power: {} }, market: { price: { food: 1, wood: 1, stone: 1, iron: 1, gold: 1 } },
-    player: PLAYER, quests: { claimed: {} }, settings: { offlineCap: 24 * HOUR, notify: 'important' },
+    player: PLAYER, quests: { claimed: {} }, settings: { offlineCap: 12 * HOUR, notify: 'important' },
     throne: { owner: -1, since: 0 }, exchangeBy: null, ages: [], explored: null, dev: !!opts.dev, lastDay: 0, campRespawn: [],
     notes: [], stats: { battles: 0 },
   };
@@ -56,7 +56,12 @@ function createWorld(opts = {}) {
   // the server opens: history begins with the founding of the guilds
   for (const gd of w.guilds) chronicle(w, 'guild_founded', `${gd.name} [${gd.tag}] raised its banner in ${SERVER.regions[gd.home.region]} under ${w.govs[gd.leader].name}.`, { g: [gd.id], p: [gd.leader], x: gd.home.x, y: gd.home.y, imp: 2 });
   chronicle(w, 'server_open', `The ${SERVER.name} server opened. ${GOVERNORS} governors in ${GUILD_COUNT} guilds and ${w.govs.filter(g => g.guild < 0).length} independents. The Capital opens on Day ${1 + THRONE_OPENS / DAY}.`, { imp: 3 });
+  // the newcomer knows the lands around their city, and every map shows where the fortresses and the Capital stand
   w.explored = new Uint8Array(N2);
+  const P = w.govs[PLAYER];
+  stampDisc(w.explored, P.x, P.y, 14, 1);
+  for (const mk of w.marks) if (mk.kind !== 'ruin') stampDisc(w.explored, mk.x, mk.y, 2, 1);
+  if (opts.scenario === 'coalition') scenarioCoalition(w);
   updatePlayerVision(w);
   return w;
 }
@@ -177,11 +182,11 @@ function placeGuildsAndGovernors(w, opts) {
     gd.heir = gd.officers[0] ?? -1;
   }
   for (const arch of left) mk(-1, arch);
-  // the player: an independent newcomer near the edge of a guild's lands with camps and fields nearby
+  // the player: an independent newcomer in the gap between two guilds' lands, with camps and fields nearby
   const ref = w.guilds[rng.int(0, GUILD_COUNT - 1)].home;
-  const ang = Math.atan2(ref.y - c, ref.x - c) + (rng() - 0.5) * 0.6;
-  const px = Math.round(c + Math.cos(ang) * N * 0.42), py = Math.round(c + Math.sin(ang) * N * 0.42);
-  const ps = freeTileNear(w, px, py, 10, rng, { spread: true, awayFromMarks: 4 }) || freeTileNear(w, c, c, 60, rng, {});
+  const ang = Math.atan2(ref.y - c, ref.x - c) + Math.PI / GUILD_COUNT;
+  const px = Math.round(c + Math.cos(ang) * N * 0.36), py = Math.round(c + Math.sin(ang) * N * 0.36);
+  const ps = freeTileNear(w, px, py, 8, rng, { spread: true, awayFromMarks: 4 }) || freeTileNear(w, px, py, 20, rng, {}) || freeTileNear(w, c, c, 60, rng, {});
   const pc = CIV[opts.civ] ? opts.civ : 'ashen';
   const player = newGovernor(w, PLAYER, { civ: pc, arch: 'tactician', x: ps[0], y: ps[1], human: true, name: String(opts.name || 'Governor').slice(0, 24) || 'Governor' });
   player.next = Infinity;
@@ -194,6 +199,18 @@ function placeGuildsAndGovernors(w, opts) {
 
 function placeCampsAndNodes(w) {
   const rng = makeRng(hash32(w.seed, 'camps'));
+  // three weak camps and a few fields near the newcomer, so the first fights are winnable
+  const P = w.govs[PLAYER];
+  for (let k = 0; k < 3; k++) {
+    const c = spawnCamp(w, rng);
+    const p = c && freeTileNear(w, P.x, P.y, 9, rng, { minR: 4, awayFromMarks: 2 });
+    if (c && p) { w.map.occ[idx(c.x, c.y)] = 0; c.x = p[0]; c.y = p[1]; c.lv = 1; c.troops = { inf: 80, cav: 45, arc: 55, sie: 0 }; c.reserved = PLAYER; c.until = w.t + NEWCOMER_SHIELD; w.map.occ[idx(c.x, c.y)] = c.occ; }
+  }
+  for (const [res, pref] of [['food', T.plains], ['wood', T.forest], ['stone', T.hills]]) {
+    const n = spawnNode(w, rng, res, pref);
+    const p = n && freeTileNear(w, P.x, P.y, 10, rng, { minR: 3, prefer: pref, awayFromMarks: 2 });
+    if (n && p) { w.map.occ[idx(n.x, n.y)] = 0; n.x = p[0]; n.y = p[1]; n.lv = 1; n.max = n.amount = res === 'stone' ? 30000 : 40000; w.map.occ[idx(n.x, n.y)] = n.occ; }
+  }
   for (let k = 0; k < 80; k++) spawnCamp(w, rng);
   const kinds = [['food', T.plains], ['wood', T.forest], ['stone', T.hills], ['iron', T.hills], ['gold', T.plains]];
   for (let k = 0; k < 260; k++) {
@@ -205,8 +222,9 @@ function spawnCamp(w, rng) {
   const c = N / 2;
   const p = freeTileNear(w, c, c, N * 0.48, rng, { minR: 10, awayFromMarks: 3 });
   if (!p) return null;
-  const dc = dist(p[0], p[1], c, c) / (N / 2);
-  const lv = clamp(Math.round((1 - dc) * 9 + rng() * 2), 1, 10);
+  // weak camps on the frontier, strong ones near the Capital
+  const dc = clamp(dist(p[0], p[1], c, c) / (N / 2), 0, 1);
+  const lv = clamp(Math.round(1 + 9 * Math.pow(1 - dc, 1.5) + rng() * 1.5 - 0.5), 1, 10);
   const base = 180 * lv * Math.pow(1.35, lv - 1);
   const camp = { id: w.nid++, x: p[0], y: p[1], lv, troops: { inf: Math.round(base * 0.45), cav: Math.round(base * 0.25), arc: Math.round(base * 0.3), sie: 0 } };
   w.camps.push(camp);
@@ -491,13 +509,13 @@ function startMarch(w, g, o) {
   }
   if (kind !== 'scout' && total <= 0) return { ok: false, err: 'Send at least one soldier.' };
   if (kind === 'scout' && total > 0) return { ok: false, err: 'Scouts travel without troops.' };
-  if (kind !== 'scout' && kind !== 'rallyjoin' && total > marchCap(w, g) * (kind === 'rally' ? 1 : 1)) return { ok: false, err: `An army can hold at most ${marchCap(w, g).toLocaleString('en-US')} troops at your Town Hall level.` };
+  if (kind !== 'scout' && total > marchCap(w, g)) return { ok: false, err: `An army can hold at most ${marchCap(w, g).toLocaleString('en-US')} troops at your Town Hall level.` };
   if (kind !== 'scout' && activeMarches(w, g) >= marchLimit(w, g)) return { ok: false, err: `All ${marchLimit(w, g)} march slots are in use.` };
   if (kind === 'scout' && w.marches.filter(m => m.owner === g.id && m.kind === 'scout').length >= 1 + Math.floor((g.b.tower || 0) / 4)) return { ok: false, err: 'Your scouts are all out. A higher Watchtower sends more.' };
   const busy = busyCommanders(w, g);
   let c1 = kind === 'scout' ? null : (o.c1 || null), c2 = kind === 'scout' ? null : (o.c2 || null);
-  if (c1 && !g.cmds[c1]) return { ok: false, err: 'You do not have that commander.' };
-  if (c2 && !g.cmds[c2]) return { ok: false, err: 'You do not have that commander.' };
+  if (c1 && !(typeof c1 === 'string' && Object.prototype.hasOwnProperty.call(g.cmds, c1))) return { ok: false, err: 'You do not have that commander.' };
+  if (c2 && !(typeof c2 === 'string' && Object.prototype.hasOwnProperty.call(g.cmds, c2))) return { ok: false, err: 'You do not have that commander.' };
   if (c1 && c1 === c2) c2 = null;
   if (c1 && busy.has(c1)) return { ok: false, err: `${CMD[c1].name} is already leading an army.` };
   if (c2 && busy.has(c2)) return { ok: false, err: `${CMD[c2].name} is already leading an army.` };
@@ -534,6 +552,10 @@ function startMarch(w, g, o) {
       const og = w.govs[occ.owner];
       if (g.guild >= 0 && og.guild === g.guild) return { ok: false, err: 'Those troops belong to your guild.' };
     }
+  }
+  if (kind === 'attack' && target?.type === 'camp') {
+    const cp = w.camps.find(x => x.id === target.id);
+    if (cp && cp.reserved != null && cp.reserved !== g.id && w.t < cp.until) return { ok: false, err: 'That camp is reserved for a newcomer.' };
   }
   if (kind === 'gather') {
     const nd = target && target.type === 'node' ? w.nodes.find(x => x.id === target.id) : null;
@@ -676,6 +698,16 @@ function arriveScout(w, m) {
         wall: d.b.wall || 0, wallDur: Math.round(d.wallDur), hall: d.b.hall, tower: d.b.tower || 0, defender: d.defender, shield: d.shield > w.t, false: lie, flagged,
         away: Object.values(d.away).reduce((a, b) => a + b, 0) > 0,
       };
+      // a guild leader's city holds the guild's papers: the player's scouts uncover its secret pacts
+      if (g.human && d.guild >= 0 && w.guilds[d.guild].leader === d.id) {
+        const found = [];
+        for (const k in w.guilds[d.guild].treaties) {
+          const tr = w.guilds[d.guild].treaties[k];
+          const key = d.guild + ':' + k;
+          if (tr.secret && !(w.secretsKnown || []).includes(key)) { (w.secretsKnown = w.secretsKnown || []).push(key, k + ':' + d.guild); found.push(w.guilds[k].name); }
+        }
+        if (found.length) rep.secrets = found;
+      }
       // the target notices
       remember(w, d, { k: 'scouted', who: g.id });
       relAdjust(d, g.id, -4);
@@ -836,7 +868,8 @@ function buildRallyLead(w, g, o) {
     troops[u] = n; total += n;
   }
   if (total <= 0) return { ok: false, err: 'Put some of your own troops in the rally.' };
-  if (!o.c1 || !g.cmds[o.c1]) return { ok: false, err: 'Choose a commander to lead the rally.' };
+  if (total > marchCap(w, g)) return { ok: false, err: `You can lead at most ${marchCap(w, g).toLocaleString('en-US')} of your own troops.` };
+  if (!o.c1 || !(typeof o.c1 === 'string' && Object.prototype.hasOwnProperty.call(g.cmds, o.c1))) return { ok: false, err: 'Choose a commander to lead the rally.' };
   const busy = busyCommanders(w, g);
   if (busy.has(o.c1)) return { ok: false, err: `${CMD[o.c1].name} is already leading an army.` };
   if (activeMarches(w, g) >= marchLimit(w, g)) return { ok: false, err: 'All march slots are in use.' };
@@ -1118,6 +1151,7 @@ function battleCamp(w, m) {
   const terrain = w.map.ter[m.to];
   const input = { seed: battleSeed(w), a: attackerSide(w, m, { attack: true, field: true, terrain }), d: neutralSide(`Bandit camp (level ${c.lv})`, c.troops, c.lv), terrain, wall: null, kind: 'camp' };
   const res = fight(input);
+  w.stats.battles++;
   const aw = woundedSplit(res.a.lost, 0.75);
   let loot = null;
   if (res.winner === 'a') {
@@ -1155,6 +1189,7 @@ function battleGatherer(w, m) {
   if (ambush) for (const u of UNIT_KEYS) dSide.mul.def[u] *= 0.85;
   const input = { seed: battleSeed(w), a: aSide, d: dSide, terrain, wall: null, kind: 'field', ambush };
   const res = fight(input);
+  w.stats.battles++;
   const aw = woundedSplit(res.a.lost, 0.5 + aSide.wounded), dw = woundedSplit(res.d.lost, 0.5 + dSide.wounded);
   const gathered = gatheredSoFar(w, victim);
   let loot = null;
@@ -1183,6 +1218,7 @@ function battleRuin(w, m) {
   const terrain = w.map.ter[m.to];
   const input = { seed: battleSeed(w), a: attackerSide(w, m, { attack: true, field: true, terrain }), d: neutralSide(`Guardians of ${mk.name}`, mk.garrison, mk.level), terrain, wall: null, kind: 'ruin' };
   const res = fight(input);
+  w.stats.battles++;
   const aw = woundedSplit(res.a.lost, 0.75);
   let loot = null;
   if (res.winner === 'a') {
@@ -1226,6 +1262,7 @@ function battleLandmark(w, m) {
   let res;
   if (troopsTotal(dSide.units) <= 0) res = { winner: 'a', reason: 'empty', rounds: [], casts: [], a: { start: { ...aSide.units }, end: { ...aSide.units }, lost: { inf: 0, cav: 0, arc: 0, sie: 0 }, chased: 0 }, d: { start: { ...dSide.units }, end: { ...dSide.units }, lost: { inf: 0, cav: 0, arc: 0, sie: 0 }, chased: 0 }, wallDamage: 0, wallLeft: wall.dur };
   else res = fight(input);
+  w.stats.battles++;
   mk.lastHit = w.t;
   mk.wallDur = Math.max(0, res.wallLeft >= 0 ? res.wallLeft : mk.wallDur);
   const aw = woundedSplit(res.a.lost, 0.5);
@@ -1434,6 +1471,8 @@ function dayTick(w, d) {
   const keys = Object.keys(w.hist.terr).map(Number).sort((a, b) => a - b);
   while (keys.length > 40) { const k = keys.shift(); delete w.hist.terr[k]; delete w.hist.power[k]; }
   for (const g of w.govs) g.tradedToday = 0;
+  // market prices drift 30% of the way back to normal each day
+  for (const r of RES) w.market.price[r] = 1 + (w.market.price[r] - 1) * 0.7;
   for (const gd of w.guilds) guildDaily(w, gd);
 }
 
@@ -1456,4 +1495,60 @@ function updatePlayerVision(w) {
   const ex = w.explored;
   for (let i = 0; i < N2; i++) if (vis[i]) ex[i] = 1;
   w._visVer = (w._visVer || 0) + 1;
+}
+
+// ================================================================ demonstration campaign: the Coalition War
+// The server is two and a half days old. Crown of Cinders has outgrown everyone (a head start set by this scenario,
+// not by any rule the AI plays under afterwards); its rivals fear it, and the Capital opens in a few hours. From
+// here everything is simulated: whether a coalition forms, who it fights, and whether the player's arrival
+// changes the outcome.
+function scenarioCoalition(w) {
+  const rng = makeRng(hash32(w.seed, 'scenario'));
+  w.scenario = 'coalition';
+  w.t = 2 * DAY + 12 * HOUR;
+  w.lastDay = Math.floor(w.t / DAY);
+  const H = w.guilds[0];
+  const level = (g, hall, rest) => { for (const b of BUILDING_KEYS) g.b[b] = b === 'hall' ? hall : Math.min(hall, rest); g.wallDur = wallMax(g, cityMods(w, g)); modsChanged(g); };
+  for (const g of w.govs) {
+    g.at = w.t; g.next = g.human ? Infinity : w.t + rint(w, 1, 60); g.shield = 0; g.q.build = null; g.q.research = null;
+    for (const u of UNIT_KEYS) g.q.train[u] = null;
+    const top = g.guild === H.id;
+    level(g, top ? 13 : 9, top ? 12 : 8);
+    const army = top ? rng.int(24000, 36000) : rng.int(5000, 11000);
+    const mix = ARCHETYPES[g.arch].army;
+    for (const u of UNIT_KEYS) g.troops[u] = Math.round(army * (mix[u] || 0));
+    for (const r of RES) g.res[r] = top ? 160000 : 60000;
+    for (const t of ['agri', 'forestry', 'drill', 'archery', 'scouting', 'masonry']) g.tech[t] = top ? 6 : 3;
+    for (const id in g.cmds) g.cmds[id].lv = top ? 18 : 10;
+    g.power = computePower(g);
+  }
+  // the hegemon already holds the three fortresses nearest its home
+  const forts = w.marks.filter(m => m.kind === 'fortress').sort((a, b) => dist(a.x, a.y, H.home.x, H.home.y) - dist(b.x, b.y, H.home.x, H.home.y)).slice(0, 3);
+  for (const mk of forts) {
+    mk.owner = H.id; mk.since = w.t - DAY; mk.lastHit = w.t - DAY;
+    const holder = w.govs[H.members[rng.int(1, H.members.length - 1)]];
+    const at = idx(mk.x, mk.y);
+    const troops = { inf: 9000, cav: 3000, arc: 6000, sie: 0 };
+    for (const u of UNIT_KEYS) { holder.troops[u] += troops[u]; holder.away[u] += troops[u]; }
+    w.marches.push({ id: w.nid++, kind: 'reinforce', owner: holder.id, troops, c1: null, c2: null, path: [at], k: 0, frac: 0, speed: 1, from: at, to: at, target: { type: 'mark', id: mk.id }, state: 'garrison', dep: w.t, eta: w.t, load: null, rally: null, wounded: null, gatherEnd: 0, alerted: true, parts: null });
+    chronicle(w, 'fortress', `${H.name} [${H.tag}] took ${mk.name} in the first days of the server.`, { g: [H.id], x: mk.x, y: mk.y, imp: 2 });
+  }
+  for (const o of w.guilds) if (o.id !== H.id) { o.rel[H.id] = Math.min(o.rel[H.id], -30); H.rel[o.id] = Math.min(H.rel[o.id], -10); o.next = w.t + rint(w, 5, 90); }
+  H.next = w.t + 30;
+  // the player arrives as a seasoned independent governor, near the frontier
+  const P = w.govs[PLAYER];
+  level(P, 12, 11);
+  P.troops = { inf: 14000, cav: 9000, arc: 9000, sie: 1500 };
+  for (const r of RES) P.res[r] = 120000;
+  P.cmds[CIV[P.civ].commander].lv = 15;
+  P.shield = w.t + DAY;
+  P.power = computePower(P);
+  for (const g of w.govs) g.power = computePower(g);
+  for (const gd of w.guilds) gd.power = guildPower(w, gd);
+  rankGuilds(w);
+  recomputeTerritory(w);
+  const total = w.guilds.reduce((a, gd) => a + gd.power, 0);
+  chronicle(w, 'hegemon', `${H.name} [${H.tag}] now holds ${Math.round(H.power / total * 100)}% of the server's power and three fortresses. Its neighbours watch the Capital, which opens on Day ${1 + THRONE_OPENS / DAY}.`, { g: [H.id], imp: 3 });
+  for (const q of QUESTS) if (q.check(P)) w.quests.claimed[q.id] = w.t;   // the tutorial goals are behind this governor
+  stampDisc(w.explored, P.x, P.y, 24, 1);
 }

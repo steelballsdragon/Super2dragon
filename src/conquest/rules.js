@@ -210,7 +210,7 @@ function armySide(w, g, troops, c1, c2, ctx, label) {
 }
 // a neutral garrison (bandit camp, unclaimed fortress, the Capital's Ember Guard)
 function neutralSide(label, units, level) {
-  const k = 1 + level * 0.04;
+  const k = 1 + level * 0.02;
   const mul = { atk: {}, def: {}, hp: {} };
   for (const u of UNIT_KEYS) { mul.atk[u] = k; mul.def[u] = k; mul.hp[u] = 1; }
   return { gov: -1, label, units: { inf: units.inf || 0, cav: units.cav || 0, arc: units.arc || 0, sie: units.sie || 0 }, mul, morale: 100, moraleLoss: 1, terror: 0, pursuit: 0, wallAtk: 1, towerMul: 1, plunder: 0, wounded: 0, cmd: null, cmd2: null };

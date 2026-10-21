@@ -1,0 +1,1070 @@
+{
+  "_note": "Excerpt of a real Age of Conquest save after 3 game days (seed 2026). The full save has 600 governors, 10 guilds and every list in full; see docs/CONQUEST.md for the schema.",
+  "wrapper": {
+    "format": "age-of-conquest",
+    "v": 1,
+    "check": "<FNV-1a hash of body>",
+    "body": "<the world below, as JSON text>"
+  },
+  "world": {
+    "v": 1,
+    "seed": 2026,
+    "rs": 17876786,
+    "t": 4680,
+    "age": 1,
+    "server": "ashen-crown",
+    "realSavedAt": 1,
+    "nid": 26527,
+    "battleN": 2236,
+    "throne": {
+      "owner": -1,
+      "since": 0
+    },
+    "market": {
+      "price": {
+        "food": 0.8827759991737647,
+        "wood": 1.6,
+        "stone": 1.6,
+        "iron": 0.6,
+        "gold": 0.8722301517567932
+      }
+    },
+    "settings": {
+      "offlineCap": 720,
+      "notify": "important"
+    },
+    "quests": {
+      "claimed": {}
+    },
+    "events": [],
+    "nextEventAt": 4800,
+    "govs": [
+      "<600 governors; one example:>",
+      {
+        "id": 0,
+        "name": "Sevius the Quiet",
+        "civ": "ashen",
+        "arch": "rallylead",
+        "t": {
+          "agg": 0.88,
+          "risk": 0.51,
+          "greed": 0.35,
+          "loyal": 0.63,
+          "patience": 0.63,
+          "skill": 0.79,
+          "diplo": 0.42,
+          "honor": 0.65,
+          "activity": 0.86,
+          "ambition": 0.9
+        },
+        "bg": 21,
+        "human": false,
+        "x": 113,
+        "y": 77,
+        "guild": 0,
+        "role": "member",
+        "joined": 360,
+        "b": {
+          "hall": 8,
+          "farm": 8,
+          "lumber": 7,
+          "warehouse": 2,
+          "barracks": 6,
+          "wall": 8,
+          "quarry": 6,
+          "range": 5,
+          "academy": 6,
+          "stables": 3,
+          "mine": 2,
+          "market": 3,
+          "workshop": 2
+        },
+        "res": {
+          "food": 454.47916666666197,
+          "wood": 180.87083333332794,
+          "stone": 3105.0186666666855,
+          "iron": 7573.693333333338,
+          "gold": 1248.2665833333335
+        },
+        "at": 4680,
+        "troops": {
+          "inf": 305,
+          "cav": 9,
+          "arc": 0,
+          "sie": 0
+        },
+        "away": {
+          "inf": 3323,
+          "cav": 153,
+          "arc": 356,
+          "sie": 0
+        },
+        "wounded": {
+          "inf": 0,
+          "cav": 0,
+          "arc": 0,
+          "sie": 0
+        },
+        "tech": {
+          "forestry": 3,
+          "agri": 3,
+          "drill": 3,
+          "scouting": 3,
+          "carto": 3,
+          "masonry": 5,
+          "archery": 2,
+          "horse": 2,
+          "logistics": 2,
+          "metal": 4,
+          "fortify": 4,
+          "trade": 2,
+          "formations": 2
+        },
+        "cmds": {
+          "kael": {
+            "lv": 4,
+            "xp": 661,
+            "sk": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "tal": {
+              "inf": 2,
+              "def": 1
+            }
+          },
+          "nyra": {
+            "lv": 1,
+            "xp": 129,
+            "sk": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "tal": {}
+          }
+        },
+        "steward": "kael",
+        "defender": "kael",
+        "q": {
+          "build": {
+            "id": "lumber",
+            "L": 8,
+            "start": 4680,
+            "end": 4695,
+            "cost": {
+              "food": 1617,
+              "gold": 40
+            }
+          },
+          "research": {
+            "id": "siegecraft",
+            "lv": 1,
+            "start": 4680,
+            "end": 4687,
+            "cost": {
+              "wood": 800,
+              "stone": 600,
+              "iron": 200,
+              "gold": 100
+            }
+          },
+          "train": {
+            "inf": null,
+            "cav": null,
+            "arc": null,
+            "sie": null
+          },
+          "heal": null,
+          "exchange": null
+        },
+        "shield": 3240,
+        "shieldCd": 0,
+        "wallDur": 31474,
+        "stats": {
+          "wins": 12,
+          "losses": 0,
+          "defWins": 0,
+          "defLosses": 0,
+          "camps": 3,
+          "scouts": 7,
+          "rallies": 0,
+          "traded": 0,
+          "healed": 0,
+          "trained": {
+            "inf": 4742,
+            "cav": 352,
+            "arc": 719,
+            "sie": 0
+          },
+          "kills": 1975,
+          "deaths": 960,
+          "sacked": 0,
+          "sackedOthers": 0,
+          "gathered": 35254,
+          "contributed": 787.5
+        },
+        "intel": [
+          {
+            "target": {
+              "type": "city",
+              "id": 121
+            },
+            "at": 2875,
+            "acc": 65,
+            "troops": {
+              "inf": 3200,
+              "cav": 0,
+              "arc": 83,
+              "sie": 0
+            },
+            "wall": 5,
+            "shield": true,
+            "flagged": false,
+            "loot": 88300
+          },
+          {
+            "target": {
+              "type": "city",
+              "id": 528
+            },
+            "at": 3160,
+            "acc": 65,
+            "troops": {
+              "inf": 2100,
+              "cav": 570,
+              "arc": 380,
+              "sie": 0
+            },
+            "wall": 7,
+            "shield": true,
+            "flagged": false,
+            "loot": 70600
+          },
+          {
+            "target": {
+              "type": "city",
+              "id": 520
+            },
+            "at": 4110,
+            "acc": 69,
+            "troops": {
+              "inf": 11000,
+              "cav": 0,
+              "arc": 3700,
+              "sie": 0
+            },
+            "wall": 12,
+            "shield": false,
+            "flagged": false,
+            "loot": 142000
+          },
+          {
+            "target": {
+              "type": "city",
+              "id": 518
+            },
+            "at": 4185,
+            "acc": 69,
+            "troops": {
+              "inf": 7700,
+              "cav": 1300,
+              "arc": 2900,
+              "sie": 40
+            },
+            "wall": 9,
+            "shield": false,
+            "flagged": false,
+            "loot": 28500
+          }
+        ],
+        "rel": {
+          "61": -4,
+          "72": -4,
+          "81": -16,
+          "91": -8,
+          "100": -24,
+          "106": -4,
+          "121": -4,
+          "387": -4,
+          "442": -4,
+          "528": -4,
+          "538": -24
+        },
+        "mem": [
+          {
+            "k": "scouted",
+            "who": 387,
+            "t": 2230
+          },
+          {
+            "k": "attacked_out",
+            "who": 81,
+            "win": true,
+            "lost": 201,
+            "t": 3305
+          },
+          {
+            "k": "attacked_out",
+            "who": 81,
+            "win": true,
+            "lost": 197,
+            "t": 3385
+          },
+          {
+            "k": "scouted",
+            "who": 72,
+            "t": 3440
+          },
+          {
+            "k": "attacked_out",
+            "who": 538,
+            "win": true,
+            "lost": 195,
+            "t": 3905
+          },
+          {
+            "k": "attacked_out",
+            "who": 538,
+            "win": true,
+            "lost": 197,
+            "t": 4025
+          },
+          {
+            "k": "scouted",
+            "who": 121,
+            "t": 4115
+          },
+          {
+            "k": "attacked_out",
+            "who": 538,
+            "win": true,
+            "lost": 201,
+            "t": 4145
+          },
+          {
+            "k": "attacked_out",
+            "who": 100,
+            "win": true,
+            "lost": 104,
+            "t": 4280
+          },
+          {
+            "k": "attacked_out",
+            "who": 100,
+            "win": true,
+            "lost": 99,
+            "t": 4415
+          },
+          {
+            "k": "attacked_out",
+            "who": 100,
+            "win": true,
+            "lost": 97,
+            "t": 4545
+          },
+          {
+            "k": "attacked_out",
+            "who": 91,
+            "win": true,
+            "lost": 344,
+            "t": 4675
+          }
+        ],
+        "log": [
+          {
+            "t": 4090,
+            "k": "attack",
+            "text": "Attacked Leoia the Cunning: their guilds are at war; a 4h-old scout report put their defense at about 15% of this army.",
+            "vis": "private"
+          },
+          {
+            "t": 4145,
+            "k": "explore",
+            "text": "Sent a scout to explore beyond the known lands, toward Halius the Elder.",
+            "vis": "private"
+          },
+          {
+            "t": 4215,
+            "k": "attack",
+            "text": "Attacked Drain: their guilds are at war; a 1h-old scout report put their defense at about 23% of this army.",
+            "vis": "private"
+          },
+          {
+            "t": 4350,
+            "k": "attack",
+            "text": "Attacked Drain: their guilds are at war; a 3h-old scout report put their defense at about 22% of this army.",
+            "vis": "private"
+          },
+          {
+            "t": 4480,
+            "k": "attack",
+            "text": "Attacked Drain: their guilds are at war; a 5h-old scout report put their defense at about 22% of this army.",
+            "vis": "private"
+          },
+          {
+            "t": 4620,
+            "k": "attack",
+            "text": "Attacked Thrnir: their guilds are at war; a 1h-old scout report put their defense at about 43% of this army.",
+            "vis": "private"
+          }
+        ],
+        "st": "war",
+        "goal": null,
+        "next": 4693,
+        "explore": 64,
+        "alert": null,
+        "power": 27100,
+        "recruited": 1,
+        "tradedToday": 0,
+        "tradeDay": 0,
+        "lastAttack": null,
+        "lastAt": 0,
+        "tier": "strategic"
+      }
+    ],
+    "guilds": [
+      "<10 guilds; one example (members list shortened):>",
+      {
+        "id": 0,
+        "name": "Crown of Cinders",
+        "tag": "CRN",
+        "color": "#d4573b",
+        "emblem": "crown",
+        "founded": 360,
+        "home": {
+          "x": 107,
+          "y": 78,
+          "region": 5
+        },
+        "civ": "ashen",
+        "leader": 2,
+        "officers": [
+          104,
+          33,
+          28,
+          54
+        ],
+        "members": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          "..."
+        ],
+        "rule": "strongest",
+        "heir": 104,
+        "policy": {
+          "stance": "war",
+          "target": 1,
+          "objective": 5,
+          "since": 1405,
+          "why": "At war with Iron Covenant. Objective: Saltmere Fort."
+        },
+        "treasury": {
+          "food": 121211,
+          "wood": 79066,
+          "stone": 75586,
+          "iron": 40422,
+          "gold": 3457
+        },
+        "tech": {
+          "granary": 0,
+          "banners": 0,
+          "bulwark": 0
+        },
+        "rel": [
+          0,
+          -100,
+          -24.9251893255487,
+          -24.275430442728094,
+          -15.429503670962891,
+          12.168629551343622,
+          20.823998160324997,
+          33.98547681685538,
+          -21.82119950881227,
+          -36.81745264489203
+        ],
+        "treaties": {
+          "1": {
+            "k": "war",
+            "since": 2990,
+            "by": 1
+          },
+          "5": {
+            "k": "nap",
+            "since": 3175,
+            "secret": false
+          },
+          "6": {
+            "k": "nap",
+            "since": 680,
+            "secret": false
+          },
+          "7": {
+            "k": "nap",
+            "since": 435,
+            "secret": false
+          }
+        },
+        "cred": 70,
+        "warScore": {
+          "1": 9.184799999999992
+        },
+        "next": 4710,
+        "stats": {
+          "kills": 139164,
+          "losses": 187309,
+          "forts": 0,
+          "sacked": 0,
+          "wars": 0
+        },
+        "power": 1833774,
+        "rank": 8,
+        "proposals": [],
+        "collapsed": false,
+        "refoundAt": 0,
+        "applicants": [],
+        "plan": [],
+        "age": 1
+      }
+    ],
+    "marks": [
+      {
+        "id": 0,
+        "kind": "capital",
+        "name": "The Ember Throne",
+        "x": 64,
+        "y": 64,
+        "owner": -1,
+        "since": 0,
+        "level": 20,
+        "garrison": {
+          "inf": 26000,
+          "cav": 14000,
+          "arc": 18000,
+          "sie": 2000
+        },
+        "base": {
+          "inf": 26000,
+          "cav": 14000,
+          "arc": 18000,
+          "sie": 2000
+        },
+        "region": 4,
+        "lastHit": 0,
+        "wallDur": 425487,
+        "wallMax": 425487
+      },
+      {
+        "id": 1,
+        "kind": "fortress",
+        "name": "Cinder Gate",
+        "x": 25,
+        "y": 18,
+        "owner": 6,
+        "since": 4025,
+        "level": 10,
+        "garrison": {
+          "inf": 4533,
+          "cav": 1788,
+          "arc": 2106,
+          "sie": 27
+        },
+        "base": {
+          "inf": 9600,
+          "cav": 5400,
+          "arc": 7000,
+          "sie": 200
+        },
+        "region": 0,
+        "lastHit": 4025,
+        "wallDur": 40745.04000000001,
+        "wallMax": 51576
+      }
+    ],
+    "camps": [
+      {
+        "id": 5729,
+        "x": 83,
+        "y": 74,
+        "lv": 7,
+        "troops": {
+          "inf": 3432,
+          "cav": 1907,
+          "arc": 2288,
+          "sie": 0
+        },
+        "occ": 15730
+      },
+      {
+        "id": 8107,
+        "x": 58,
+        "y": 77,
+        "lv": 8,
+        "troops": {
+          "inf": 5296,
+          "cav": 2942,
+          "arc": 3530,
+          "sie": 0
+        },
+        "occ": 18108
+      }
+    ],
+    "nodes": [
+      {
+        "id": 109,
+        "x": 66,
+        "y": 72,
+        "res": "stone",
+        "lv": 5,
+        "amount": 192290,
+        "max": 200000,
+        "by": null,
+        "occ": 20110
+      },
+      {
+        "id": 112,
+        "x": 63,
+        "y": 57,
+        "res": "wood",
+        "lv": 5,
+        "amount": 181234,
+        "max": 200000,
+        "by": null,
+        "occ": 20113
+      }
+    ],
+    "marches": [
+      {
+        "id": 20932,
+        "kind": "return",
+        "owner": 145,
+        "troops": {
+          "inf": 1560,
+          "cav": 0,
+          "arc": 334,
+          "sie": 0
+        },
+        "c1": "kael",
+        "c2": "thane",
+        "path": "15690:ffffffffffffffffffffiiiiifffffffcffffffffccccccccccbbbbbaabbbbbbbbbaabbbbbbbbbbbbbbbbaaaddhgghgghggghhhhgggggggdddddddgggggggggggdgddddddddgdg",
+        "k": 131,
+        "frac": 0.12262231054309658,
+        "speed": 0.5830000000000001,
+        "from": 14663,
+        "to": 14663,
+        "target": {
+          "type": "city",
+          "id": 145
+        },
+        "state": "back",
+        "dep": 4000,
+        "eta": 4703,
+        "load": null,
+        "rally": null,
+        "wounded": null,
+        "gatherEnd": 0,
+        "alerted": false,
+        "parts": null
+      },
+      {
+        "id": 21139,
+        "kind": "reinforce",
+        "owner": 304,
+        "troops": {
+          "inf": 6361,
+          "cav": 1441,
+          "arc": 2142,
+          "sie": 0
+        },
+        "c1": "kael",
+        "c2": "amara",
+        "path": "2329:",
+        "k": 0,
+        "frac": 0,
+        "speed": 1,
+        "from": 2329,
+        "to": 2329,
+        "target": {
+          "type": "mark",
+          "id": 1
+        },
+        "state": "garrison",
+        "dep": 4025,
+        "eta": 4025,
+        "load": null,
+        "rally": null,
+        "wounded": null,
+        "gatherEnd": 0,
+        "alerted": true,
+        "parts": null
+      }
+    ],
+    "rallies": [
+      {
+        "id": 20029,
+        "leader": 304,
+        "guild": 6,
+        "target": {
+          "type": "mark",
+          "id": 1
+        },
+        "to": 2329,
+        "launchAt": 3935,
+        "state": "done",
+        "lead": 20028,
+        "created": 3890,
+        "march": 20387
+      }
+    ],
+    "chron": [
+      {
+        "n": 197,
+        "t": 4640,
+        "k": "sacked",
+        "txt": "Gungar the Grey [ICV] broke the walls of Valous [CRN] and sacked the city.",
+        "g": [
+          1,
+          0
+        ],
+        "p": [
+          90,
+          52
+        ],
+        "x": 125,
+        "y": 78,
+        "imp": 2,
+        "vis": "public"
+      },
+      {
+        "n": 200,
+        "t": 4645,
+        "k": "war",
+        "txt": "Order of the Oath [OTH] declared war on Ravenmark [RVN]. They believed Ravenmark too weak to resist.",
+        "g": [
+          6,
+          7
+        ],
+        "p": [
+          332
+        ],
+        "x": null,
+        "y": null,
+        "imp": 3,
+        "vis": "public"
+      },
+      {
+        "n": 202,
+        "t": 4655,
+        "k": "sacked",
+        "txt": "Jalur [CRN] broke the walls of Gunnir [ICV] and sacked the city.",
+        "g": [
+          0,
+          1
+        ],
+        "p": [
+          104,
+          61
+        ],
+        "x": 77,
+        "y": 85,
+        "imp": 2,
+        "vis": "public"
+      },
+      {
+        "n": 203,
+        "t": 4660,
+        "k": "fortress",
+        "txt": "Emberguard [EMB] captured Ironvale Bastion, led by Halar.",
+        "g": [
+          4
+        ],
+        "p": [
+          224
+        ],
+        "x": 26,
+        "y": 61,
+        "imp": 2,
+        "vis": "public"
+      }
+    ],
+    "chronN": 206,
+    "battles": [
+      {
+        "id": 26495,
+        "t": 4680,
+        "kind": "city",
+        "x": 41,
+        "y": 18,
+        "a": 373,
+        "d": 342,
+        "dName": "Tora",
+        "aGuild": 7,
+        "dGuild": 6,
+        "win": "d",
+        "aLost": 2067,
+        "dLost": 759,
+        "aStart": 3985,
+        "dStart": 1841,
+        "sacked": false,
+        "seen": false
+      },
+      {
+        "id": 26496,
+        "t": 4680,
+        "kind": "city",
+        "x": 85,
+        "y": 106,
+        "a": 104,
+        "d": 71,
+        "dName": "Kranir",
+        "aGuild": 0,
+        "dGuild": 1,
+        "win": "a",
+        "aLost": 235,
+        "dLost": 194,
+        "aStart": 12461,
+        "dStart": 194,
+        "sacked": false,
+        "seen": false
+      }
+    ],
+    "reports": [
+      {
+        "kind": "battle",
+        "title": "Defeat: Malen the Patient [FRF] attacked your city",
+        "view": "d",
+        "won": false,
+        "input": {
+          "seed": 3876141125,
+          "a": {
+            "gov": 455,
+            "label": "Malen the Patient [FRF]",
+            "units": {
+              "inf": 3439,
+              "cav": 224,
+              "arc": 466,
+              "sie": 0
+            },
+            "mul": {
+              "atk": {
+                "inf": 1.0739999999999998,
+                "cav": 1.099,
+                "arc": 1.119,
+                "sie": 1.009
+              },
+              "def": {
+                "inf": 1.174,
+                "cav": 1.099,
+                "arc": 1.069,
+                "sie": 1.009
+              },
+              "hp": {
+                "inf": 0.95,
+                "cav": 0.95,
+                "arc": 0.95,
+                "sie": 0.95
+              }
+            },
+            "morale": 100,
+            "moraleLoss": 1,
+            "terror": 0,
+            "pursuit": 0,
+            "wallAtk": 1,
+            "towerMul": 1,
+            "plunder": 0,
+            "wounded": 0,
+            "cmd": {
+              "id": "kael",
+              "lv": 2,
+              "sk": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "ult": false
+            },
+            "cmd2": "seris"
+          },
+          "d": {
+            "gov": 599,
+            "label": "Sample",
+            "units": {
+              "inf": 0,
+              "cav": 0,
+              "arc": 0,
+              "sie": 0
+            },
+            "mul": {
+              "atk": {
+                "inf": 1.009,
+                "cav": 1.009,
+                "arc": 1.059,
+                "sie": 1.009
+              },
+              "def": {
+                "inf": 1.009,
+                "cav": 1.009,
+                "arc": 1.009,
+                "sie": 1.009
+              },
+              "hp": {
+                "inf": 0.95,
+                "cav": 0.95,
+                "arc": 0.95,
+                "sie": 0.95
+              }
+            },
+            "morale": 100,
+            "moraleLoss": 1,
+            "terror": 0,
+            "pursuit": 0,
+            "wallAtk": 1,
+            "towerMul": 1,
+            "plunder": 0,
+            "wounded": 0,
+            "cmd": {
+              "id": "seris",
+              "lv": 3,
+              "sk": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "ult": false
+            },
+            "cmd2": null
+          },
+          "terrain": 8,
+          "wall": {
+            "level": 0,
+            "dur": 429,
+            "max": 2000
+          },
+          "kind": "city"
+        },
+        "res": {
+          "winner": "a",
+          "reason": "destroyed",
+          "rounds": [
+            [
+              4129,
+              0,
+              99,
+              99,
+              115,
+              []
+            ]
+          ],
+          "casts": [],
+          "a": {
+            "start": {
+              "inf": 3439,
+              "cav": 224,
+              "arc": 466,
+              "sie": 0
+            },
+            "end": {
+              "inf": 3439,
+              "cav": 224,
+              "arc": 466,
+              "sie": 0
+            },
+            "lost": {
+              "inf": 0,
+              "cav": 0,
+              "arc": 0,
+              "sie": 0
+            },
+            "chased": 0
+          },
+          "d": {
+            "start": {
+              "inf": 0,
+              "cav": 0,
+              "arc": 0,
+              "sie": 0
+            },
+            "end": {
+              "inf": 0,
+              "cav": 0,
+              "arc": 0,
+              "sie": 0
+            },
+            "lost": {
+              "inf": 0,
+              "cav": 0,
+              "arc": 0,
+              "sie": 0
+            },
+            "chased": 0
+          },
+          "wallDamage": 314,
+          "wallLeft": 115
+        },
+        "extra": {
+          "plunder": {
+            "food": 119,
+            "wood": 119,
+            "stone": 30,
+            "iron": 15,
+            "gold": 7
+          },
+          "sacked": false,
+          "captured": false,
+          "aWounded": {
+            "inf": 0,
+            "cav": 0,
+            "arc": 0,
+            "sie": 0
+          },
+          "dWounded": {
+            "inf": 0,
+            "cav": 0,
+            "arc": 0,
+            "sie": 0
+          }
+        },
+        "explain": [
+          "They had Infinity times as many troops.",
+          "Deep snow: attackers -5% attack.",
+          "Your army was destroyed."
+        ],
+        "x": 95,
+        "y": 16,
+        "id": 26451,
+        "t": 4675,
+        "read": false
+      }
+    ],
+    "hist": {
+      "terr": {
+        "3": "00000000000000880000000000000000000000000088008880000000000000000000077700888000000009990000000000007077778888000000099000000000000000770070000000000990990000000000777777780000000999909900000000007777770878800009999999aaa00000000077777777700009999099aaa0000007777777770700000099a09aaa00000000007777777770070999aaaaaa0a00000000007777700000000aaaaaa9000000666600777770000890000aaaaaa0000066666777770000080000a0aaaa0000066666666080000000000000aa00000006666666600000000000000a00900a00066666000000000000000000aa11000006066665500000000000000001111000006065555500000000000000111111000666555555000400000a00311111110000055555550004000020300911111110000555550540044000003022011111100006555544444444000000200101101000000550444444000052222220111000000500444644000055322322221110000005504444050000033223222220000000000044444400503333222222000000000000444444054033332222223000000000000044444400333332222000000000000000004044403333300330000000000000000030500030333330000000000000000000000003000333300000000000000000000000000000000000000000"
+      },
+      "power": {
+        "3": [
+          1699752,
+          1669665,
+          2074399,
+          2378355,
+          2145973,
+          2189359,
+          2338436,
+          983363,
+          2000804,
+          2074704
+        ]
+      }
+    },
+    "ages": [],
+    "exploredRle": "0.1503.1.124.7.110.1.9.9.104.11.4.9.102.15.2.9.53.1.47.28.10..."
+  }
+}

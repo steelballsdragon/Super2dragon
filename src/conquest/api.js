@@ -3,8 +3,11 @@
    legitimately discovered. Part of the engine bundle. */
 
 // ================================================================ actions (shared by AI and player)
+// names and numbers that come from the player are checked against real keys (never '__proto__' and friends)
+const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+const intIn = (v, n) => Number.isInteger(v) && v >= 0 && v < n;
 function buildCheck(w, g, id) {
-  const d = BUILDINGS[id];
+  const d = own(BUILDINGS, id) ? BUILDINGS[id] : null;
   if (!d) return { allowed: false, ok: false, err: 'Unknown building.' };
   const L = (g.b[id] || 0) + 1;
   const no = err => ({ allowed: false, ok: false, err, L });
@@ -35,7 +38,7 @@ function techReqMet(g, req) {
   return '';
 }
 function researchCheck(w, g, id) {
-  const d = TECHS[id];
+  const d = own(TECHS, id) ? TECHS[id] : null;
   if (!d) return { allowed: false, ok: false, err: 'Unknown technology.' };
   const lv = (g.tech[id] || 0) + 1;
   if (lv > TECH_MAX) return { allowed: false, ok: false, err: 'Fully researched.', lv };
@@ -58,7 +61,7 @@ function actResearch(w, g, id) {
   return { ok: true };
 }
 function trainCheck(w, g, u, n) {
-  const U = UNITS[u];
+  const U = own(UNITS, u) ? UNITS[u] : null;
   if (!U) return { ok: false, err: 'Unknown troop type.' };
   n = Math.floor(Number(n));
   const L = g.b[U.building] || 0;
@@ -221,8 +224,8 @@ function actExchange(w, g) {
 
 // ================================================================ quests and achievements (the player)
 const QUESTS = [
-  { id: 'farm2', text: 'Upgrade the Farm to level 2', how: 'City: tap the Farm.', check: g => g.b.farm >= 2, reward: { wood: 1500, stone: 600 } },
-  { id: 'hall2', text: 'Raise the Town Hall to level 2', how: 'City: tap the Town Hall.', check: g => g.b.hall >= 2, reward: { food: 2500, wood: 2500 } },
+  { id: 'hall2', text: 'Raise the Town Hall to level 2', how: 'City: Buildings, Town Hall. No building can pass its level.', check: g => g.b.hall >= 2, reward: { food: 2500, wood: 2500 } },
+  { id: 'farm2', text: 'Upgrade the Farm to level 2', how: 'City: Buildings, Farm. Troops eat Food.', check: g => g.b.farm >= 2, reward: { wood: 1500, stone: 600 } },
   { id: 'warehouse', text: 'Build a Warehouse', how: 'Protects part of your stock from plunder.', check: g => (g.b.warehouse || 0) >= 1, reward: { stone: 1200 } },
   { id: 'train', text: 'Train 200 Infantry', how: 'City: Barracks.', check: g => g.stats.trained.inf >= 200, reward: { food: 3000, wood: 1000 } },
   { id: 'scout', text: 'Send a scout', how: 'Map: tap a bandit camp or a city, then Scout.', check: g => g.stats.scouts >= 1, reward: { gold: 400 } },
@@ -291,10 +294,10 @@ function playerCommand(w, cmd, opts = {}) {
     }
     case 'rally': return strip(startRally(w, P, { to: Math.floor(Number(a.to)), troops: a.troops, c1: a.c1, c2: a.c2, wait: a.wait }));
     case 'joinRally': return strip(joinRally(w, P, { rally: a.rally, troops: a.troops, c1: a.c1, c2: a.c2 }));
-    case 'steward': if (!P.cmds[a.cmd]) return { ok: false, err: 'You do not have that commander.' }; P.steward = a.cmd; modsChanged(P); return { ok: true };
-    case 'defender': if (!P.cmds[a.cmd]) return { ok: false, err: 'You do not have that commander.' }; P.defender = a.cmd; return { ok: true };
+    case 'steward': if (!own(P.cmds, a.cmd)) return { ok: false, err: 'You do not have that commander.' }; P.steward = a.cmd; modsChanged(P); return { ok: true };
+    case 'defender': if (!own(P.cmds, a.cmd)) return { ok: false, err: 'You do not have that commander.' }; P.defender = a.cmd; return { ok: true };
     case 'talent': {
-      const r = P.cmds[a.cmd];
+      const r = own(P.cmds, a.cmd) ? P.cmds[a.cmd] : null;
       if (!r) return { ok: false, err: 'You do not have that commander.' };
       if (!CMD[a.cmd].talents.includes(a.branch)) return { ok: false, err: 'That talent is not in this commander\'s tree.' };
       if (talentPointsFree(r) <= 0) return { ok: false, err: 'No talent points left. Commanders earn one per level.' };
@@ -303,14 +306,14 @@ function playerCommand(w, cmd, opts = {}) {
       return { ok: true };
     }
     case 'resetTalents': {
-      const r = P.cmds[a.cmd];
+      const r = own(P.cmds, a.cmd) ? P.cmds[a.cmd] : null;
       if (!r) return { ok: false, err: 'You do not have that commander.' };
       const cost = { gold: 500 * r.lv };
       if (!canAfford(P, cost)) return { ok: false, err: `Resetting costs ${cost.gold.toLocaleString('en-US')} Gold.` };
       pay(P, cost); r.tal = {}; return { ok: true };
     }
     case 'skill': {
-      const r = P.cmds[a.cmd];
+      const r = own(P.cmds, a.cmd) ? P.cmds[a.cmd] : null;
       const k = Math.floor(Number(a.skill));
       if (!r) return { ok: false, err: 'You do not have that commander.' };
       if (!(k >= 0 && k <= 3)) return { ok: false, err: 'Unknown skill.' };
@@ -331,7 +334,7 @@ function playerCommand(w, cmd, opts = {}) {
       return { ok: true, reward: q.reward };
     }
     case 'apply': {
-      const gd = w.guilds[a.guild];
+      const gd = intIn(a.guild, GUILD_COUNT) ? w.guilds[a.guild] : null;
       if (!gd) return { ok: false, err: 'Unknown guild.' };
       if (P.guild >= 0) return { ok: false, err: 'Leave your guild first.' };
       const invited = (P.invites || []).includes(gd.id);
@@ -353,7 +356,7 @@ function playerCommand(w, cmd, opts = {}) {
     }
     case 'contribute': return actContribute(w, P, a.res);
     case 'refound': {
-      const gd = w.guilds[a.guild];
+      const gd = intIn(a.guild, GUILD_COUNT) ? w.guilds[a.guild] : null;
       if (!gd || !gd.collapsed) return { ok: false, err: 'Only a fallen guild\'s place can be refounded.' };
       if (P.guild >= 0) return { ok: false, err: 'Leave your guild first.' };
       if (P.b.hall < 8) return { ok: false, err: 'Founding a guild needs a level 8 Town Hall.' };
@@ -391,14 +394,14 @@ function playerCommand(w, cmd, opts = {}) {
     case 'objective': {
       const gd = P.guild >= 0 ? w.guilds[P.guild] : null;
       if (!gd || (gd.leader !== PLAYER && !gd.officers.includes(PLAYER))) return { ok: false, err: 'Only the leader and officers set objectives.' };
-      const mk = w.marks[a.mark];
+      const mk = intIn(a.mark, w.marks.length) ? w.marks[a.mark] : null;
       if (a.mark !== -1 && (!mk || mk.kind === 'ruin')) return { ok: false, err: 'Choose a fortress or the Capital.' };
       gd.policy = { ...gd.policy, objective: a.mark, why: a.mark === -1 ? 'No objective set.' : `Objective set by ${P.name}: ${mk.name}.`, since: w.t };
       gd.playerObjective = a.mark;
       return { ok: true };
     }
     case 'settings': {
-      if (a.offlineCap != null) { const v = Math.floor(Number(a.offlineCap)); if ([0, 6 * HOUR, 24 * HOUR, 72 * HOUR].includes(v)) w.settings.offlineCap = v; else return { ok: false, err: 'Unknown setting.' }; }
+      if (a.offlineCap != null) { const v = Math.floor(Number(a.offlineCap)); if ([0, 6 * HOUR, 12 * HOUR, 24 * HOUR, 72 * HOUR].includes(v)) w.settings.offlineCap = v; else return { ok: false, err: 'Unknown setting.' }; }
       if (a.notify != null) { if (['all', 'important', 'off'].includes(a.notify)) w.settings.notify = a.notify; else return { ok: false, err: 'Unknown setting.' }; }
       return { ok: true };
     }
@@ -413,7 +416,7 @@ function skillCost(id, lv) { const k = CMD[id].rarity === 'epic' ? 0.7 : 1; retu
 function leaderDiplo(w, P, a) {
   const gd = P.guild >= 0 ? w.guilds[P.guild] : null;
   if (!gd || gd.leader !== PLAYER) return { ok: false, err: 'Only your guild\'s leader can do that.' };
-  const o = w.guilds[a.guild];
+  const o = intIn(a.guild, GUILD_COUNT) ? w.guilds[a.guild] : null;
   if (!o || o.id === gd.id || o.collapsed) return { ok: false, err: 'Choose another guild.' };
   const tr = treaty(w, gd.id, o.id);
   const oLeader = w.govs[o.leader];
@@ -564,6 +567,7 @@ function frameView(w, since) {
   out.unread = w.reports.filter(r => !r.read).length;
   if (P.guild >= 0 && w.guilds[P.guild].leader === PLAYER) { const gd = w.guilds[P.guild]; out.proposals = gd.proposals.map(p => ({ ...p, fromName: w.guilds[p.from].name })); out.applicants = gd.applicants.map(id => publicGov(w, w.govs[id])); }
   out.ages = w.ages.slice();
+  out.scenario = w.scenario || null;
   return out;
 }
 function rallyView(w, r) {
@@ -593,7 +597,7 @@ function guildBrief(w, gd) {
   };
 }
 function guildDetail(w, gi) {
-  const gd = w.guilds[gi];
+  const gd = intIn(gi, GUILD_COUNT) ? w.guilds[gi] : null;
   if (!gd) return null;
   const P = w.govs[PLAYER];
   const mine = P.guild === gi;
@@ -613,7 +617,7 @@ function chronVisible(w, e) {
 }
 // the inspector: public facts for anyone; personality, goals and reasoning only with fresh intel or as a guild mate
 function inspect(w, id) {
-  const g = w.govs[id];
+  const g = intIn(id, w.govs.length) ? w.govs[id] : null;
   if (!g) return null;
   const P = w.govs[PLAYER];
   const known = !!w.explored[idx(g.x, g.y)] || id === PLAYER || (P.guild >= 0 && g.guild === P.guild);
@@ -704,7 +708,7 @@ function tileView(w, i) {
   const t = tileTarget(w, i);
   out.target = t;
   if (t?.type === 'city') out.city = inspect(w, t.id);
-  if (t?.type === 'camp') { const c = w.camps.find(x => x.id === t.id); out.camp = { id: c.id, lv: c.lv, troops: { ...c.troops } }; }
+  if (t?.type === 'camp') { const c = w.camps.find(x => x.id === t.id); out.camp = { id: c.id, lv: c.lv, troops: { ...c.troops }, reserved: c.reserved === PLAYER && w.t < c.until ? c.until : null }; }
   if (t?.type === 'node') { const n = nodeById(w, t.id); out.node = { id: n.id, res: n.res, lv: n.lv, amount: out.visible ? n.amount : null, max: n.max, busy: !!n.by && out.visible, byName: n.by && out.visible ? w.govs[w.marches.find(m => m.id === n.by)?.owner]?.name : null }; }
   if (t?.type === 'mark') {
     const mk = w.marks[t.id];
@@ -788,7 +792,7 @@ function deserialize(json) {
 }
 function migrate(w, v) {
   // schema 1 is the first version; later versions add their upgrades here
-  if (!w.settings) w.settings = { offlineCap: 24 * HOUR, notify: 'important' };
+  if (!w.settings) w.settings = { offlineCap: 12 * HOUR, notify: 'important' };
   if (!w.notes) w.notes = [];
   if (!w.campRespawn) w.campRespawn = [];
   void v;
@@ -883,7 +887,7 @@ function createServer(host) {
         switch (msg.type) {
           case 'new': {
             const t0 = now();
-            S.w = createWorld({ seed: msg.seed, name: msg.name, civ: msg.civ, dev: S.dev, now: now() });
+            S.w = createWorld({ seed: msg.seed, name: msg.name, civ: msg.civ, dev: S.dev, now: now(), scenario: msg.scenario === 'coalition' ? 'coalition' : null });
             S.speed = 1; S.acc = 0;
             ready({ createdMs: now() - t0 });
             save();

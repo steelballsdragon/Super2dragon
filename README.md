@@ -12,6 +12,12 @@ It plays like a mobile strategy game:
 
 Turn your phone sideways for a landscape layout with every control in a panel on the left and the town filling the rest of the screen.
 
+## Age of Conquest
+
+The start screen also offers **Last Furnace: Age of Conquest**, a grand strategy game in the same page. You are one of 600 governors on the Ashen Crown server; the other 599 are simulated, each with its own personality, memory, economy and army, playing by the same rules as you. Ten guilds sign pacts, betray them, form coalitions and wage war over fortresses and the Ember Throne. Build your city, scout through the fog of war, train troops, lead commanders, join or found a guild, call rallies, and win the Age by holding the Throne or building the Grand Exchange. A demonstration campaign, *The Coalition War*, starts on Day 3 with one guild dominating the server.
+
+This version builds one fully simulated server and the Eternal Conquest mode (plus the demonstration campaign); the other servers and modes are planned. Architecture, save format, feature checklist, test results, measured performance, limitations and roadmap: [docs/CONQUEST.md](docs/CONQUEST.md).
+
 ## Where players get the game
 
 | Link | What it is | Saves |
@@ -67,7 +73,7 @@ Never edit those files by hand: `node build.mjs` overwrites them. Change the fil
 
 ## Tests
 
-Every push runs all four test suites on GitHub (see the Actions tab), and nothing is published unless they pass. To run them yourself:
+Every push runs all seven test suites on GitHub (see the Actions tab), and nothing is published unless they pass. To run them yourself:
 
 ```sh
 npm install                      # installs Playwright
@@ -79,6 +85,9 @@ node tests/all.mjs
 - `tests/smoke.mjs` plays a first session through the screens: the start screen, quests, upgrades and speed-ups, collecting, a free recruit, the squad, training, a battle, the idle chest, test-mode purchases, mail and login rewards, then a reload. It fails on any error or network request.
 - `tests/cloud.mjs` plays three accounts on separate devices (owner, invited friend, view-only visitor) against a stand-in for the claude.ai platform: cloud saves, restoring a city on a device that lost it, a newer save from another device winning, an older copy never overwriting a newer one, and the game with no platform at all.
 - `tests/dev.mjs` checks the hidden 7-tap switch (six taps or slow taps do nothing, the setting survives a reload) and every control on the Dev panel, including a blizzard on demand without the page freezing.
+- `tests/conquest-engine.mjs` checks the Age of Conquest rules and simulation in Node: the 600-governor and 10-guild invariants, the economy, prerequisites, pathfinding, combat counters and replays, fog of war, guild politics, saves, offline time, victory, and that invalid commands are refused.
+- `tests/conquest-demo.mjs` runs the Coalition War campaign: a coalition forms against the dominant guild, the war changes the map, and the player's intervention changes the outcome.
+- `tests/conquest-ui.mjs` plays the opening of a world through the interface, with the simulation in its worker and on the page, in portrait and landscape.
 - `tests/soak.mjs` plays from Furnace 1 to 30 on a phone-density screen in portrait and in landscape, visiting every screen and fighting a battle at every level, and fails on any freeze, error, memory growth or oversized save. It reloads at Furnace 17 and 30, then damages saves on purpose (a corrupt save, every copy corrupt, blocked storage) to check that nothing is lost.
 
 ## Project layout
@@ -94,12 +103,16 @@ src/
     shop.js, shop.css            Gems, the test store, packs, monthly card, VIP, Gem Shop, daily gift
     progress.js, progress.css    chapter quests, daily missions, login calendar, mail, chief profile
     dev.js, dev.css              the hidden developer panel
+  conquest/                Age of Conquest: the simulation engine (data, world, rules, sim, ai, api) and its
+                           interface (ui-*.js, ui.css); see docs/CONQUEST.md
 public/icons/            app icons for the installable version
+public/logo.webp, public/conquest-logo.webp   the Last Furnace and Age of Conquest artwork (inlined by the build)
 build.mjs                puts everything together into index.html and dist/
-tests/                   smoke, cloud, dev and soak tests, a stand-in for the claude.ai platform, all.mjs
+tests/                   every test suite, a stand-in for the claude.ai platform, all.mjs, the Age of Conquest benchmark
 .github/workflows/       tests every push and publishes the tested build to GitHub Pages
 docs/CONTRACT.md         the Game API that the modules share (read this before changing a module)
 docs/IAP.md              how purchases work and how to connect real app-store payments
+docs/CONQUEST.md         Age of Conquest: architecture, save format, features, tests, performance, roadmap
 ```
 
 Useful build options:

@@ -5,7 +5,8 @@
 //   node build.mjs --out DIR               -> DIR/index.html + DIR/dist/index.html
 //   node build.mjs --only city,shop        -> core plus only the listed modules
 //
-// CSS order: core, then modules. JS order: core, then city, military, shop, progress, dev, then the boot snippet.
+// CSS order: core, modules, Age of Conquest. JS order: the Age of Conquest engine (own script tag), then core,
+// city, military, shop, progress, dev, the Age of Conquest interface, then the boot snippet.
 // Every JS source is wrapped in its own function scope, so top-level names stay private to that file.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, copyFileSync } from 'node:fs';
@@ -13,10 +14,15 @@ import { createHash } from 'node:crypto';
 import { dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { engineSource, WORKER_GLUE, ENGINE_FILES } from './src/conquest/bundle.mjs';
+
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SRC = join(ROOT, 'src');
 const MODULES = ['city', 'military', 'shop', 'progress', 'dev'];
 const ALIASES = { mil: 'military', prog: 'progress', heroes: 'military' };
+// Age of Conquest: the engine goes in its own script tag (the page also starts its Web Worker from that text),
+// the interface files run after the Last Furnace modules
+const CONQUEST_UI = ['ui-core.js', 'ui-map.js', 'ui-city.js', 'ui-army.js', 'ui-guild.js', 'ui-intel.js', 'ui-chron.js', 'ui-misc.js'];
 
 // ---------- arguments
 function parseArgs(argv) {
@@ -66,8 +72,9 @@ function read(path, optional = false) {
 const template = read(join(SRC, 'template.html'));
 const CSS_MARK = '/*@@CSS@@*/';
 const JS_MARK = '/*@@JS@@*/';
+const ENGINE_MARK = '/*@@ENGINE@@*/';
 const BODY_MARK = '<!--@@BODY@@-->';
-for (const m of [CSS_MARK, JS_MARK, BODY_MARK]) if (!template.includes(m)) fail(`template.html is missing the ${m} marker`);
+for (const m of [CSS_MARK, JS_MARK, ENGINE_MARK, BODY_MARK]) if (!template.includes(m)) fail(`template.html is missing the ${m} marker`);
 
 const cssParts = [{ name: 'core.css', text: read(join(SRC, 'core.css')) }];
 const jsParts = [{ name: 'core.js', text: read(join(SRC, 'core.js')) }];
@@ -75,6 +82,9 @@ for (const m of selected) {
   cssParts.push({ name: `modules/${m}.css`, text: read(join(SRC, 'modules', `${m}.css`), true) });
   jsParts.push({ name: `modules/${m}.js`, text: read(join(SRC, 'modules', `${m}.js`)) });
 }
+cssParts.push({ name: 'conquest/ui.css', text: read(join(SRC, 'conquest', 'ui.css')) });
+for (const f of CONQUEST_UI) jsParts.push({ name: `conquest/${f}`, text: read(join(SRC, 'conquest', f)) });
+const engine = engineSource();
 
 const BOOT = `try { window.claude?.hot?.snapshot?.(() => ({ state: Game.S })) } catch (e) {}
 const hot = window.claude?.hot;
@@ -97,6 +107,7 @@ function lint(name, text, kind) {
 lint('template.html', template, 'html');
 for (const p of cssParts) lint(p.name, p.text, 'css');
 for (const p of jsParts) lint(p.name, p.text, 'js');
+for (const f of ENGINE_FILES) lint(`conquest/${f}`, read(join(SRC, 'conquest', f)), 'js');
 
 // ---------- assemble
 const safeCss = s => s.replace(/<\/style/gi, '<\\/style');
@@ -108,14 +119,18 @@ const css = cssParts
   .join('\n');
 
 const wrapJs = p => `/* ===== ${p.name} ===== */\n;(function () {\n'use strict';\ntry {\n${safeJs(p.text.trim())}\n} catch (e) { console.error('[build] ${p.name} failed to load', e); }\n})();\n`;
-// images the page needs are inlined (the Artifact frame cannot load files): public/logo.webp becomes LF_ASSETS.logo
+// images the page needs are inlined (the Artifact frame cannot load files): public/logo.webp becomes LF_ASSETS.logo,
+// public/conquest-logo.webp (the Age of Conquest artwork) LF_ASSETS.conquestLogo
 const logoPath = join(ROOT, 'public', 'logo.webp');
-const ASSETS = existsSync(logoPath) ? `window.LF_ASSETS = { logo: 'data:image/webp;base64,${readFileSync(logoPath).toString('base64')}' };\n` : 'window.LF_ASSETS = {};\n';
-const js = `/* ===== assets ===== */\n${ASSETS}\n` + jsParts.map(wrapJs).join('\n') + `\n/* ===== boot ===== */\n${BOOT}\n`;
+const conquestLogoPath = join(ROOT, 'public', 'conquest-logo.webp');
+const asset = p => (existsSync(p) ? `'data:image/webp;base64,${readFileSync(p).toString('base64')}'` : 'null');
+const ASSETS = `window.LF_ASSETS = { logo: ${asset(logoPath)}, conquestLogo: ${asset(conquestLogoPath)} };\n`;
+const js = `/* ===== assets ===== */\n${ASSETS}window.AOC_GLUE = ${JSON.stringify(WORKER_GLUE).replace(/<\//g, '<\\/')};\n` + jsParts.map(wrapJs).join('\n') + `\n/* ===== boot ===== */\n${BOOT}\n`;
 
 const filled = template
   .replace(CSS_MARK, () => css)
-  .replace(JS_MARK, () => js);
+  .replace(JS_MARK, () => js)
+  .replace(ENGINE_MARK, () => safeJs(engine));
 
 const [headPart, bodyPart] = filled.split(BODY_MARK);
 const fragment = (headPart.trimEnd() + '\n' + bodyPart.trimStart()).replace(/^\s+/, '');

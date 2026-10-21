@@ -254,6 +254,7 @@ function aiMilitary(w, g) {
       const myPow = troopPower(army.troops);
       let best = null, bs = -Infinity;
       for (const c of w.camps) {
+        if (c.reserved != null && c.reserved !== g.id && w.t < c.until) continue;
         const d = dist(g.x, g.y, c.x, c.y);
         if (d > g.explore + 4) continue;
         const cp = troopPower(c.troops) * (1 + c.lv * 0.04);

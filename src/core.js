@@ -1608,6 +1608,9 @@ Game.setDevMode = v => {
   Game.emit('dev:changed', { on: devMem });
   if (booted) Game.toast(devMem ? 'Developer mode on' : 'Developer mode off', 'info');
 };
+// other games in this page (Age of Conquest) add themselves to the start screen
+const startEntries = [];
+Game.addStartEntry = e => { if (e && e.id && typeof e.play === 'function' && !startEntries.some(x => x.id === e.id)) startEntries.push(e); };
 function ago(ms) {
   const s = Math.max(0, (Date.now() - ms) / 1000);
   if (s < 90) return 'just now';
@@ -1648,6 +1651,7 @@ Game.start = (d = {}) => {
           </div>
         </div>
       </div>
+      <div class="start-modes" hidden></div>
       <div class="start-install" hidden>
         <button type="button" class="btn blue wide" id="start-install">${Game.icon('arrow_down', 18)}<span>Install the game</span></button>
         <p class="start-install-note"></p>
@@ -1693,6 +1697,14 @@ Game.start = (d = {}) => {
     Game.setDevMode(!Game.devMode());
     showDev(true);
   });
+
+  const modes = $('.start-modes');
+  for (const m of startEntries) {
+    const b = el(`<button type="button" class="start-mode${m.image ? ' has-img' : ''}" id="start-mode-${esc(m.id)}">${m.image ? `<img class="start-mode-img" src="${m.image}" alt="" width="72" height="72">` : ''}<span class="start-mode-txt"><span class="start-mode-k">${esc(m.kicker || 'Also here')}</span><b>${esc(m.title)}</b><span class="start-mode-t">${esc(m.text || '')}</span></span></button>`);
+    b.addEventListener('click', () => { Cloud.hold = true; leave(() => m.play()); });
+    modes.appendChild(b);
+  }
+  modes.hidden = !startEntries.length;
 
   function summary(st) {
     if (!st) return '<p class="start-new-t">No city yet. Light the furnace and start from the beginning.</p>';

@@ -11,7 +11,7 @@ const EXPORTS = [
   'RES', 'RES_NAME', 'RES_VALUE', 'UNITS', 'UNIT_KEYS', 'COUNTER', 'TERRAIN', 'T', 'BUILDINGS', 'BUILDING_KEYS', 'TECHS', 'TECH_KEYS', 'TECH_MAX', 'CIVS', 'CIV',
   'COMMANDERS', 'CMD', 'SYNERGY', 'TALENT_STATS', 'TALENT_NAME', 'RECRUIT', 'ARCHETYPES', 'SERVER', 'GUILD_MAX', 'GUILD_COUNT', 'GOVERNORS', 'OFFICERS_MAX',
   'THRONE_OPENS', 'THRONE_HOLD', 'EXCHANGE', 'SHIELD', 'NEWCOMER_SHIELD', 'MAP_N', 'HOUR', 'DAY', 'MAX_LEVEL', 'CMD_MAX_LEVEL', 'ULTIMATE_LEVEL', 'GUILD_TECH',
-  'QUESTS', 'ACHIEVEMENTS', 'PLAYER', 'SCHEMA', 'EVENTS',
+  'QUESTS', 'ACHIEVEMENTS', 'PLAYER', 'SCHEMA', 'EVENTS', 'ROLE_NAME',
   // formulas
   'buildingCost', 'buildingMinutes', 'buildingReq', 'productionAt', 'storageCap', 'protectedAmount', 'hospitalCap', 'wallDurability', 'visionRadius',
   'marchCapacity', 'marchSlots', 'trainBatch', 'techCost', 'techMinutes', 'cmdXpToNext', 'skillCost', 'clock', 'roman', 'troopsTotal', 'troopPower',

@@ -7,6 +7,9 @@ const A = window.AOC;
 const U = (window.AOCUI = window.AOCUI || {});
 const SAVE_DB = 'last-furnace-conquest';
 const SAVE_LS = 'last-furnace-conquest-save';
+// the page's storage wrapper never throws (blocked storage, private windows)
+const LS = window.Game?.storage || { get: () => null, set: () => false, remove: () => {} };
+U.LS = LS;
 
 // ================================================================ helpers
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -156,7 +159,7 @@ U.toast = (text, kind = 'info') => {
 U.layer = () => document.getElementById('aoc-layer') || document.body;
 U.reduced = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-// ================================================================ saves: IndexedDB with gzip, localStorage as a fallback
+// ================================================================ saves: IndexedDB with gzip, browser storage as a fallback
 function idb() {
   return new Promise((res, rej) => {
     let r;
@@ -187,8 +190,12 @@ U.store = {
       U.store.where = 'IndexedDB';
       return true;
     } catch (e) {
-      // no IndexedDB (some private windows): keep the newest copy in localStorage if it fits
-      try { localStorage.setItem(SAVE_LS + '-' + key, JSON.stringify({ meta, at: Date.now(), json })); U.store.where = 'localStorage'; return true; } catch (e2) { U.store.where = 'nowhere'; return false; }
+      // no IndexedDB (some private windows): keep the newest copy in browser storage, gzipped as base64 if possible
+      let data = json, enc = 'plain';
+      if (rec.enc === 'gzip') { try { const bytes = new Uint8Array(await rec.data.arrayBuffer()); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); data = btoa(bin); enc = 'gzip64'; } catch (e2) { data = json; enc = 'plain'; } }
+      if (LS.set(SAVE_LS + '-' + key, JSON.stringify({ meta, at: Date.now(), enc, data }))) { U.store.where = 'browser storage'; return true; }
+      U.store.where = 'nowhere';
+      return false;
     }
   },
   async get(key) {
@@ -198,12 +205,19 @@ U.store = {
       db.close();
       if (rec) return { meta: rec.meta, at: rec.at, json: await gunzip(rec) };
     } catch (e) { /* fall through */ }
-    try { const raw = localStorage.getItem(SAVE_LS + '-' + key); if (raw) { const o = JSON.parse(raw); return o; } } catch (e) { /* none */ }
+    try {
+      const raw = LS.get(SAVE_LS + '-' + key);
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (o.enc === 'gzip64') { const bin = atob(o.data); const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i); return { meta: o.meta, at: o.at, json: await gunzip({ enc: 'gzip', data: new Blob([bytes]) }) }; }
+        return { meta: o.meta, at: o.at, json: o.data ?? o.json };
+      }
+    } catch (e) { /* unreadable */ }
     return null;
   },
   async remove(key) {
     try { const db = await idb(); await new Promise(res => { const tx = db.transaction('saves', 'readwrite'); tx.objectStore('saves').delete(key); tx.oncomplete = res; tx.onerror = res; }); db.close(); } catch (e) { /* ignore */ }
-    try { localStorage.removeItem(SAVE_LS + '-' + key); } catch (e) { /* ignore */ }
+    LS.remove(SAVE_LS + '-' + key);
   },
   where: 'IndexedDB',
 };
@@ -382,7 +396,7 @@ function resSheet(r) {
 // ================================================================ title screen, new world, loading
 function rootEl() {
   let r = document.getElementById('aoc');
-  if (!r) { r = el('<div class="aoc" id="aoc"></div>'); document.body.appendChild(r); }
+  if (!r) { r = el('<div class="aoc" id="aoc"></div>'); document.body.appendChild(r); if (LS.get('aoc-text') === 'large') r.classList.add('is-large'); }
   return r;
 }
 U.start = async () => {
@@ -391,8 +405,8 @@ U.start = async () => {
   const root = rootEl();
   root.hidden = false;
   root.innerHTML = `<div class="aoc-title" role="main"><div class="aoc-title-in">
-    <div class="aoc-crest" aria-hidden="true">${crestSvg()}</div>
-    <h1 class="aoc-h1">Age of Conquest</h1>
+    ${logoHtml('aoc-logo')}
+    <h1 class="aoc-h1${LOGO ? ' aoc-sr' : ''}">Age of Conquest</h1>
     <p class="aoc-tagline">One server. Six hundred governors. Ten guilds. Every other governor is played by the simulation, and the world keeps moving.</p>
     <section class="aoc-card aoc-savecard" aria-live="polite"><p class="aoc-muted">Looking for your world</p></section>
     <div class="aoc-title-actions">
@@ -418,6 +432,11 @@ U.start = async () => {
   } else $('.aoc-savecard').innerHTML = '<p class="aoc-muted">No world yet. Found a city on the Ashen Crown server to begin.</p>';
 };
 function savedAgo(at) { const s = (Date.now() - at) / 1000; return s < 90 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} days ago`; }
+// the Last Furnace: Age of Conquest artwork (inlined by the build); the drawn crest stands in without it
+const LOGO = window.LF_ASSETS?.conquestLogo || null;
+function logoHtml(cls) {
+  return LOGO ? `<div class="${cls}"><img src="${LOGO}" alt="Last Furnace: Age of Conquest" width="640" height="640"></div>` : `<div class="aoc-crest" aria-hidden="true">${crestSvg()}</div>`;
+}
 function crestSvg() {
   return `<svg viewBox="0 0 120 120" width="112" height="112"><defs><linearGradient id="aoc-cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9b45c"/><stop offset="1" stop-color="#9b5a1e"/></linearGradient></defs>
     <path d="M60 8 100 22v34c0 26-17 44-40 56C37 100 20 82 20 56V22Z" fill="#231d1a" stroke="url(#aoc-cg)" stroke-width="4"/>
@@ -429,7 +448,7 @@ function newWorld() {
   let seed = (Math.random() * 2 ** 31) >>> 0;
   let civ = 'ashen';
   root.innerHTML = `<div class="aoc-title aoc-new" role="main"><div class="aoc-title-in is-wide">
-    <button type="button" class="aoc-btn ghost small aoc-backlink" id="aoc-new-back">${U.icon('back', 16)}<span>Back</span></button>
+    <div class="aoc-newhead"><button type="button" class="aoc-btn ghost small aoc-backlink" id="aoc-new-back">${U.icon('back', 16)}<span>Back</span></button>${LOGO ? `<img class="aoc-newlogo" src="${LOGO}" alt="" width="64" height="64">` : ''}</div>
     <h1 class="aoc-h2">Found your city</h1>
     <section class="aoc-card aoc-server">
       <div class="aoc-server-head"><div><div class="aoc-kicker">Server 1</div><h2 class="aoc-h3">${esc(A.SERVER.name)}</h2><p class="aoc-muted">${esc(A.SERVER.motto)}</p></div>
@@ -441,6 +460,11 @@ function newWorld() {
         <li>Map seed <b class="aoc-seed">${seed}</b>. Every seed is a different map and history.</li>
       </ul>
     </section>
+    <h2 class="aoc-h3">How to begin</h2>
+    <div class="aoc-modes" role="radiogroup" aria-label="How to begin">
+      <button type="button" class="aoc-mode" role="radio" aria-checked="true" data-scn=""><b>Eternal Conquest</b><span>Start on Day 1 with everyone else. Build, join a guild, and compete for the Throne.</span></button>
+      <button type="button" class="aoc-mode" role="radio" aria-checked="false" data-scn="coalition"><b>Demonstration: The Coalition War</b><span>Day 3. Crown of Cinders has outgrown every rival and the Capital opens soon. Arrive as a seasoned governor and decide how the war ends.</span></button>
+    </div>
     <h2 class="aoc-h3">Civilization</h2>
     <div class="aoc-civs" role="radiogroup" aria-label="Civilization">${A.CIVS.map(c => civCard(c)).join('')}</div>
     <section class="aoc-card aoc-namecard">
@@ -454,11 +478,13 @@ function newWorld() {
   const pick = id => { civ = id; root.querySelectorAll('.aoc-civ').forEach(b => b.setAttribute('aria-checked', b.dataset.civ === id ? 'true' : 'false')); };
   pick(civ);
   root.querySelectorAll('.aoc-civ').forEach(b => b.addEventListener('click', () => pick(b.dataset.civ)));
+  let scenario = '';
+  root.querySelectorAll('.aoc-mode').forEach(b => b.addEventListener('click', () => { scenario = b.dataset.scn; root.querySelectorAll('.aoc-mode').forEach(x => x.setAttribute('aria-checked', x === b ? 'true' : 'false')); }));
   $('#aoc-reseed').addEventListener('click', () => { seed = (Math.random() * 2 ** 31) >>> 0; setText($('.aoc-seed'), seed); });
   $('#aoc-new-back').addEventListener('click', () => U.start());
   $('#aoc-found').addEventListener('click', () => {
     const name = ($('#aoc-name').value || '').trim().slice(0, 24) || 'Governor';
-    beginWorld({ type: 'new', seed, civ, name });
+    beginWorld({ type: 'new', seed, civ, name, scenario });
   });
 }
 function civCard(c) {
@@ -472,7 +498,7 @@ function civCard(c) {
 }
 function loadingScreen(label) {
   const root = rootEl();
-  root.innerHTML = `<div class="aoc-title aoc-loading" role="main"><div class="aoc-title-in"><div class="aoc-crest" aria-hidden="true">${crestSvg()}</div>
+  root.innerHTML = `<div class="aoc-title aoc-loading" role="main"><div class="aoc-title-in">${logoHtml('aoc-logo is-small')}
     <p class="aoc-load-t" aria-live="polite">${esc(label)}</p><div class="aoc-bar"><i style="width:0%"></i></div></div></div>`;
   U.progress = (pct, l) => { const b = root.querySelector('.aoc-bar i'); if (b) b.style.width = pct + '%'; if (l) setText(root.querySelector('.aoc-load-t'), l); };
 }
@@ -531,7 +557,7 @@ U.backToStart = () => { try { U.host.post({ type: 'save' }); } catch (e) { /* ig
 
 // the Last Furnace start screen offers this game
 window.Game?.addStartEntry?.({
-  id: 'conquest', title: 'Age of Conquest', kicker: 'Grand strategy',
+  id: 'conquest', title: 'Age of Conquest', kicker: 'Grand strategy', image: window.LF_ASSETS?.conquestLogo || null,
   text: '600 governors, 10 guilds and one living world: build an empire, join a guild, take the Throne.',
   play: () => U.start(),
 });

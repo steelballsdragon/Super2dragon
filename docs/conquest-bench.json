@@ -1,0 +1,67 @@
+{
+  "machine": "Intel(R) Xeon(R) Processor (4 threads), Node v22.22.0",
+  "date": "2026-10-21",
+  "createMs": 39,
+  "heapAfterCreateMB": 2.9,
+  "throughput": [
+    {
+      "day": 1,
+      "msPerGameMinute": 2.13,
+      "gameMinutesPerSecond": 470,
+      "marches": 496,
+      "battles": 15,
+      "tiers": {
+        "active": 119,
+        "strategic": 0,
+        "background": 480
+      }
+    },
+    {
+      "day": 3,
+      "msPerGameMinute": 3.29,
+      "gameMinutesPerSecond": 304,
+      "marches": 706,
+      "battles": 805,
+      "tiers": {
+        "active": 97,
+        "strategic": 303,
+        "background": 199
+      }
+    },
+    {
+      "day": 7,
+      "msPerGameMinute": 4.81,
+      "gameMinutesPerSecond": 208,
+      "marches": 1117,
+      "battles": 13538,
+      "tiers": {
+        "active": 65,
+        "strategic": 528,
+        "background": 6
+      }
+    }
+  ],
+  "offlineDayMs": 5305,
+  "heapAfter8DaysMB": 10.3,
+  "saveMs": 43.2,
+  "saveKB": 3487,
+  "saveGzipKB": 479,
+  "loadMs": 48.4,
+  "loadOk": true,
+  "checkUs": 0,
+  "frameViewMs": 0.6,
+  "path": {
+    "searches": 300,
+    "avgTiles": 87,
+    "avgMs": 0.52,
+    "expandedPerSearch": 3093
+  },
+  "browser": {
+    "createToFirstFrameMs": 166,
+    "mode": "worker",
+    "roundTripMs": 0.1,
+    "commandMs": 0.2,
+    "speed64GameMinutesPerSecond": 63,
+    "jsHeapMB": 10
+  }
+}

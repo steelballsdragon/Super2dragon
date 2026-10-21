@@ -332,6 +332,10 @@ Layout: `.app` is a flex column (HUD, `.screens`, tab bar) max 480 px wide, cent
 
 `Game.storage.get(key)`, `.set(key, value)` → boolean, `.remove(key)` (**extra**): wrappers that never throw. Use them for per-viewer conveniences. Game state lives in `Game.S` and is saved by core (every 5 s, on hide and on pagehide) under `last-furnace-v2`. Modules do not save on their own, with one exception: right after something the player paid for is delivered (a store purchase or a restore), call `Game.save()` so a crash inside the 5 s window cannot lose it. The shop module does this.
 
+## Other games on the start screen (core)
+
+`Game.addStartEntry({ id, title, kicker, text, image, play })` adds a card under the start screen's buttons. Tapping it hides the start screen without booting the city game and calls `play()`. Age of Conquest (`src/conquest/ui-core.js`) uses it; its engine and interface do not use `Game.S` or the city game's modules.
+
 ## Developer mode (core)
 
 `Game.devMode()` → boolean, `Game.setDevMode(on)` (stored on this device under `last-furnace-dev`, emits `dev:changed { on }`). The start screen toggles it after 7 quick taps on the logo; the dev module adds the City's Dev button only while it is on.
