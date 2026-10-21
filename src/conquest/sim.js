@@ -1,7 +1,7 @@
 /* Age of Conquest simulation: world creation, the clock, queues, marches, battles, landmarks, territory, world
    events and the chronicle. AI decisions live in ai.js, player commands and views in api.js. Part of the engine. */
 
-const SCHEMA = 3;   // 2: the kingdom map (384 tiles, zones, passes and holy sites); 3: unpainted commanders replaced
+const SCHEMA = 4;   // 2: the kingdom map (384 tiles, zones, passes and holy sites); 3: unpainted commanders replaced; 4: events, items and action points
 const PLAYER = GOVERNORS - 1;
 
 // ================================================================ creation
@@ -28,6 +28,7 @@ function newGovernor(w, id, opts) {
     power: 0, recruited: 0, tradedToday: 0, tradeDay: 0, lastAttack: null, lastAt: 0, crate: {},
   };
   g.cmds[CIV[civ].commander] = { lv: 1, xp: 0, sk: [1, 1, 1, 1], tal: {} };
+  initEvents(w, g);
   // AI governors begin with the same base; their head start depends only on how actively they play (activity),
   // simulated as a few early decisions in createWorld, never extra resources
   return g;
@@ -40,7 +41,7 @@ function createWorld(opts = {}) {
     map: null, govs: [], guilds: [], marks: [], camps: [], nodes: [], marches: [], rallies: [], nid: 1, battleN: 0,
     events: [], nextEventAt: 6 * HOUR + rint({ rs: hash32(seed, 'ev') }, 18, 30) * HOUR, chron: [], chronN: 0, reports: [], battles: [],
     hist: { terr: {}, power: {} }, market: { price: { food: 1, wood: 1, stone: 1, iron: 1, gold: 1 } },
-    player: PLAYER, quests: { claimed: {} }, settings: { offlineCap: 12 * HOUR, notify: 'important' }, devSw: { unlimited: false, instant: false },
+    player: PLAYER, quests: { claimed: {} }, settings: { offlineCap: 12 * HOUR, notify: 'important' }, devSw: { unlimited: false, instant: false, events: false },
     throne: { owner: -1, since: 0 }, exchangeBy: null, ages: [], explored: null, dev: !!opts.dev, lastDay: 0, campRespawn: [],
     notes: [], stats: { battles: 0 },
   };
@@ -53,6 +54,7 @@ function createWorld(opts = {}) {
   recomputeTerritory(w);
   for (const gd of w.guilds) gd.power = guildPower(w, gd);
   rankGuilds(w);
+  canyonRanks(w);
   // the server opens: history begins with the founding of the guilds
   for (const gd of w.guilds) chronicle(w, 'guild_founded', `${gd.name} [${gd.tag}] raised its banner in ${SERVER.regions[gd.home.region]} under ${w.govs[gd.leader].name}.`, { g: [gd.id], p: [gd.leader], x: gd.home.x, y: gd.home.y, imp: 2 });
   chronicle(w, 'server_open', `The ${SERVER.name} server opened. ${GOVERNORS} governors in ${GUILD_COUNT} guilds and ${w.govs.filter(g => g.guild < 0).length} independents. The Capital opens on Day ${1 + THRONE_OPENS / DAY}.`, { imp: 3 });
@@ -264,6 +266,8 @@ function placeCampsAndNodes(w) {
     const [res, pref] = kinds[k % 5 === 4 && rng() < 0.5 ? 4 : k % 4];
     spawnNode(w, rng, res, pref);
   }
+  const frng = makeRng(hash32(w.seed, 'forts'));
+  for (let k = 0; k < FORTS; k++) spawnFort(w, frng);
 }
 const CAMPS = 600, NODES = 1200;
 // how far toward the centre a tile lies within its zone: 0 at the zone's outer edge, 1 at its inner edge
@@ -397,8 +401,9 @@ function step(w, dt) {
   processRallies(w);
   thinkAll(w, dt);
   if (w.t % 30 < dt) { for (const g of w.govs) g.power = computePower(g); for (const gd of w.guilds) gd.power = guildPower(w, gd); rankGuilds(w); }
-  if (w.t % 60 < dt) { recomputeTerritory(w); regrowLandmarks(w); respawnCamps(w); }
+  if (w.t % 60 < dt) { recomputeTerritory(w); regrowLandmarks(w); respawnCamps(w); regrowForts(w); }
   worldEvents(w);
+  eventsTick(w);
   throneCheck(w);
   const day = Math.floor(w.t / DAY);
   if (day !== w.lastDay) { w.lastDay = day; dayTick(w, day); }
@@ -420,53 +425,59 @@ function clock(t) { const d = 1 + Math.floor(t / DAY), m = t % DAY; return `Day 
 
 // ================================================================ queues
 function processQueues(w) {
-  for (const g of w.govs) {
-    const q = g.q;
-    if (q.build && q.build.end <= w.t) {
-      const { id, L } = q.build;
-      q.build = null;
+  for (const g of w.govs) processGov(w, g);
+}
+// one governor's finished queues (a speedup only needs its own)
+function processGov(w, g) {
+  const q = g.q;
+  if (q.build && q.build.end <= w.t) {
+    const { id, L } = q.build;
+    q.build = null;
+    settle(w, g, w.t);
+    g.b[id] = L;
+    modsChanged(g);
+    if (id === 'wall') g.wallDur = wallMax(g, cityMods(w, g));
+    if (g.human) { note(w, 'build', `${BUILDINGS[id].name} reached level ${L}.`, 2); }
+    activity(w, g, 'build');
+    if (!g.human && id === 'hall' && L >= 10 && L % 5 === 0) chronicle(w, 'growth', `${g.name}${tagOf(w, g)} raised a level ${L} Town Hall.`, { p: [g.id], g: g.guild >= 0 ? [g.guild] : [], x: g.x, y: g.y, imp: 1 });
+    checkRecruits(w, g);
+    g.power = computePower(g);
+  }
+  if (q.research && q.research.end <= w.t) {
+    const { id, lv } = q.research;
+    q.research = null;
+    settle(w, g, w.t);
+    g.tech[id] = lv;
+    modsChanged(g);
+    activity(w, g, 'research');
+    if (g.human) note(w, 'research', `${TECHS[id].name} reached level ${lv}.`, 2);
+    checkRecruits(w, g);
+  }
+  for (const u of UNIT_KEYS) {
+    const tq = q.train[u];
+    if (tq && tq.end <= w.t) {
+      q.train[u] = null;
       settle(w, g, w.t);
-      g.b[id] = L;
-      modsChanged(g);
-      if (id === 'wall') g.wallDur = wallMax(g, cityMods(w, g));
-      if (g.human) { note(w, 'build', `${BUILDINGS[id].name} reached level ${L}.`, 2); }
-      if (!g.human && id === 'hall' && L >= 10 && L % 5 === 0) chronicle(w, 'growth', `${g.name}${tagOf(w, g)} raised a level ${L} Town Hall.`, { p: [g.id], g: g.guild >= 0 ? [g.guild] : [], x: g.x, y: g.y, imp: 1 });
-      checkRecruits(w, g);
-      g.power = computePower(g);
-    }
-    if (q.research && q.research.end <= w.t) {
-      const { id, lv } = q.research;
-      q.research = null;
-      settle(w, g, w.t);
-      g.tech[id] = lv;
-      modsChanged(g);
-      if (g.human) note(w, 'research', `${TECHS[id].name} reached level ${lv}.`, 2);
+      g.troops[u] += tq.n;
+      g.stats.trained[u] += tq.n;
+      activity(w, g, 'train');
+      if (g.human) note(w, 'train', `${tq.n.toLocaleString('en-US')} ${UNITS[u].plural} finished training.`, 2);
       checkRecruits(w, g);
     }
-    for (const u of UNIT_KEYS) {
-      const tq = q.train[u];
-      if (tq && tq.end <= w.t) {
-        q.train[u] = null;
-        settle(w, g, w.t);
-        g.troops[u] += tq.n;
-        g.stats.trained[u] += tq.n;
-        if (g.human) note(w, 'train', `${tq.n.toLocaleString('en-US')} ${UNITS[u].plural} finished training.`, 2);
-        checkRecruits(w, g);
-      }
-    }
-    if (q.heal && q.heal.end <= w.t) {
-      const h = q.heal;
-      q.heal = null;
-      let n = 0;
-      for (const u of UNIT_KEYS) { g.troops[u] += h.troops[u] || 0; n += h.troops[u] || 0; }
-      g.stats.healed += n;
-      if (g.human) note(w, 'heal', `${n.toLocaleString('en-US')} wounded troops returned to duty.`, 2);
-      checkRecruits(w, g);
-    }
-    if (q.exchange && q.exchange.end <= w.t) {
-      q.exchange = null;
-      completeExchange(w, g);
-    }
+  }
+  if (q.heal && q.heal.end <= w.t) {
+    const h = q.heal;
+    q.heal = null;
+    let n = 0;
+    for (const u of UNIT_KEYS) { g.troops[u] += h.troops[u] || 0; n += h.troops[u] || 0; }
+    g.stats.healed += n;
+    activity(w, g, 'heal');
+    if (g.human) note(w, 'heal', `${n.toLocaleString('en-US')} wounded troops returned to duty.`, 2);
+    checkRecruits(w, g);
+  }
+  if (q.exchange && q.exchange.end <= w.t) {
+    q.exchange = null;
+    completeExchange(w, g);
   }
 }
 
@@ -619,9 +630,13 @@ function startMarch(w, g, o) {
       if (g.guild >= 0 && og.guild === g.guild) return { ok: false, err: 'Those troops belong to your guild.' };
     }
   }
+  let apCost = 0;
   if (kind === 'attack' && target?.type === 'camp') {
     const cp = w.camps.find(x => x.id === target.id);
+    if (cp && cp.fort) return { ok: false, err: 'A barbarian fort is too strong for one army. Start a guild rally on it.' };
     if (cp && cp.reserved != null && cp.reserved !== g.id && w.t < cp.until) return { ok: false, err: 'That camp is reserved for a newcomer.' };
+    apCost = cp ? campAp(cp.lv) : 0;
+    if (apCost && apNow(w, g) < apCost) return { ok: false, err: apError(w, g, apCost) };
   }
   if (kind === 'gather') {
     const nd = target && target.type === 'node' ? w.nodes.find(x => x.id === target.id) : null;
@@ -637,14 +652,16 @@ function startMarch(w, g, o) {
   const speed = marchSpeed(w, g, troops, c1, c2, kind);
   const cost = pathCost(w, path);
   if (kind === 'attack' && target.type !== 'camp' && g.shield > w.t) g.shield = 0;   // attacking breaks your own shield
+  if (apCost) spendAp(w, g, apCost);
   settle(w, g, w.t);
   for (const u of UNIT_KEYS) { g.troops[u] -= troops[u]; g.away[u] += troops[u]; }
   const m = {
     id: w.nid++, kind, owner: g.id, troops, c1, c2, path, k: 0, frac: 0, speed, from, to, target, state: 'out', dep: w.t, eta: w.t + Math.ceil(cost / speed),
     load: null, rally: o.rally || null, wounded: null, gatherEnd: 0, alerted: false, parts: o.parts || null,
   };
+  if (apCost) m.ap = apCost;
   w.marches.push(m);
-  if (kind === 'scout') g.stats.scouts++;
+  if (kind === 'scout') { g.stats.scouts++; activity(w, g, 'scout'); }
   return { ok: true, march: m };
 }
 function marchPos(w, m) {
@@ -844,6 +861,7 @@ function finishGather(w, m) {
   const got = Math.min(m.gatherAmount, nd ? nd.amount : m.gatherAmount);
   if (nd) nd.amount -= got;
   g.stats.gathered += got;
+  activity(w, g, 'gather');
   if (g.human) report(w, { kind: 'gather', title: `Gathered ${got.toLocaleString('en-US')} ${RES_NAME[nd ? nd.res : 'food']}`, res: { [nd ? nd.res : 'food']: got } });
   const res = nd ? nd.res : 'food';
   sendHome(w, m, { load: { [res]: got } });
@@ -896,8 +914,11 @@ function startRally(w, g, o) {
   if (g.role !== 'leader' && g.role !== 'officer' && !(g.b.hall >= 12)) return { ok: false, err: 'Only guild leaders, officers and governors with a level 12 Town Hall can start rallies.' };
   if (w.rallies.some(r => r.leader === g.id && r.state === 'gathering')) return { ok: false, err: 'You are already leading a rally.' };
   const tgt = tileTarget(w, o.to);
-  if (!tgt || (tgt.type !== 'mark' && tgt.type !== 'city')) return { ok: false, err: 'Rally on a pass, a holy site, the Capital or an enemy city.' };
-  if (tgt.type === 'mark') {
+  const fort = tgt && tgt.type === 'camp' ? w.camps.find(x => x.id === tgt.id && x.fort) : null;
+  if (!tgt || (tgt.type !== 'mark' && tgt.type !== 'city' && !fort)) return { ok: false, err: 'Rally on a pass, a holy site, the Capital, a barbarian fort or an enemy city.' };
+  if (fort) {
+    if (apNow(w, g) < FORT_AP) return { ok: false, err: apError(w, g, FORT_AP) };
+  } else if (tgt.type === 'mark') {
     const mk = w.marks[tgt.id];
     if (mk.kind === 'ruin') return { ok: false, err: 'Ruins are explored, not rallied.' };
     if (mk.owner === g.guild) return { ok: false, err: 'Your guild already holds it.' };
@@ -914,12 +935,14 @@ function startRally(w, g, o) {
   // the leader's own troops wait at home as part of the rally
   const lead = buildRallyLead(w, g, o);
   if (!lead.ok) return lead;
-  if (g.shield > w.t) g.shield = 0;
+  if (fort) spendAp(w, g, FORT_AP);
+  else if (g.shield > w.t) g.shield = 0;
   const rally = { id: w.nid++, leader: g.id, guild: g.guild, target: tgt, to: o.to, launchAt: w.t + wait, state: 'gathering', lead: lead.march.id, created: w.t };
   lead.march.rally = rally.id;
   w.rallies.push(rally);
   g.stats.rallies++;
-  const name = tgt.type === 'mark' ? w.marks[tgt.id].name : w.govs[tgt.id].name;
+  activity(w, g, 'rally');
+  const name = tgt.type === 'mark' ? w.marks[tgt.id].name : fort ? `a level ${fort.lv} barbarian fort` : w.govs[tgt.id].name;
   decide(w, g, 'rally', `Called a rally on ${name}.`, 'guild');
   for (const mid of w.guilds[g.guild].members) { const mg = w.govs[mid]; if (!mg.human && mid !== g.id) mg.next = Math.min(mg.next, w.t + rint(w, 1, 8)); }
   if (w.govs[PLAYER].guild === g.guild && !g.human) note(w, 'rally', `${g.name} called a guild rally on ${name}. It leaves in ${wait} minutes.`, 3, { rally: rally.id });
@@ -963,8 +986,10 @@ function joinRally(w, g, o) {
   const have = rallyTroops(w, r);
   const sending = UNIT_KEYS.reduce((a, u) => a + Math.max(0, Math.floor(Number(o.troops?.[u]) || 0)), 0);
   if (lead && have + sending > rallyCapacity(w, lead)) return { ok: false, err: `The rally can take ${Math.max(0, rallyCapacity(w, lead) - have).toLocaleString('en-US')} more troops.` };
+  const fort = r.target.type === 'camp';
+  if (fort && apNow(w, g) < FORT_AP) return { ok: false, err: apError(w, g, FORT_AP) };
   const res = startMarch(w, g, { kind: 'rallyjoin', to: idx(leader.x, leader.y), troops: o.troops, c1: o.c1, c2: o.c2, target: { type: 'rallyhome', id: leader.id }, rally: r.id });
-  if (res.ok) g.stats.rallies++;
+  if (res.ok) { g.stats.rallies++; activity(w, g, 'rally'); if (fort) spendAp(w, g, FORT_AP); }
   return res;
 }
 function rallyTroops(w, r) { let n = 0; for (const m of w.marches) if (m.rally === r.id && (m.state === 'waiting' || m.kind === 'rallyjoin')) n += troopsTotal(m.troops); return n; }
@@ -1011,6 +1036,7 @@ function arriveRally(w, m) {
   const r = w.rallies.find(x => x.id === m.rally);
   if (r) r.state = 'done';
   if (m.target.type === 'mark') return battleLandmark(w, m);
+  if (m.target.type === 'camp') return battleFort(w, m);
   return battleCity(w, m);
 }
 // split a merged army's survivors and wounded back to each contributor (proportionally to what they sent)
@@ -1228,6 +1254,8 @@ function battleCamp(w, m) {
     w.camps.splice(w.camps.indexOf(c), 1);
     if (w.map.occ[m.to] === c.occ) w.map.occ[m.to] = 0;
     w.campRespawn.push(w.t + 3 * HOUR);
+    give(w, g, campDrop(c.lv));
+    activity(w, g, 'camp');
     checkRecruits(w, g);
   } else {
     g.stats.losses++;
@@ -1236,7 +1264,7 @@ function battleCamp(w, m) {
   if (m.c1) giveXp(w, g, m.c1, troopsTotal(res.d.lost) * 0.8 + c.lv * 60);
   if (m.c2) giveXp(w, g, m.c2, troopsTotal(res.d.lost) * 0.3);
   g.stats.kills += troopsTotal(res.d.lost);
-  if (g.human) report(w, { kind: 'battle', title: `${res.winner === 'a' ? 'Victory' : 'Defeat'}: bandit camp level ${c.lv}`, view: 'a', won: res.winner === 'a', input, res, extra: { plunder: loot, aWounded: aw.wd }, explain: explainBattle(input, res, 'a'), x: c.x, y: c.y });
+  if (g.human) report(w, { kind: 'battle', title: `${res.winner === 'a' ? 'Victory' : 'Defeat'}: bandit camp level ${c.lv}`, view: 'a', won: res.winner === 'a', input, res, extra: { plunder: loot, aWounded: aw.wd, items: res.winner === 'a' ? campDrop(c.lv) : null }, explain: explainBattle(input, res, 'a'), x: c.x, y: c.y });
   for (const u of UNIT_KEYS) g.away[u] -= (m.troops[u] || 0) - (res.a.end[u] || 0);
   m.troops = { ...res.a.end };
   sendHome(w, m, { load: loot, wounded: aw.wd });
@@ -1538,6 +1566,7 @@ function dayTick(w, d) {
   const keys = Object.keys(w.hist.terr).map(Number).sort((a, b) => a - b);
   while (keys.length > 40) { const k = keys.shift(); delete w.hist.terr[k]; delete w.hist.power[k]; }
   for (const g of w.govs) g.tradedToday = 0;
+  eventsDaily(w);
   // market prices drift 30% of the way back to normal each day
   for (const r of RES) w.market.price[r] = 1 + (w.market.price[r] - 1) * 0.7;
   for (const gd of w.guilds) guildDaily(w, gd);

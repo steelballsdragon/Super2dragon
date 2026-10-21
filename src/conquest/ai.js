@@ -45,6 +45,7 @@ function think(w, g) {
   if (g.st === 'defend') aiDefend(w, g);
   aiEconomy(w, g, false);
   aiGuildDuties(w, g);
+  if (rnd(w) < 0.5) aiEvents(w, g);
   if (g.st !== 'rebuild') aiMilitary(w, g);
   aiPolitics(w, g);
   g.alert = g.alert && w.t - g.alert.t < 90 ? g.alert : null;
@@ -259,9 +260,11 @@ function aiMilitary(w, g) {
     const army = pickArmy(w, g, 0.45 + g.t.risk * 0.3, null);
     if (army) {
       const myPow = troopPower(army.troops);
+      const ap = apNow(w, g);
       let best = null, bs = -Infinity;
       for (const c of w.camps) {
-        if (c.reserved != null && c.reserved !== g.id && w.t < c.until) continue;
+        if (c.fort || (c.reserved != null && c.reserved !== g.id && w.t < c.until)) continue;
+        if (ap < campAp(c.lv)) continue;
         const d = dist(g.x, g.y, c.x, c.y);
         if (d > g.explore + 4 || !inReach(w, reach, idx(c.x, c.y))) continue;
         const cp = troopPower(c.troops) * (1 + c.lv * 0.04);
@@ -581,8 +584,9 @@ function thinkGuild(w, gd) {
   // coalitions against a guild that grows too strong
   if (hegemon && hegemon.id !== gd.id && w.t - (w.lastCoalition || -9e9) > 2 * DAY) formCoalition(w, hegemon);
   planObjective(w, gd, share);
-  // officers and the leader launch rallies on the objective
+  // officers and the leader launch rallies on the objective, and on barbarian forts when nothing else is under way
   aiRallyPlanning(w, gd);
+  aiFortRally(w, gd);
 }
 function formCoalition(w, h) {
   const total = w.guilds.reduce((a, o) => a + (o.collapsed ? 0 : o.power), 0) || 1;

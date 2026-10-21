@@ -48,7 +48,7 @@ function battleSheet(r) {
     <div class="aoc-bdetails" hidden>
     <p class="aoc-result ${won ? 'aoc-good' : 'aoc-bad'}">${won ? 'Victory' : 'Defeat'} · ${A.clock(r.t)} · ${esc(A.TERRAIN[input.terrain]?.name || '')}${input.ambush ? ' · ambush' : ''}</p>
     <div class="aoc-sides">${side(input.a.label, input.a, res.a.lost, res.a.end, x.aWounded, input.a.cmd)}${side(input.d.label, input.d, res.d.lost, res.d.end, x.dWounded, input.d.cmd)}</div>
-    ${x.plunder ? `<p class="aoc-p">${view === 'a' ? 'Taken' : 'Lost'}: ${U.cost(x.plunder)}</p>` : ''}
+    ${x.plunder ? `<p class="aoc-p">${view === 'a' ? 'Taken' : 'Lost'}: ${U.cost(x.plunder)}</p>` : ''}${x.items && U.rewardLine ? `<p class="aoc-p">Found: ${U.rewardLine(x.items, 18)}</p>` : ''}
     ${x.sacked ? `<p class="aoc-p aoc-bad">${view === 'a' ? 'The walls fell and the city was sacked.' : 'Your walls fell and the city was sacked.'}</p>` : ''}
     ${x.captured ? '<p class="aoc-p aoc-good">The landmark was captured.</p>' : ''}
     <h3 class="aoc-h4">Why</h3><ul class="aoc-list">${(r.explain || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul>

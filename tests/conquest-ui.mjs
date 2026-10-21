@@ -226,7 +226,7 @@ await step('army: train infantry at the Barracks and in the army screen, and rea
 await step('attack the nearest bandit camp from the map; the report explains it and its replay matches', async () => {
   await page.click('#aoc-tab-map');
   // the newcomer camps: level 1, near the start (a stronger camp may happen to be closer on some maps)
-  const camp = await page.evaluate(() => { const F = window.AOCUI.F, P = F.player; const c = F.camps.filter(x => x.lv === 1).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0]; return c ? { ...c, d: Math.hypot(c.x - P.x, c.y - P.y) } : null; });
+  const camp = await page.evaluate(() => { const F = window.AOCUI.F, P = F.player; const c = F.camps.filter(x => x.lv === 1 && !x.fort).sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0]; return c ? { ...c, d: Math.hypot(c.x - P.x, c.y - P.y) } : null; });
   check(camp && camp.d < 14, `expected a level 1 camp near the start, got ${JSON.stringify(camp)}`);
   await page.click('[data-speed="4"]');
   await tapTile(camp.x, camp.y);
@@ -319,6 +319,38 @@ await step('guilds: the ten guilds are listed and the player can apply', async (
   const f = await F();
   const toast = await page.locator('.aoc-toast').last().textContent();
   check(f.P.guild === near || /turned you down|sent/.test(toast), `no answer to the application: ${toast}`);
+});
+
+await step('events: the hub opens from the city, a free chest pays out, the canyon fights, the Wheel spins, the map shows action points', async () => {
+  await page.click('#aoc-tab-city');
+  await closeSheets();
+  await page.click('[data-side="events"]');
+  await page.waitForSelector('.aoc-ev-body .aoc-ev-pts');
+  check(/activity points/.test(await page.locator('.aoc-ev-body').textContent()), 'the daily objectives show');
+  await page.click('[data-etab="tavern"]');
+  await page.click('[data-chest="silver"][data-n="1"]');
+  await page.waitForSelector('.aoc-reward .aoc-reward-item');
+  check(await page.locator('.aoc-reward .aoc-reward-item').count() >= 1, 'the chest showed what it held');
+  await page.click('.aoc-reward-ok');
+  check(await page.locator('[data-chest="silver"][data-n="1"]').isDisabled(), 'the free chest can be opened again at once');
+  await page.click('[data-etab="canyon"]');
+  await page.waitForSelector('[data-canyon]');
+  const rank0 = await page.evaluate(() => window.AOCUI.host.query('events').then(v => v.canyon.left));
+  await page.locator('[data-canyon]').first().click();
+  await page.waitForSelector('.aoc-sheet .aoc-ev-fights li');
+  check(await page.evaluate(() => window.AOCUI.host.query('events').then(v => v.canyon.left)) === rank0 - 1, 'the battle used an attempt');
+  await closeSheets();
+  await page.click('[data-etab="events"]');
+  await page.click('[data-spin="1"]');
+  await page.waitForSelector('.aoc-reward .aoc-reward-item');
+  await page.click('.aoc-reward-ok');
+  check(await page.evaluate(() => window.AOCUI.host.query('events').then(v => v.wheel.spins)) === 1, 'the free spin');
+  await page.click('[data-etab="items"]');
+  await page.waitForSelector('.aoc-ev-purse');
+  await page.click('[data-back]');
+  await page.waitForFunction(() => window.AOCUI.current === 'city');
+  await page.click('#aoc-tab-map');
+  await page.waitForFunction(() => /AP/.test(document.querySelector('.aoc-map-ap')?.textContent || ''));
 });
 
 await step('history and rankings: the chronicle, the real population and the simulation tiers', async () => {

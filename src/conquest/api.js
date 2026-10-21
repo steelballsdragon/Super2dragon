@@ -211,7 +211,7 @@ function actShield(w, g) {
   return { ok: true };
 }
 function relocateCost(g) { return g.freeMoveUsed || g.guild >= 0 ? 800 * g.b.hall : 0; }
-function actRelocate(w, g, x, y, isAi) {
+function actRelocate(w, g, x, y, isAi, tele) {
   x = Math.floor(Number(x)); y = Math.floor(Number(y));
   if (!inMap(x, y) || x < 2 || y < 2 || x > N - 3 || y > N - 3) return { ok: false, err: 'That is off the map.' };
   const i = idx(x, y);
@@ -226,9 +226,11 @@ function actRelocate(w, g, x, y, isAi) {
   if (!isAi && !w.explored[i]) return { ok: false, err: 'You can only move to land you have explored.' };
   if (w.marches.some(m => m.owner === g.id && m.kind !== 'scout')) return { ok: false, err: 'Bring every army home before moving the city.' };
   settle(w, g, w.t);
-  const cost = { gold: relocateCost(g) };
+  if (tele && !(g.inv.items.tele > 0)) return { ok: false, err: 'You have no Teleport.' };
+  const cost = { gold: tele ? 0 : relocateCost(g) };
   if (!canAfford(g, cost)) return { ok: false, err: `Moving costs ${cost.gold.toLocaleString('en-US')} Gold.` };
   pay(g, cost);
+  if (tele) { g.inv.items.tele--; if (!g.inv.items.tele) delete g.inv.items.tele; }
   if (!cost.gold) g.freeMoveUsed = true;
   relocate(w, g, x, y);
   g.freeMoveUsed = true;
@@ -316,6 +318,7 @@ function playerCommandRaw(w, cmd, opts) {
   if (!cmd || typeof cmd !== 'object' || typeof cmd.type !== 'string') return { ok: false, err: 'Bad command.' };
   settle(w, P, w.t);
   const a = cmd;
+  if (a.type.startsWith('ev:')) return eventCommand(w, P, a);
   switch (a.type) {
     case 'free': return actFree(w, P, String(a.q), String(a.unit || ''));
     case 'collect': return actCollect(w, P, String(a.id));
@@ -329,7 +332,7 @@ function playerCommandRaw(w, cmd, opts) {
     }
     case 'trade': return actTrade(w, P, a.sell, a.buy, a.amount);
     case 'shield': return actShield(w, P);
-    case 'relocate': return actRelocate(w, P, a.x, a.y, false);
+    case 'relocate': return actRelocate(w, P, a.x, a.y, false, a.item === 'tele');
     case 'exchange': return actExchange(w, P);
     case 'march': {
       const kind = String(a.kind);
@@ -350,6 +353,8 @@ function playerCommandRaw(w, cmd, opts) {
         r.state = 'done';
         return { ok: true };
       }
+      // a camp attack called back before it arrives returns its action points
+      if (m.ap && m.kind === 'attack' && m.state === 'out') { settleAp(w, P); P.ap += m.ap; m.ap = 0; }
       sendHome(w, m);
       return { ok: true };
     }
@@ -556,6 +561,8 @@ function devCommand(w, a) {
     case 'dev:shield': P.shield = w.t + 7 * DAY; return { ok: true };
     case 'dev:unlimited': w.devSw.unlimited = !!a.on; if (w.devSw.unlimited) devRefill(w); return { ok: true };
     case 'dev:instant': w.devSw.instant = !!a.on; if (w.devSw.instant) devFinishNow(w); return { ok: true };
+    case 'dev:events': w.devSw.events = !!a.on; return { ok: true };
+    case 'dev:items': give(w, P, { gems: 50000, keyS: 20, keyG: 10, speed60: 20, tome2: 20, ap200: 10, 'sc:uniL': 20, 'sc:uniE': 20 }); settleAp(w, P); P.ap = Math.max(P.ap, AP_MAX); return { ok: true };
     default: return { ok: false, err: 'Unknown developer command.' };
   }
 }
@@ -624,7 +631,7 @@ function frameView(w, since) {
   }
   // battles seen in the last few game minutes flash on the map
   out.fights = w.battles.filter(b => w.t - b.t <= 8 && (b.seen || b.a === PLAYER || b.d === PLAYER)).map(b => ({ x: b.x, y: b.y, t: b.t }));
-  out.camps = w.camps.filter(c => ex[idx(c.x, c.y)]).map(c => ({ id: c.id, x: c.x, y: c.y, lv: c.lv }));
+  out.camps = w.camps.filter(c => ex[idx(c.x, c.y)]).map(c => ({ id: c.id, x: c.x, y: c.y, lv: c.lv, fort: !!c.fort }));
   out.nodes = w.nodes.filter(n => ex[idx(n.x, n.y)]).map(n => ({ id: n.id, x: n.x, y: n.y, res: n.res, lv: n.lv, amount: vis[idx(n.x, n.y)] ? n.amount : null, max: n.max, busy: !!n.by && vis[idx(n.x, n.y)] >= 2 }));
   out.marks = w.marks.map(mk => ({ id: mk.id, kind: mk.kind, name: mk.name, x: mk.x, y: mk.y, owner: mk.owner, since: mk.since, level: mk.level, tier: mk.tier || 0, known: !!ex[idx(mk.x, mk.y)], cleared: (mk.cleared || []).includes(PLAYER), region: mk.region, opens: mk.opens, site: mk.site || null, blessing: mk.blessing || null, gate: mk.gate ?? null, links: mk.links || null }));
   out.guilds = w.guilds.map(gd => guildBrief(w, gd));
@@ -633,6 +640,7 @@ function frameView(w, since) {
   out.quests = QUESTS.map(q => { const [a, b] = q.prog(P); return { id: q.id, ch: q.ch, chapter: CHAPTERS[q.ch], text: q.text, how: q.how, reward: q.reward, prog: [Math.min(a, b), b], done: a >= b, claimed: !!w.quests.claimed[q.id] }; });
   out.crates = crateView(w, P);
   out.devSw = { ...w.devSw };
+  out.ev = eventsBadge(w, P);
   out.unread = w.reports.filter(r => !r.read).length;
   if (P.guild >= 0 && w.guilds[P.guild].leader === PLAYER) { const gd = w.guilds[P.guild]; out.proposals = gd.proposals.map(p => ({ ...p, fromName: w.guilds[p.from].name })); out.applicants = gd.applicants.map(id => publicGov(w, w.govs[id])); }
   out.ages = w.ages.slice();
@@ -778,7 +786,7 @@ function tileView(w, i) {
   const t = tileTarget(w, i);
   out.target = t;
   if (t?.type === 'city') out.city = inspect(w, t.id);
-  if (t?.type === 'camp') { const c = w.camps.find(x => x.id === t.id); out.camp = { id: c.id, lv: c.lv, troops: { ...c.troops }, reserved: c.reserved === PLAYER && w.t < c.until ? c.until : null }; }
+  if (t?.type === 'camp') { const c = w.camps.find(x => x.id === t.id); out.camp = { id: c.id, lv: c.lv, fort: !!c.fort, troops: { ...c.troops }, reserved: c.reserved === PLAYER && w.t < c.until ? c.until : null }; }
   if (t?.type === 'node') { const n = nodeById(w, t.id); out.node = { id: n.id, res: n.res, lv: n.lv, amount: out.visible ? n.amount : null, max: n.max, busy: !!n.by && out.visible, byName: n.by && out.visible ? w.govs[w.marches.find(m => m.id === n.by)?.owner]?.name : null }; }
   if (t?.type === 'mark') {
     const mk = w.marks[t.id];
@@ -854,9 +862,11 @@ function deserialize(json) {
   w.explored = rleDecode(w.exploredRle, N2);
   delete w.exploredRle;
   for (const g of w.govs) if (g.human) g.next = Infinity;
+  if (w.needForts) { delete w.needForts; const frng = makeRng(hash32(w.seed, 'forts')); for (let k = 0; k < FORTS; k++) spawnFort(w, frng); }
   rebuildBuckets(w);
   recomputeTerritory(w);
   updatePlayerVision(w);
+  canyonRanks(w);
   const problems = validateWorld(w);
   if (problems.length) return { ok: false, err: 'The save failed its checks: ' + problems.slice(0, 3).join('; '), problems };
   return { ok: true, world: w };
@@ -869,6 +879,9 @@ function migrate(w, v) {
   if (!w.devSw) w.devSw = { unlimited: false, instant: false };
   for (const g of w.govs || []) if (!g.crate) g.crate = {};
   if (v < 3) replaceCommanders(w);
+  // schema 4: events, items and action points start fresh for every governor; forts are placed on the next load
+  for (const g of w.govs || []) if (!g.inv) initEvents(w, g);
+  if (v < 4) w.needForts = true;
 }
 // schema 3: seven commanders without paintings left the game; each save's copies become the commander who replaced them
 function replaceCommanders(w) {
@@ -941,6 +954,12 @@ function validateWorld(w) {
     for (const b in g.b) if (!(g.b[b] >= 0 && g.b[b] <= MAX_LEVEL) || (b !== 'hall' && g.b[b] > g.b.hall)) p.push(`governor ${i} building ${b} level ${g.b[b]} is out of range`);
     for (const t in g.tech) if (!(g.tech[t] >= 0 && g.tech[t] <= TECH_MAX)) p.push(`governor ${i} tech ${t} out of range`);
     for (const c in g.cmds) if (!CMD[c]) p.push(`governor ${i} has an unknown commander ${c}`);
+    if (!g.inv || !(g.inv.gems >= 0) || !(g.inv.credits >= 0) || !(g.inv.tokens >= 0)) p.push(`governor ${i} has a bad purse`);
+    else {
+      for (const k in g.inv.items) if (!own(ITEMS, k) || !(g.inv.items[k] >= 0)) p.push(`governor ${i} has a bad item ${k}`);
+      for (const k in g.inv.sc) if ((!own(CMD, k) && k !== 'uniE' && k !== 'uniL') || !(g.inv.sc[k] >= 0)) p.push(`governor ${i} has bad sculptures ${k}`);
+    }
+    if (!(g.ap >= 0)) p.push(`governor ${i} has bad action points`);
     const key = g.x + ',' + g.y;
     if (seenTile.has(key)) p.push(`two cities share tile ${key}`);
     seenTile.add(key);
@@ -1040,6 +1059,7 @@ function createServer(host) {
               case 'quote': res = { got: tradeQuote(S.w, S.w.govs[PLAYER], a.sell, a.buy, Math.max(0, Math.floor(Number(a.amount) || 0))), price: { ...S.w.market.price } }; break;
               case 'achievements': { const P = S.w.govs[PLAYER]; res = ACHIEVEMENTS.map(x => ({ id: x.id, name: x.name, text: x.text, done: !!x.check(P) })); break; }
               case 'exchange': res = exchangeCheck(S.w, S.w.govs[PLAYER]); break;
+              case 'events': res = eventsView(S.w); break;
               case 'diag': res = diagnostics(S.w); break;
               case 'validate': res = validateWorld(S.w); break;
               default: res = null;

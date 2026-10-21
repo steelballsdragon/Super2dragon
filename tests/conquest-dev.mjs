@@ -140,6 +140,13 @@ await step('troops, every commander, the whole map, a shield and finished timers
   await page.waitForFunction(() => window.AOCUI.S.fog && window.AOCUI.S.fog.every(v => v > 0));
   await devAct('dev:shield');
   await page.waitForFunction(() => window.AOCUI.F.player.shield - window.AOCUI.F.t > 6 * 1440);
+  await devAct('dev:items');
+  await page.waitForFunction(() => window.AOCUI.F.ev && window.AOCUI.F.ev.gems >= 50000);
+  await page.click('[data-sw="events"]');
+  await page.waitForFunction(() => document.querySelector('[data-sw="events"]').getAttribute('aria-checked') === 'true');
+  check(await page.evaluate(() => window.AOCUI.host.query('events').then(v => ['wheel', 'cards', 'mtg', 'ceroli', 'arms'].every(k => v.windows[k].open))), 'every event should be open');
+  await page.click('[data-sw="events"]');
+  await page.waitForFunction(() => document.querySelector('[data-sw="events"]').getAttribute('aria-checked') === 'false');
   // a timer, then finish it from the panel
   await page.click('[data-sw="instant"]');
   await page.waitForFunction(() => document.querySelector('[data-sw="instant"]').getAttribute('aria-checked') === 'false');

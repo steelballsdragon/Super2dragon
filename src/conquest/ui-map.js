@@ -338,9 +338,10 @@ function draw() {
     for (const c of z < 2.5 ? [] : f.camps) {
       if (!inView(c.x, c.y)) continue;
       const [sx, sy] = toScreen(c.x + 0.5, c.y + 0.5);
-      const r = Math.max(2.5, z * 0.36);
-      g.fillStyle = '#b4483a';
-      g.beginPath(); g.moveTo(sx, sy - r); g.lineTo(sx + r, sy + r * 0.8); g.lineTo(sx - r, sy + r * 0.8); g.closePath(); g.fill();
+      const r = Math.max(2.5, z * (c.fort ? 0.5 : 0.36));
+      g.fillStyle = c.fort ? '#7a2b8f' : '#b4483a';
+      if (c.fort) g.fillRect(sx - r, sy - r * 0.8, r * 2, r * 1.6);
+      else { g.beginPath(); g.moveTo(sx, sy - r); g.lineTo(sx + r, sy + r * 0.8); g.lineTo(sx - r, sy + r * 0.8); g.closePath(); g.fill(); }
       if (z >= 11) { g.fillStyle = '#f3e5d6'; g.font = `600 ${Math.round(z * 0.45)}px Barlow, sans-serif`; g.textAlign = 'center'; g.fillText(String(c.lv), sx, sy + r * 0.75); }
     }
     // cities
@@ -529,7 +530,8 @@ function drawSprites(g, f, z, inView, gcol, P) {
     if (!inView(c.x, c.y)) continue;
     const [sx, sy] = at(c.x, c.y), k = z * 1.4 / 34;
     objs.push({ y: c.y, f: () => {
-      if (!ART.paint(g, c.lv <= 3 ? 'camp-1' : c.lv <= 7 ? 'camp-2' : 'camp-3', sx, sy + z * 0.55, z * (c.lv <= 7 ? 2.7 : 3))) ART.put(g, ART.mapCamp(c.lv), sx, sy + z * 0.3, 24, 36, k);
+      if (c.fort) { if (!ART.paint(g, 'bastion', sx, sy + z * 0.6, z * 3.4)) ART.put(g, ART.mapCamp(10), sx, sy + z * 0.3, 24, 36, k * 1.3); }
+      else if (!ART.paint(g, c.lv <= 3 ? 'camp-1' : c.lv <= 7 ? 'camp-2' : 'camp-3', sx, sy + z * 0.55, z * (c.lv <= 7 ? 2.7 : 3))) ART.put(g, ART.mapCamp(c.lv), sx, sy + z * 0.3, 24, 36, k);
       if (z >= 9) { const r = Math.max(6, z * 0.26); g.fillStyle = '#5f1214'; g.beginPath(); g.arc(sx - z * 0.45, sy - z * 0.45, r, 0, 7); g.fill(); g.strokeStyle = '#e9b45e'; g.lineWidth = 1.2; g.stroke(); g.fillStyle = '#fff2dc'; g.font = `800 ${Math.round(r * 1.2)}px Barlow, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(c.lv), sx - z * 0.45, sy - z * 0.43); g.textBaseline = 'alphabetic'; }
     } });
   }
@@ -630,6 +632,7 @@ function mountMap(root) {
     <canvas class="aoc-map-cv" aria-label="World map. Drag to move, pinch or use the buttons to zoom, tap a place to see it."></canvas>
     <div class="aoc-map-bottom"><div class="aoc-quest" hidden></div></div>
     <div class="aoc-map-where" aria-live="off"></div>
+    <button type="button" class="aoc-map-ap" data-act="events" aria-label="Action points: open events"></button>
     <div class="aoc-map-tools">
       <button type="button" class="aoc-iconbtn" data-act="home" aria-label="Center on your city">${U.icon('home', 20)}</button>
       <button type="button" class="aoc-iconbtn" data-act="find" aria-label="Find passes, holy sites and the Capital">${U.icon('search', 20)}</button>
@@ -645,6 +648,7 @@ function mountMap(root) {
   M.ctx = M.cv.getContext('2d', { alpha: false });
   const ro = new ResizeObserver(() => { resize(); schedule(); });
   ro.observe(M.cv.parentElement);
+  root.querySelector('.aoc-map-ap').addEventListener('click', () => U.openEvents('daily'));
   root.querySelector('.aoc-map-tools').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
@@ -790,10 +794,16 @@ async function openTile(i) {
         if (P.guild >= 0 && (P.role === 'leader' || P.role === 'officer' || P.b.hall >= 12)) acts.push({ label: 'Rally', kind: 'red', icon: 'flag', onClick: () => U.marchSheet({ kind: 'rally', to: i, name: c.name, intel: c.intel }) });
       }
     }
+  } else if (t.camp && t.camp.fort) {
+    title = `Barbarian fort, level ${t.camp.lv}`;
+    if (U.art) parts.push(ppic('bastion', () => U.art.mapCamp(10)));
+    parts.push(`<p class="aoc-p">Too strong for one army: only a guild rally can take it. Everyone in a winning rally earns Tomes of Knowledge, speedups and commander experience. Leading or joining costs ${A.FORT_AP} action points (you have ${full(f.ev?.ap || 0)}).</p><div class="aoc-intel"><span class="aoc-kicker">Garrison</span><div>${U.troopLine(t.camp.troops)}</div></div>`);
+    if (P.guild >= 0 && (P.role === 'leader' || P.role === 'officer' || P.b.hall >= 12)) acts.push({ label: 'Call a rally', kind: 'red', icon: 'flag', onClick: () => U.marchSheet({ kind: 'rally', to: i, name: title, enemy: t.camp.troops }) });
+    else parts.push(`<p class="aoc-muted">${P.guild < 0 ? 'Join a guild to rally on forts.' : 'Leaders, officers and governors with a level 12 Town Hall call rallies; join one from the Guild tab.'}</p>`);
   } else if (t.camp) {
     title = `Bandit camp, level ${t.camp.lv}`;
     if (U.art) parts.push(ppic(t.camp.lv <= 3 ? 'camp-1' : t.camp.lv <= 7 ? 'camp-2' : 'camp-3', () => U.art.mapCamp(t.camp.lv)));
-    parts.push(`<p class="aoc-p">Beat the bandits for loot and commander experience.${t.camp.reserved ? ` <b>Reserved for you until ${A.clock(t.camp.reserved)}.</b>` : ''}</p><div class="aoc-intel"><span class="aoc-kicker">Garrison</span><div>${U.troopLine(t.camp.troops)}</div></div>`);
+    parts.push(`<p class="aoc-p">Beat the bandits for loot, Tomes of Knowledge, speedups and commander experience. Attacking costs <b>${A.campAp(t.camp.lv)}</b> action points (you have ${full(f.ev?.ap || 0)}).${t.camp.reserved ? ` <b>Reserved for you until ${A.clock(t.camp.reserved)}.</b>` : ''}</p><div class="aoc-intel"><span class="aoc-kicker">Garrison</span><div>${U.troopLine(t.camp.troops)}</div></div>`);
     acts.push({ label: 'Attack', kind: 'red', icon: 'sword', onClick: () => U.marchSheet({ kind: 'attack', to: i, name: title, enemy: t.camp.troops, level: t.camp.lv }) });
   } else if (t.node) {
     const n = t.node;
@@ -875,10 +885,11 @@ async function sendScout(i) {
   return !!r;
 }
 function relocate(x, y) {
-  const P = U.F.player;
-  U.confirm({
-    title: 'Move your city?', text: `Your city moves to (${x}, ${y}) at once. ${P.relocateCost ? `It costs ${full(P.relocateCost)} Gold.` : 'Your first move as an independent is free.'} Every army must be home first.`,
-    ok: 'Move the city', onOk: async () => { const r = await U.run({ type: 'relocate', x, y }, 'Your city has moved.'); if (r) home(true); },
+  const P = U.F.player, tele = U.F.ev?.tele || 0;
+  const go = async item => { const r = await U.run({ type: 'relocate', x, y, item }, 'Your city has moved.'); if (r) home(true); };
+  U.sheet({
+    title: 'Move your city?', body: `<p class="aoc-p">Your city moves to (${x}, ${y}) at once. ${P.relocateCost ? `It costs ${full(P.relocateCost)} Gold${tele ? `, or one of your ${tele} Teleports` : ''}.` : 'Your first move as an independent is free.'} Every army must be home first.</p>`,
+    actions: [{ label: 'Cancel', kind: 'ghost' }, tele && P.relocateCost ? { label: 'Use a Teleport', kind: 'blue', onClick: () => go('tele') } : null, { label: 'Move the city', onClick: () => go(null) }],
   });
 }
 
@@ -887,5 +898,9 @@ window.addEventListener('aoc-art', () => { if (U.current === 'map') schedule(); 
 U.screen('map', {
   mount: mountMap,
   show() { resize(); if (!M.homed && U.F) { M.homed = true; home(false); M.view.z = 9; } schedule(); },
-  update(f) { U.questBar(document.querySelector('.aoc-screen-map .aoc-quest'), f); if (U.current === 'map' && performance.now() - M.lastDraw > 150) schedule(); },
+  update(f) {
+    U.questBar(document.querySelector('.aoc-screen-map .aoc-quest'), f);
+    if (f.ev) U.setHtml(document.querySelector('.aoc-screen-map .aoc-map-ap'), `${U.icon('power', 16)}${U.full(f.ev.ap)}<span>/ ${U.full(f.ev.apMax)} AP</span>`);
+    if (U.current === 'map' && performance.now() - M.lastDraw > 150) schedule();
+  },
 });

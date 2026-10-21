@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-export const ENGINE_FILES = ['data.js', 'world.js', 'rules.js', 'sim.js', 'ai.js', 'api.js'];
+export const ENGINE_FILES = ['data.js', 'world.js', 'rules.js', 'sim.js', 'ai.js', 'events.js', 'api.js'];
 const EXPORTS = [
   // data
   'RES', 'RES_NAME', 'RES_VALUE', 'UNITS', 'UNIT_KEYS', 'COUNTER', 'TERRAIN', 'T', 'BUILDINGS', 'BUILDING_KEYS', 'TECHS', 'TECH_KEYS', 'TECH_MAX', 'CIVS', 'CIV',
@@ -24,6 +24,13 @@ const EXPORTS = [
   'scoutAccuracy', 'intelOn', 'garrisonOf', 'marchPos', 'makeRng', 'hash32', 'generateTerrain', 'recomputeTerritory', 'updatePlayerVision', 'idx', 'tx', 'ty',
   'rleEncode', 'rleDecode', 'PF', 'projectRes', 'tierOf', 'marchCap', 'marchSpeed', 'checkRecruits', 'giveXp', 'endAge', 'dist', 'tileTarget', 'busyCommanders',
   'regionAt', 'zoneAt', 'zoneOfRegion', 'regionCenter', 'edgeDist', 'gateAccess', 'regionsReachable', 'canReach', 'reachMaskOf', 'inReach', 'blessingMods', 'planObjective',
+  // events
+  'AP_MAX', 'AP_EVERY', 'FORT_AP', 'FORTS', 'campAp', 'ITEMS', 'ITEM_KEYS', 'SC_RECRUIT', 'scSkillCost', 'DAILY_TASKS', 'DAILY_CHESTS', 'CHESTS', 'SHOPS', 'EVENT_CAL', 'FEATURED',
+  'WHEEL', 'WHEEL_COST', 'CARD_COSTS', 'CARDS', 'MTG', 'ARMS', 'CEROLI', 'CEROLI_ROLES', 'LEGION', 'CANYON', 'EXPEDITION', 'HELP', 'DONATE', 'EPICS', 'LEGENDS',
+  'apNow', 'spendAp', 'give', 'rewardName', 'rewardText', 'dailyOf', 'dailyPoints', 'activity', 'eventWindow', 'winState', 'featuredOf', 'actClaimDaily', 'actUseItem',
+  'actOpenChest', 'chestFree', 'actRecruitSc', 'actSkillSc', 'actConvertSc', 'actBuy', 'spendGems', 'formationOf', 'formationArmy', 'lineBattle', 'canyonRanks', 'canyonChoices',
+  'actCanyon', 'canyonDaily', 'expStage', 'medalsNow', 'actExpedition', 'helpRequests', 'actHelpAll', 'donateCost', 'actDonate', 'actSpin', 'actFlip', 'cardBoard', 'loharWave',
+  'actArms', 'ceroliRaid', 'ceroliTeam', 'actCeroli', 'legionTick', 'legionArmy', 'spawnFort', 'battleFort', 'campDrop', 'fortReward', 'aiEvents', 'aiFortRally', 'eventsView', 'eventsBadge',
 ];
 export function engineSource() {
   const parts = ENGINE_FILES.map(f => `/* ----- conquest/${f} ----- */\n` + readFileSync(join(HERE, f), 'utf8'));

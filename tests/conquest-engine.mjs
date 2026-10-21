@@ -401,14 +401,14 @@ await test('passes, holy sites and the Capital open on their day; camps and fiel
   check(!r.ok && /opens on Day 2/.test(r.err), `a rally on an altar before it opens: ${r.err}`);
   const sanctum = w.marks.find(m => m.kind === 'site' && m.site === 'sanctum' && m.region === home);
   check(A.startRally(w, lead, { to: A.idx(sanctum.x, sanctum.y), troops: { inf: 1000 }, c1: Object.keys(lead.cmds)[0], wait: 20 }).ok, 'sanctums are open from the start');
-  const lv = z => { const c = w.camps.filter(x => A.zoneAt(w, x.x, x.y) === z); return c.reduce((s, x) => s + x.lv, 0) / Math.max(1, c.length); };
+  const lv = z => { const c = w.camps.filter(x => !x.fort && A.zoneAt(w, x.x, x.y) === z); return c.reduce((s, x) => s + x.lv, 0) / Math.max(1, c.length); };
   check(lv(1) < lv(2) && lv(2) < lv(3), `camp levels should rise toward the centre (${lv(1).toFixed(1)}, ${lv(2).toFixed(1)}, ${lv(3).toFixed(1)})`);
   check(w.camps.length >= 590 && w.nodes.length >= 1190, 'the big map has its camps and fields');
 });
 await test('marches take travel time; scouts return with a report; armies return home', () => {
   const w = fresh();
   const g = w.govs[P];
-  const camp = w.camps.slice().sort((a, b) => Math.hypot(a.x - g.x, a.y - g.y) - Math.hypot(b.x - g.x, b.y - g.y))[0];
+  const camp = w.camps.filter(c => !c.fort).sort((a, b) => Math.hypot(a.x - g.x, a.y - g.y) - Math.hypot(b.x - g.x, b.y - g.y))[0];
   const r = cmd(w, { type: 'march', kind: 'scout', to: A.idx(camp.x, camp.y) });
   check(r.ok, r.err);
   check(w.reports.length === 0, 'no report before arrival');

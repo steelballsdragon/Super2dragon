@@ -614,6 +614,79 @@ html, body, .aoc, .aoc * { touch-action: manipulation; }
 @media (max-width: 480px) { .aoc-chron li { grid-template-columns: 1fr auto; } .aoc-chron-t { grid-column: 1 / -1; } .aoc-chron-b { display: none; } .aoc-ti { grid-template-columns: auto 1fr 96px; } .aoc-row-act { max-width: 60%; } }
 @media (prefers-reduced-motion: reduce) { .aoc * { transition: none !important; } }
 
+/* ---------- events hub (daily objectives, events, canyon, expedition, guild, tavern, items, shops) */
+.aoc-ev-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.aoc-ev-head .aoc-h3 { margin: 0; flex: 1; }
+.aoc-ev-gems { display: flex; gap: 6px; }
+.aoc-ev-tabs button { position: relative; display: inline-flex; align-items: center; gap: 5px; }
+.aoc-ev-tabs .aoc-badge { position: static; margin-left: 1px; }
+.aoc-ev-pts { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+.aoc-ev-pts b { font: 34px/1 var(--a-font-head); font-weight: 400; color: var(--a-gold); }
+.aoc-ev-track { position: relative; height: 54px; margin: 10px 18px 2px 4px; }
+.aoc-ev-track > .aoc-ev-bar { position: absolute; left: 0; right: 0; top: 12px; height: 12px; }
+.aoc-ev-bar { display: block; height: 8px; border-radius: 999px; background: var(--a-track); box-shadow: inset 0 0 0 1px var(--a-line-soft); overflow: hidden; }
+.aoc-ev-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--a-gold-2), var(--a-gold)); }
+.aoc-ev-chest { position: absolute; top: 0; transform: translateX(-50%); display: grid; justify-items: center; gap: 1px; padding: 2px; border: 0; background: none; color: var(--a-text-2); font: 12px/1 var(--a-font-head); }
+.aoc-ev-chest .aico { filter: grayscale(0.8) brightness(0.7); }
+.aoc-ev-chest.is-ready .aico { filter: drop-shadow(0 0 6px var(--a-gold)); animation: aoc-ev-pulse 1.2s ease-in-out infinite alternate; }
+.aoc-ev-chest.is-got { color: var(--a-good); }
+.aoc-ev-chest.is-got .aico { filter: none; }
+@keyframes aoc-ev-pulse { from { transform: scale(1); } to { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { .aoc-ev-chest.is-ready .aico { animation: none; } }
+.aoc-ev-task { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 6px 0; border-bottom: 1px solid var(--a-line-soft); }
+.aoc-ev-task > .aoc-ev-bar { grid-column: 1 / -1; height: 5px; }
+.aoc-ev-card-h { display: flex; align-items: center; gap: 10px; }
+.aoc-ev-card-h .aoc-h3 { margin: 0 0 3px; }
+.aoc-ev-card.is-open { border-color: var(--a-gold-2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(255, 216, 98, 0.25), 0 6px 18px rgba(0, 0, 0, 0.4); }
+.aoc-ev-pic { flex: none; object-fit: contain; }
+.aoc-ev-feat { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+.aoc-ev-rw { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; font: 14px/1 var(--a-font-head); white-space: nowrap; }
+.aoc-ev-rw b { font-weight: 400; }
+.aoc-ev-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; margin: 8px 0; }
+.aoc-ev-slot { display: grid; place-items: center; min-height: 40px; padding: 4px; border-radius: var(--a-r); background: var(--a-chip); border: 1px solid var(--a-line-soft); }
+.aoc-ev-slot .aoc-ev-rw { margin: 0; }
+.aoc-ev-miles { display: grid; gap: 4px; margin-top: 8px; }
+.aoc-ev-mile { display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--a-r); background: var(--a-chip); font-size: 13px; }
+.aoc-ev-mile-at { font: 13px/1 var(--a-font-head); color: var(--a-text-2); }
+.aoc-ev-mile.is-got { opacity: 0.6; }
+.aoc-ev-mile.is-ready { box-shadow: inset 0 0 0 1px var(--a-gold-2); }
+.aoc-ev-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.aoc-ev-cardface { display: grid; place-items: center; min-height: 78px; padding: 6px; border: 1.5px solid var(--a-gold-2); border-radius: var(--a-r-lg); background: linear-gradient(160deg, #5b2a8c, #2a1450); color: var(--a-gold); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 8px rgba(0, 0, 0, 0.45); }
+.aoc-ev-cardface.is-up { background: linear-gradient(180deg, var(--a-panel-3), var(--a-panel)); }
+.aoc-ev-cardface .aoc-ev-rw { margin: 0; }
+.aoc-ev-q { font: 34px/1 var(--a-font-head); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5); }
+.aoc-ev-rank { display: flex; align-items: baseline; gap: 10px; }
+.aoc-ev-rank b { font: 34px/1 var(--a-font-head); font-weight: 400; color: var(--a-gold); }
+.aoc-ev-line { display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle; }
+.aoc-ev-lc { position: relative; display: inline-block; line-height: 0; }
+.aoc-ev-lc b { position: absolute; right: -2px; bottom: -2px; padding: 1px 3px; border-radius: 4px; background: rgba(0, 0, 0, 0.75); font: 11px/1 var(--a-font-head); font-weight: 400; color: var(--a-text); }
+.aoc-ev-myline { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 6px 0; }
+.aoc-ev-fights li { margin: 3px 0; }
+.aoc-ev-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; margin-top: 10px; }
+.aoc-ev-pickc { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid var(--a-line); border-radius: var(--a-r); background: var(--a-chip); color: var(--a-text); text-align: left; }
+.aoc-ev-pickc.is-in { border-color: var(--a-gold-2); background: rgba(255, 216, 98, 0.12); }
+.aoc-ev-tavern { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.aoc-ev-tchest { display: grid; justify-items: center; gap: 4px; padding: 12px 8px; border: 1px solid var(--a-line); border-radius: var(--a-r-lg); background: radial-gradient(70% 60% at 50% 30%, rgba(255, 216, 98, 0.16), transparent 70%), linear-gradient(180deg, var(--a-panel-2), var(--a-panel)); text-align: center; }
+.aoc-ev-tchest img { object-fit: contain; }
+.aoc-ev-tchest b { font: 17px/1 var(--a-font-head); font-weight: 400; }
+.aoc-ev-tchest .aoc-chips { justify-content: center; margin: 4px 0 0; }
+.aoc-ev-scrow { display: flex; align-items: center; gap: 10px; }
+.aoc-ev-statue { display: inline-block; flex: none; border-radius: 6px; background: #3a2c66 center / 84% no-repeat; box-shadow: inset 0 0 0 2px #a07ad0; vertical-align: middle; }
+.aoc-ev-statue.is-leg { background-color: #5e4512; box-shadow: inset 0 0 0 2px #e2b04a; }
+.aoc-ev-tome.t2 .aico { filter: hue-rotate(160deg) saturate(1.4); }
+.aoc-ev-tome.t3 .aico { filter: hue-rotate(250deg) saturate(1.6); }
+.aoc-ev-purse { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.aoc-ev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px 8px; }
+.aoc-ev-item { display: grid; justify-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--a-text-2); text-align: center; }
+.aoc-ev-item .aoc-small { line-height: 1.15; }
+.aoc-tile.is-small { width: 44px; height: 44px; flex: none; }
+.aoc-ev-iteminfo { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.aoc-ev-iteminfo .aoc-tile { flex: none; }
+.aoc-ev-more summary { cursor: pointer; color: var(--a-ice); margin: 10px 0 4px; }
+/* action points on the world map */
+.aoc-map-ap { position: absolute; left: max(10px, env(safe-area-inset-left)); top: 44px; display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px 3px 4px; border-radius: 999px; background: var(--a-chip); border: 1px solid var(--a-line); color: var(--a-text); font: 14px/1 var(--a-font-head); }
+.aoc-map-ap span { color: var(--a-muted); font-size: 12px; }
+
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -2229,7 +2302,7 @@ function noisy(rng, v, acc) {
 /* Age of Conquest simulation: world creation, the clock, queues, marches, battles, landmarks, territory, world
    events and the chronicle. AI decisions live in ai.js, player commands and views in api.js. Part of the engine. */
 
-const SCHEMA = 3;   // 2: the kingdom map (384 tiles, zones, passes and holy sites); 3: unpainted commanders replaced
+const SCHEMA = 4;   // 2: the kingdom map (384 tiles, zones, passes and holy sites); 3: unpainted commanders replaced; 4: events, items and action points
 const PLAYER = GOVERNORS - 1;
 
 // ================================================================ creation
@@ -2256,6 +2329,7 @@ function newGovernor(w, id, opts) {
     power: 0, recruited: 0, tradedToday: 0, tradeDay: 0, lastAttack: null, lastAt: 0, crate: {},
   };
   g.cmds[CIV[civ].commander] = { lv: 1, xp: 0, sk: [1, 1, 1, 1], tal: {} };
+  initEvents(w, g);
   // AI governors begin with the same base; their head start depends only on how actively they play (activity),
   // simulated as a few early decisions in createWorld, never extra resources
   return g;
@@ -2268,7 +2342,7 @@ function createWorld(opts = {}) {
     map: null, govs: [], guilds: [], marks: [], camps: [], nodes: [], marches: [], rallies: [], nid: 1, battleN: 0,
     events: [], nextEventAt: 6 * HOUR + rint({ rs: hash32(seed, 'ev') }, 18, 30) * HOUR, chron: [], chronN: 0, reports: [], battles: [],
     hist: { terr: {}, power: {} }, market: { price: { food: 1, wood: 1, stone: 1, iron: 1, gold: 1 } },
-    player: PLAYER, quests: { claimed: {} }, settings: { offlineCap: 12 * HOUR, notify: 'important' }, devSw: { unlimited: false, instant: false },
+    player: PLAYER, quests: { claimed: {} }, settings: { offlineCap: 12 * HOUR, notify: 'important' }, devSw: { unlimited: false, instant: false, events: false },
     throne: { owner: -1, since: 0 }, exchangeBy: null, ages: [], explored: null, dev: !!opts.dev, lastDay: 0, campRespawn: [],
     notes: [], stats: { battles: 0 },
   };
@@ -2281,6 +2355,7 @@ function createWorld(opts = {}) {
   recomputeTerritory(w);
   for (const gd of w.guilds) gd.power = guildPower(w, gd);
   rankGuilds(w);
+  canyonRanks(w);
   // the server opens: history begins with the founding of the guilds
   for (const gd of w.guilds) chronicle(w, 'guild_founded', `${gd.name} [${gd.tag}] raised its banner in ${SERVER.regions[gd.home.region]} under ${w.govs[gd.leader].name}.`, { g: [gd.id], p: [gd.leader], x: gd.home.x, y: gd.home.y, imp: 2 });
   chronicle(w, 'server_open', `The ${SERVER.name} server opened. ${GOVERNORS} governors in ${GUILD_COUNT} guilds and ${w.govs.filter(g => g.guild < 0).length} independents. The Capital opens on Day ${1 + THRONE_OPENS / DAY}.`, { imp: 3 });
@@ -2492,6 +2567,8 @@ function placeCampsAndNodes(w) {
     const [res, pref] = kinds[k % 5 === 4 && rng() < 0.5 ? 4 : k % 4];
     spawnNode(w, rng, res, pref);
   }
+  const frng = makeRng(hash32(w.seed, 'forts'));
+  for (let k = 0; k < FORTS; k++) spawnFort(w, frng);
 }
 const CAMPS = 600, NODES = 1200;
 // how far toward the centre a tile lies within its zone: 0 at the zone's outer edge, 1 at its inner edge
@@ -2625,8 +2702,9 @@ function step(w, dt) {
   processRallies(w);
   thinkAll(w, dt);
   if (w.t % 30 < dt) { for (const g of w.govs) g.power = computePower(g); for (const gd of w.guilds) gd.power = guildPower(w, gd); rankGuilds(w); }
-  if (w.t % 60 < dt) { recomputeTerritory(w); regrowLandmarks(w); respawnCamps(w); }
+  if (w.t % 60 < dt) { recomputeTerritory(w); regrowLandmarks(w); respawnCamps(w); regrowForts(w); }
   worldEvents(w);
+  eventsTick(w);
   throneCheck(w);
   const day = Math.floor(w.t / DAY);
   if (day !== w.lastDay) { w.lastDay = day; dayTick(w, day); }
@@ -2648,53 +2726,59 @@ function clock(t) { const d = 1 + Math.floor(t / DAY), m = t % DAY; return `Day 
 
 // ================================================================ queues
 function processQueues(w) {
-  for (const g of w.govs) {
-    const q = g.q;
-    if (q.build && q.build.end <= w.t) {
-      const { id, L } = q.build;
-      q.build = null;
+  for (const g of w.govs) processGov(w, g);
+}
+// one governor's finished queues (a speedup only needs its own)
+function processGov(w, g) {
+  const q = g.q;
+  if (q.build && q.build.end <= w.t) {
+    const { id, L } = q.build;
+    q.build = null;
+    settle(w, g, w.t);
+    g.b[id] = L;
+    modsChanged(g);
+    if (id === 'wall') g.wallDur = wallMax(g, cityMods(w, g));
+    if (g.human) { note(w, 'build', `${BUILDINGS[id].name} reached level ${L}.`, 2); }
+    activity(w, g, 'build');
+    if (!g.human && id === 'hall' && L >= 10 && L % 5 === 0) chronicle(w, 'growth', `${g.name}${tagOf(w, g)} raised a level ${L} Town Hall.`, { p: [g.id], g: g.guild >= 0 ? [g.guild] : [], x: g.x, y: g.y, imp: 1 });
+    checkRecruits(w, g);
+    g.power = computePower(g);
+  }
+  if (q.research && q.research.end <= w.t) {
+    const { id, lv } = q.research;
+    q.research = null;
+    settle(w, g, w.t);
+    g.tech[id] = lv;
+    modsChanged(g);
+    activity(w, g, 'research');
+    if (g.human) note(w, 'research', `${TECHS[id].name} reached level ${lv}.`, 2);
+    checkRecruits(w, g);
+  }
+  for (const u of UNIT_KEYS) {
+    const tq = q.train[u];
+    if (tq && tq.end <= w.t) {
+      q.train[u] = null;
       settle(w, g, w.t);
-      g.b[id] = L;
-      modsChanged(g);
-      if (id === 'wall') g.wallDur = wallMax(g, cityMods(w, g));
-      if (g.human) { note(w, 'build', `${BUILDINGS[id].name} reached level ${L}.`, 2); }
-      if (!g.human && id === 'hall' && L >= 10 && L % 5 === 0) chronicle(w, 'growth', `${g.name}${tagOf(w, g)} raised a level ${L} Town Hall.`, { p: [g.id], g: g.guild >= 0 ? [g.guild] : [], x: g.x, y: g.y, imp: 1 });
-      checkRecruits(w, g);
-      g.power = computePower(g);
-    }
-    if (q.research && q.research.end <= w.t) {
-      const { id, lv } = q.research;
-      q.research = null;
-      settle(w, g, w.t);
-      g.tech[id] = lv;
-      modsChanged(g);
-      if (g.human) note(w, 'research', `${TECHS[id].name} reached level ${lv}.`, 2);
+      g.troops[u] += tq.n;
+      g.stats.trained[u] += tq.n;
+      activity(w, g, 'train');
+      if (g.human) note(w, 'train', `${tq.n.toLocaleString('en-US')} ${UNITS[u].plural} finished training.`, 2);
       checkRecruits(w, g);
     }
-    for (const u of UNIT_KEYS) {
-      const tq = q.train[u];
-      if (tq && tq.end <= w.t) {
-        q.train[u] = null;
-        settle(w, g, w.t);
-        g.troops[u] += tq.n;
-        g.stats.trained[u] += tq.n;
-        if (g.human) note(w, 'train', `${tq.n.toLocaleString('en-US')} ${UNITS[u].plural} finished training.`, 2);
-        checkRecruits(w, g);
-      }
-    }
-    if (q.heal && q.heal.end <= w.t) {
-      const h = q.heal;
-      q.heal = null;
-      let n = 0;
-      for (const u of UNIT_KEYS) { g.troops[u] += h.troops[u] || 0; n += h.troops[u] || 0; }
-      g.stats.healed += n;
-      if (g.human) note(w, 'heal', `${n.toLocaleString('en-US')} wounded troops returned to duty.`, 2);
-      checkRecruits(w, g);
-    }
-    if (q.exchange && q.exchange.end <= w.t) {
-      q.exchange = null;
-      completeExchange(w, g);
-    }
+  }
+  if (q.heal && q.heal.end <= w.t) {
+    const h = q.heal;
+    q.heal = null;
+    let n = 0;
+    for (const u of UNIT_KEYS) { g.troops[u] += h.troops[u] || 0; n += h.troops[u] || 0; }
+    g.stats.healed += n;
+    activity(w, g, 'heal');
+    if (g.human) note(w, 'heal', `${n.toLocaleString('en-US')} wounded troops returned to duty.`, 2);
+    checkRecruits(w, g);
+  }
+  if (q.exchange && q.exchange.end <= w.t) {
+    q.exchange = null;
+    completeExchange(w, g);
   }
 }
 
@@ -2847,9 +2931,13 @@ function startMarch(w, g, o) {
       if (g.guild >= 0 && og.guild === g.guild) return { ok: false, err: 'Those troops belong to your guild.' };
     }
   }
+  let apCost = 0;
   if (kind === 'attack' && target?.type === 'camp') {
     const cp = w.camps.find(x => x.id === target.id);
+    if (cp && cp.fort) return { ok: false, err: 'A barbarian fort is too strong for one army. Start a guild rally on it.' };
     if (cp && cp.reserved != null && cp.reserved !== g.id && w.t < cp.until) return { ok: false, err: 'That camp is reserved for a newcomer.' };
+    apCost = cp ? campAp(cp.lv) : 0;
+    if (apCost && apNow(w, g) < apCost) return { ok: false, err: apError(w, g, apCost) };
   }
   if (kind === 'gather') {
     const nd = target && target.type === 'node' ? w.nodes.find(x => x.id === target.id) : null;
@@ -2865,14 +2953,16 @@ function startMarch(w, g, o) {
   const speed = marchSpeed(w, g, troops, c1, c2, kind);
   const cost = pathCost(w, path);
   if (kind === 'attack' && target.type !== 'camp' && g.shield > w.t) g.shield = 0;   // attacking breaks your own shield
+  if (apCost) spendAp(w, g, apCost);
   settle(w, g, w.t);
   for (const u of UNIT_KEYS) { g.troops[u] -= troops[u]; g.away[u] += troops[u]; }
   const m = {
     id: w.nid++, kind, owner: g.id, troops, c1, c2, path, k: 0, frac: 0, speed, from, to, target, state: 'out', dep: w.t, eta: w.t + Math.ceil(cost / speed),
     load: null, rally: o.rally || null, wounded: null, gatherEnd: 0, alerted: false, parts: o.parts || null,
   };
+  if (apCost) m.ap = apCost;
   w.marches.push(m);
-  if (kind === 'scout') g.stats.scouts++;
+  if (kind === 'scout') { g.stats.scouts++; activity(w, g, 'scout'); }
   return { ok: true, march: m };
 }
 function marchPos(w, m) {
@@ -3072,6 +3162,7 @@ function finishGather(w, m) {
   const got = Math.min(m.gatherAmount, nd ? nd.amount : m.gatherAmount);
   if (nd) nd.amount -= got;
   g.stats.gathered += got;
+  activity(w, g, 'gather');
   if (g.human) report(w, { kind: 'gather', title: `Gathered ${got.toLocaleString('en-US')} ${RES_NAME[nd ? nd.res : 'food']}`, res: { [nd ? nd.res : 'food']: got } });
   const res = nd ? nd.res : 'food';
   sendHome(w, m, { load: { [res]: got } });
@@ -3124,8 +3215,11 @@ function startRally(w, g, o) {
   if (g.role !== 'leader' && g.role !== 'officer' && !(g.b.hall >= 12)) return { ok: false, err: 'Only guild leaders, officers and governors with a level 12 Town Hall can start rallies.' };
   if (w.rallies.some(r => r.leader === g.id && r.state === 'gathering')) return { ok: false, err: 'You are already leading a rally.' };
   const tgt = tileTarget(w, o.to);
-  if (!tgt || (tgt.type !== 'mark' && tgt.type !== 'city')) return { ok: false, err: 'Rally on a pass, a holy site, the Capital or an enemy city.' };
-  if (tgt.type === 'mark') {
+  const fort = tgt && tgt.type === 'camp' ? w.camps.find(x => x.id === tgt.id && x.fort) : null;
+  if (!tgt || (tgt.type !== 'mark' && tgt.type !== 'city' && !fort)) return { ok: false, err: 'Rally on a pass, a holy site, the Capital, a barbarian fort or an enemy city.' };
+  if (fort) {
+    if (apNow(w, g) < FORT_AP) return { ok: false, err: apError(w, g, FORT_AP) };
+  } else if (tgt.type === 'mark') {
     const mk = w.marks[tgt.id];
     if (mk.kind === 'ruin') return { ok: false, err: 'Ruins are explored, not rallied.' };
     if (mk.owner === g.guild) return { ok: false, err: 'Your guild already holds it.' };
@@ -3142,12 +3236,14 @@ function startRally(w, g, o) {
   // the leader's own troops wait at home as part of the rally
   const lead = buildRallyLead(w, g, o);
   if (!lead.ok) return lead;
-  if (g.shield > w.t) g.shield = 0;
+  if (fort) spendAp(w, g, FORT_AP);
+  else if (g.shield > w.t) g.shield = 0;
   const rally = { id: w.nid++, leader: g.id, guild: g.guild, target: tgt, to: o.to, launchAt: w.t + wait, state: 'gathering', lead: lead.march.id, created: w.t };
   lead.march.rally = rally.id;
   w.rallies.push(rally);
   g.stats.rallies++;
-  const name = tgt.type === 'mark' ? w.marks[tgt.id].name : w.govs[tgt.id].name;
+  activity(w, g, 'rally');
+  const name = tgt.type === 'mark' ? w.marks[tgt.id].name : fort ? `a level ${fort.lv} barbarian fort` : w.govs[tgt.id].name;
   decide(w, g, 'rally', `Called a rally on ${name}.`, 'guild');
   for (const mid of w.guilds[g.guild].members) { const mg = w.govs[mid]; if (!mg.human && mid !== g.id) mg.next = Math.min(mg.next, w.t + rint(w, 1, 8)); }
   if (w.govs[PLAYER].guild === g.guild && !g.human) note(w, 'rally', `${g.name} called a guild rally on ${name}. It leaves in ${wait} minutes.`, 3, { rally: rally.id });
@@ -3191,8 +3287,10 @@ function joinRally(w, g, o) {
   const have = rallyTroops(w, r);
   const sending = UNIT_KEYS.reduce((a, u) => a + Math.max(0, Math.floor(Number(o.troops?.[u]) || 0)), 0);
   if (lead && have + sending > rallyCapacity(w, lead)) return { ok: false, err: `The rally can take ${Math.max(0, rallyCapacity(w, lead) - have).toLocaleString('en-US')} more troops.` };
+  const fort = r.target.type === 'camp';
+  if (fort && apNow(w, g) < FORT_AP) return { ok: false, err: apError(w, g, FORT_AP) };
   const res = startMarch(w, g, { kind: 'rallyjoin', to: idx(leader.x, leader.y), troops: o.troops, c1: o.c1, c2: o.c2, target: { type: 'rallyhome', id: leader.id }, rally: r.id });
-  if (res.ok) g.stats.rallies++;
+  if (res.ok) { g.stats.rallies++; activity(w, g, 'rally'); if (fort) spendAp(w, g, FORT_AP); }
   return res;
 }
 function rallyTroops(w, r) { let n = 0; for (const m of w.marches) if (m.rally === r.id && (m.state === 'waiting' || m.kind === 'rallyjoin')) n += troopsTotal(m.troops); return n; }
@@ -3239,6 +3337,7 @@ function arriveRally(w, m) {
   const r = w.rallies.find(x => x.id === m.rally);
   if (r) r.state = 'done';
   if (m.target.type === 'mark') return battleLandmark(w, m);
+  if (m.target.type === 'camp') return battleFort(w, m);
   return battleCity(w, m);
 }
 // split a merged army's survivors and wounded back to each contributor (proportionally to what they sent)
@@ -3456,6 +3555,8 @@ function battleCamp(w, m) {
     w.camps.splice(w.camps.indexOf(c), 1);
     if (w.map.occ[m.to] === c.occ) w.map.occ[m.to] = 0;
     w.campRespawn.push(w.t + 3 * HOUR);
+    give(w, g, campDrop(c.lv));
+    activity(w, g, 'camp');
     checkRecruits(w, g);
   } else {
     g.stats.losses++;
@@ -3464,7 +3565,7 @@ function battleCamp(w, m) {
   if (m.c1) giveXp(w, g, m.c1, troopsTotal(res.d.lost) * 0.8 + c.lv * 60);
   if (m.c2) giveXp(w, g, m.c2, troopsTotal(res.d.lost) * 0.3);
   g.stats.kills += troopsTotal(res.d.lost);
-  if (g.human) report(w, { kind: 'battle', title: `${res.winner === 'a' ? 'Victory' : 'Defeat'}: bandit camp level ${c.lv}`, view: 'a', won: res.winner === 'a', input, res, extra: { plunder: loot, aWounded: aw.wd }, explain: explainBattle(input, res, 'a'), x: c.x, y: c.y });
+  if (g.human) report(w, { kind: 'battle', title: `${res.winner === 'a' ? 'Victory' : 'Defeat'}: bandit camp level ${c.lv}`, view: 'a', won: res.winner === 'a', input, res, extra: { plunder: loot, aWounded: aw.wd, items: res.winner === 'a' ? campDrop(c.lv) : null }, explain: explainBattle(input, res, 'a'), x: c.x, y: c.y });
   for (const u of UNIT_KEYS) g.away[u] -= (m.troops[u] || 0) - (res.a.end[u] || 0);
   m.troops = { ...res.a.end };
   sendHome(w, m, { load: loot, wounded: aw.wd });
@@ -3766,6 +3867,7 @@ function dayTick(w, d) {
   const keys = Object.keys(w.hist.terr).map(Number).sort((a, b) => a - b);
   while (keys.length > 40) { const k = keys.shift(); delete w.hist.terr[k]; delete w.hist.power[k]; }
   for (const g of w.govs) g.tradedToday = 0;
+  eventsDaily(w);
   // market prices drift 30% of the way back to normal each day
   for (const r of RES) w.market.price[r] = 1 + (w.market.price[r] - 1) * 0.7;
   for (const gd of w.guilds) guildDaily(w, gd);
@@ -3908,6 +4010,7 @@ function think(w, g) {
   if (g.st === 'defend') aiDefend(w, g);
   aiEconomy(w, g, false);
   aiGuildDuties(w, g);
+  if (rnd(w) < 0.5) aiEvents(w, g);
   if (g.st !== 'rebuild') aiMilitary(w, g);
   aiPolitics(w, g);
   g.alert = g.alert && w.t - g.alert.t < 90 ? g.alert : null;
@@ -4122,9 +4225,11 @@ function aiMilitary(w, g) {
     const army = pickArmy(w, g, 0.45 + g.t.risk * 0.3, null);
     if (army) {
       const myPow = troopPower(army.troops);
+      const ap = apNow(w, g);
       let best = null, bs = -Infinity;
       for (const c of w.camps) {
-        if (c.reserved != null && c.reserved !== g.id && w.t < c.until) continue;
+        if (c.fort || (c.reserved != null && c.reserved !== g.id && w.t < c.until)) continue;
+        if (ap < campAp(c.lv)) continue;
         const d = dist(g.x, g.y, c.x, c.y);
         if (d > g.explore + 4 || !inReach(w, reach, idx(c.x, c.y))) continue;
         const cp = troopPower(c.troops) * (1 + c.lv * 0.04);
@@ -4444,8 +4549,9 @@ function thinkGuild(w, gd) {
   // coalitions against a guild that grows too strong
   if (hegemon && hegemon.id !== gd.id && w.t - (w.lastCoalition || -9e9) > 2 * DAY) formCoalition(w, hegemon);
   planObjective(w, gd, share);
-  // officers and the leader launch rallies on the objective
+  // officers and the leader launch rallies on the objective, and on barbarian forts when nothing else is under way
   aiRallyPlanning(w, gd);
+  aiFortRally(w, gd);
 }
 function formCoalition(w, h) {
   const total = w.guilds.reduce((a, o) => a + (o.collapsed ? 0 : o.power), 0) || 1;
@@ -4698,6 +4804,1011 @@ function refoundGuild(w, gd, founderId) {
   return true;
 }
 
+/* ----- conquest/events.js ----- */
+/* Age of Conquest events and daily activities: action points, daily objectives, items, the tavern and sculptures,
+   Sunset Canyon, the Expedition, guild helps and donations, the shops, gems, More Than Gems, the Wheel of Fortune,
+   Card King, Arms Training, Ceroli Crisis, the Shadow Legion Invasion and barbarian forts. Every action here is
+   shared by the AI and the player and validates its input; AI governors take part by the same rules. Part of the
+   engine bundle. */
+
+// ================================================================ tables
+const AP_MAX = 1000, AP_EVERY = 2;            // one action point every 2 game minutes, up to 1,000
+function campAp(lv) { return 40 + 5 * lv; }    // attacking a bandit camp
+const FORT_AP = 150;                          // leading or joining a rally on a barbarian fort
+const FORTS = 60;
+
+// items, by kind: speed (minutes off a queue), tome (commander experience), key (opens a tavern chest), ap, res
+// (a crate of resources), box (opens into a random item), shield, tele (moves the city once for free)
+const ITEMS = {
+  speed5: { name: '5-minute Speedup', kind: 'speed', min: 5 },
+  speed15: { name: '15-minute Speedup', kind: 'speed', min: 15 },
+  speed60: { name: '60-minute Speedup', kind: 'speed', min: 60 },
+  speed180: { name: '3-hour Speedup', kind: 'speed', min: 180 },
+  speed480: { name: '8-hour Speedup', kind: 'speed', min: 480 },
+  tome1: { name: 'Novice Tome of Knowledge', kind: 'tome', xp: 500 },
+  tome2: { name: 'Expert Tome of Knowledge', kind: 'tome', xp: 2000 },
+  tome3: { name: 'Master Tome of Knowledge', kind: 'tome', xp: 8000 },
+  keyS: { name: 'Silver Key', kind: 'key' },
+  keyG: { name: 'Gold Key', kind: 'key' },
+  ap50: { name: 'Action Point Tonic (50)', kind: 'ap', ap: 50 },
+  ap200: { name: 'Action Point Tonic (200)', kind: 'ap', ap: 200 },
+  crateFood: { name: 'Food Crate (10,000)', kind: 'res', res: { food: 10000 } },
+  crateWood: { name: 'Wood Crate (10,000)', kind: 'res', res: { wood: 10000 } },
+  crateStone: { name: 'Stone Crate (5,000)', kind: 'res', res: { stone: 5000 } },
+  crateIron: { name: 'Iron Crate (2,500)', kind: 'res', res: { iron: 2500 } },
+  crateGold: { name: 'Gold Crate (1,000)', kind: 'res', res: { gold: 1000 } },
+  box: { name: 'Magic Box', kind: 'box' },
+  shield: { name: '8-hour Peace Shield', kind: 'shield', minutes: 8 * HOUR },
+  tele: { name: 'Teleport', kind: 'tele' },
+};
+const ITEM_KEYS = Object.keys(ITEMS);
+const SC_RECRUIT = 10;                                  // sculptures that recruit a commander
+function scSkillCost(lv) { return 2 * lv; }             // sculptures that raise a skill from level lv
+const EPICS = COMMANDERS.filter(c => c.rarity === 'epic').map(c => c.id);
+const LEGENDS = COMMANDERS.filter(c => c.rarity === 'legendary').map(c => c.id);
+
+// daily objectives: points for what a governor does in a game day, chests at 20, 40, 60, 80 and 100 points
+const DAILY_TASKS = [
+  { k: 'camp', name: 'Defeat bandit camps', pts: 5, max: 20 },
+  { k: 'ap', name: 'Spend action points (per 100)', per: 100, pts: 5, max: 20 },
+  { k: 'gather', name: 'Bring home gathered resources', pts: 5, max: 15 },
+  { k: 'build', name: 'Finish building upgrades', pts: 5, max: 15 },
+  { k: 'research', name: 'Finish research', pts: 5, max: 10 },
+  { k: 'train', name: 'Finish training troops', pts: 5, max: 15 },
+  { k: 'heal', name: 'Heal wounded troops', pts: 5, max: 5 },
+  { k: 'scout', name: 'Send scouts', pts: 2, max: 10 },
+  { k: 'help', name: 'Help guild mates', pts: 1, max: 10 },
+  { k: 'donate', name: 'Donate to guild technology', pts: 2, max: 10 },
+  { k: 'canyon', name: 'Fight in Sunset Canyon', pts: 5, max: 15 },
+  { k: 'expedition', name: 'Fight an Expedition stage', pts: 5, max: 10 },
+  { k: 'rally', name: 'Lead or join rallies', pts: 10, max: 20 },
+  { k: 'tavern', name: 'Open tavern chests', pts: 5, max: 10 },
+];
+const DAILY_CHESTS = [
+  { at: 20, rw: { speed15: 2, crateFood: 1 } },
+  { at: 40, rw: { tome1: 3, keyS: 1 } },
+  { at: 60, rw: { speed60: 1, gems: 50, crateWood: 1 } },
+  { at: 80, rw: { tome2: 1, ap50: 1 } },
+  { at: 100, rw: { gems: 150, 'sc:uniE': 1, box: 1, keyG: 1 } },
+];
+// tavern chests: a key each, the silver one free once a game day and the gold one once every two days
+const CHESTS = {
+  silver: { name: 'Silver Chest', key: 'keyS', every: 1, pool: [{ w: 30, sc: 'epic', n: 1 }, { w: 22, rw: { tome1: 2 } }, { w: 20, rw: { speed15: 2 } }, { w: 10, rw: { crateFood: 1 } }, { w: 10, rw: { crateWood: 1 } }, { w: 8, rw: { 'sc:uniE': 1 } }] },
+  gold: { name: 'Gold Chest', key: 'keyG', every: 2, pool: [{ w: 26, sc: 'legend', n: 1 }, { w: 15, sc: 'epic', n: 3 }, { w: 20, rw: { tome2: 2 } }, { w: 19, rw: { speed60: 2 } }, { w: 5, rw: { 'sc:uniL': 1 } }, { w: 15, rw: { keyS: 2 } }] },
+};
+const BOX = [{ w: 20, rw: { speed60: 1 } }, { w: 20, rw: { tome2: 1 } }, { w: 15, rw: { crateIron: 1 } }, { w: 15, rw: { crateGold: 1 } }, { w: 15, rw: { keyS: 1 } }, { w: 15, rw: { gems: 50 } }];
+
+// shops: each item has a price in the shop's currency and a daily limit per governor
+const SHOPS = {
+  gems: { name: 'Gem Shop', cur: 'gems', items: [
+    { id: 'ap50', rw: { ap50: 1 }, cost: 100, limit: 10 }, { id: 'speed60', rw: { speed60: 1 }, cost: 300, limit: 20 }, { id: 'speed480', rw: { speed480: 1 }, cost: 2000, limit: 5 },
+    { id: 'keyS', rw: { keyS: 1 }, cost: 150, limit: 10 }, { id: 'keyG', rw: { keyG: 1 }, cost: 750, limit: 5 }, { id: 'tome2', rw: { tome2: 1 }, cost: 250, limit: 10 },
+    { id: 'shield', rw: { shield: 1 }, cost: 500, limit: 2 }, { id: 'tele', rw: { tele: 1 }, cost: 1000, limit: 2 }, { id: 'crateGold', rw: { crateGold: 1 }, cost: 100, limit: 20 },
+  ] },
+  expedition: { name: 'Expedition Shop', cur: 'medals', items: [
+    { id: 'scBoudica', rw: { 'sc:boudica': 1 }, cost: 300, limit: 5 }, { id: 'scUniL', rw: { 'sc:uniL': 1 }, cost: 2000, limit: 1 }, { id: 'tome2', rw: { tome2: 1 }, cost: 250, limit: 5 },
+    { id: 'keyG', rw: { keyG: 1 }, cost: 1000, limit: 1 }, { id: 'keyS', rw: { keyS: 1 }, cost: 250, limit: 3 }, { id: 'speed60', rw: { speed60: 1 }, cost: 150, limit: 5 },
+  ] },
+  guild: { name: 'Guild Shop', cur: 'credits', items: [
+    { id: 'shield', rw: { shield: 1 }, cost: 2000, limit: 1 }, { id: 'tele', rw: { tele: 1 }, cost: 3000, limit: 1 }, { id: 'speed60', rw: { speed60: 1 }, cost: 300, limit: 10 },
+    { id: 'tome1', rw: { tome1: 1 }, cost: 100, limit: 20 }, { id: 'ap50', rw: { ap50: 1 }, cost: 200, limit: 10 }, { id: 'keyS', rw: { keyS: 1 }, cost: 600, limit: 2 },
+  ] },
+  ceroli: { name: 'Ceroli Shop', cur: 'tokens', items: [
+    { id: 'scUniE', rw: { 'sc:uniE': 1 }, cost: 150, limit: 10 }, { id: 'scUniL', rw: { 'sc:uniL': 1 }, cost: 900, limit: 2 }, { id: 'tome2', rw: { tome2: 1 }, cost: 120, limit: 10 },
+    { id: 'keyG', rw: { keyG: 1 }, cost: 600, limit: 2 }, { id: 'speed180', rw: { speed180: 1 }, cost: 300, limit: 5 },
+  ] },
+};
+
+// the event calendar, in game days: open from day `from`, for `days` days, every `every` days
+const EVENT_CAL = {
+  wheel: { name: 'Wheel of Fortune', every: 7, from: 1, days: 2, text: 'Spin for sculptures of a featured legendary commander. One free spin each game day.' },
+  cards: { name: 'Card King', every: 7, from: 3, days: 2, text: 'Flip six hidden cards. Each flip costs more gems; the top card holds five sculptures of the featured commander.' },
+  mtg: { name: 'More Than Gems', every: 7, from: 4, days: 2, text: 'Every gem you spend while it runs counts toward universal legendary sculptures.' },
+  ceroli: { name: 'Ceroli Crisis', every: 7, from: 5, days: 2, text: 'A four-governor raid on Ceroli. Choose Tank, Damage or Healer; damage earns tokens for the Ceroli shop.' },
+  arms: { name: 'Arms Training', every: 7, from: 6, days: 2, text: 'Hold out against wave after wave of Armsmaster Lohar. Survivors carry on to the next wave.' },
+  legion: { name: 'Shadow Legion Invasion', every: 5, from: 3, days: 1, text: 'At 20:00, five waves of the Shadow Legion assault every guild member\'s city inside guild territory.' },
+};
+const FEATURED = ['genghis', 'alexander', 'caesar', 'saladin', 'richard', 'cleopatra', 'hannibal', 'leonidas', 'caocao', 'nobunaga', 'ragnar'];
+const WHEEL_COST = 150;
+const WHEEL = [
+  { w: 14, rw: { 'sc:F': 1 } }, { w: 5, rw: { 'sc:F': 3 } }, { w: 0.7, rw: { 'sc:F': 10 } }, { w: 12, rw: { 'sc:uniE': 1 } }, { w: 16, rw: { speed60: 1 } }, { w: 14, rw: { tome2: 1 } },
+  { w: 12, rw: { keyS: 1 } }, { w: 4, rw: { keyG: 1 } }, { w: 10, rw: { gems: 100 } }, { w: 12, rw: { ap50: 1 } }, { w: 8, rw: { crateIron: 1 } }, { w: 2, rw: { 'sc:uniL': 1 } },
+];
+const WHEEL_MILESTONES = [{ at: 10, rw: { 'sc:F': 5 } }, { at: 25, rw: { 'sc:F': 10 } }, { at: 50, rw: { 'sc:F': 15 } }, { at: 80, rw: { 'sc:F': 20 } }];
+const CARD_COSTS = [50, 100, 150, 250, 400, 600];
+const CARDS = [{ 'sc:F': 5 }, { 'sc:F': 2 }, { 'sc:uniL': 1 }, { keyG: 1 }, { tome2: 2 }, { speed180: 1 }];
+const CARD_MILESTONES = [{ at: 2, rw: { 'sc:F': 5 } }, { at: 5, rw: { 'sc:F': 10 } }, { at: 10, rw: { 'sc:F': 20 } }];
+const MTG = [{ at: 2000, rw: { 'sc:uniE': 5 } }, { at: 4000, rw: { tome2: 3 } }, { at: 7000, rw: { 'sc:uniL': 5 } }, { at: 10000, rw: { keyG: 3 } }, { at: 15000, rw: { 'sc:uniL': 10 } }, { at: 25000, rw: { 'sc:uniL': 20 } }];
+const ARMS = { attempts: 3, waves: 30, milestones: [{ at: 3, rw: { speed60: 2 } }, { at: 6, rw: { tome2: 2 } }, { at: 10, rw: { keyG: 1 } }, { at: 15, rw: { 'sc:uniL': 1 } }, { at: 20, rw: { 'sc:uniL': 2 } }, { at: 25, rw: { gems: 500 } }] };
+const CEROLI = { attempts: 3, levels: 10, rounds: 30 };
+const CEROLI_ROLES = { tank: 'Tank', dps: 'Damage', healer: 'Healer' };
+const LEGION = { at: 20 * HOUR, waves: 5, gap: 10 };
+const LEGION_REWARDS = [{ at: 100, rw: { speed60: 1 } }, { at: 300, rw: { tome2: 2 } }, { at: 600, rw: { keyS: 2 } }, { at: 1000, rw: { keyG: 1 } }, { at: 1500, rw: { 'sc:uniL': 1 } }];
+const CANYON = { attempts: 5, size: 5 };
+const EXPEDITION = { stages: 30, attempts: 10, medals: 4 };   // medals per game hour per stage cleared
+const EXP_CHAPTERS = ['The Border Road', 'Wolf Hills', 'The Salt Marsh', 'Ember Steppe', 'The Glass Mountains', 'Throne of Ash'];
+const HELP = { max: 10, credits: 10, paid: 50 };   // helps per queue, credits per help, paid helps per day
+const DONATE = { max: 20, credits: 40 };
+
+// ================================================================ state
+// per governor: ap and apAt; inv { gems, credits, tokens, items, sc }; ev (today's counters, reset each game day);
+// exp (the Expedition); cf (the Sunset Canyon formation); evp { freeG, n, win } (the last free gold chest, a draw
+// counter for chests and wheels, and progress in the current window of each event)
+function initEvents(w, g) {
+  g.ap = AP_MAX; g.apAt = w.t;
+  g.inv = { gems: 0, credits: 0, tokens: 0, items: {}, sc: {} };
+  g.ev = { d: Math.floor(w.t / DAY), cnt: {}, got: 0, cy: 0, ex: 0, don: 0, helpN: 0, buy: {}, spin: 0, arms: 0, ce: 0, freeS: 0 };
+  g.exp = { st: 0, med: 0, at: w.t };
+  g.cf = [];
+  g.evp = { freeG: -9, n: 0, win: {} };
+}
+function dailyOf(w, g) {
+  const d = Math.floor(w.t / DAY);
+  if (g.ev.d !== d) g.ev = { d, cnt: {}, got: 0, cy: 0, ex: 0, don: 0, helpN: 0, buy: {}, spin: 0, arms: 0, ce: 0, freeS: 0 };
+  return g.ev;
+}
+function activity(w, g, k, n = 1) {
+  const e = dailyOf(w, g);
+  e.cnt[k] = (e.cnt[k] || 0) + n;
+}
+function dailyPoints(e) {
+  let p = 0;
+  for (const t of DAILY_TASKS) p += Math.min(t.max, Math.floor((e.cnt[t.k] || 0) / (t.per || 1)) * t.pts);
+  return p;
+}
+// ---------------------------------------------------------------- action points
+function apNow(w, g) { return g.ap >= AP_MAX ? g.ap : Math.min(AP_MAX, g.ap + (w.t - g.apAt) / AP_EVERY); }
+function settleAp(w, g) { g.ap = apNow(w, g); g.apAt = w.t; }
+function spendAp(w, g, n) {
+  settleAp(w, g);
+  if (g.ap < n - 1e-9) return false;
+  g.ap -= n;
+  activity(w, g, 'ap', n);
+  return true;
+}
+function apError(w, g, n) { return `This needs ${n} action points; you have ${Math.floor(apNow(w, g))}. One returns every ${AP_EVERY} minutes.`; }
+// ---------------------------------------------------------------- rewards
+function give(w, g, rw) {
+  const inv = g.inv;
+  for (const k in rw) {
+    const n = rw[k];
+    if (!(n > 0)) continue;
+    if (k === 'gems' || k === 'credits' || k === 'tokens') inv[k] += n;
+    else if (k === 'medals') g.exp.med += n;
+    else if (k.startsWith('sc:')) inv.sc[k.slice(3)] = (inv.sc[k.slice(3)] || 0) + n;
+    else if (own(ITEMS, k)) inv.items[k] = (inv.items[k] || 0) + n;
+  }
+}
+// 'sc:F' in a table stands for the featured commander
+function withFeatured(rw, f) { const o = {}; for (const k in rw) o[k === 'sc:F' ? 'sc:' + f : k] = (o[k === 'sc:F' ? 'sc:' + f : k] || 0) + rw[k]; return o; }
+function rewardName(k) {
+  if (k === 'gems') return 'Gems';
+  if (k === 'credits') return 'Guild Credits';
+  if (k === 'tokens') return 'Ceroli Tokens';
+  if (k === 'medals') return 'Expedition Medals';
+  if (k === 'sc:uniE') return 'Universal Epic Sculpture';
+  if (k === 'sc:uniL') return 'Universal Legendary Sculpture';
+  if (k.startsWith('sc:')) return `${CMD[k.slice(3)]?.name || k.slice(3)} Sculpture`;
+  return ITEMS[k]?.name || k;
+}
+function rewardText(rw) { return Object.keys(rw).map(k => `${rw[k].toLocaleString('en-US')} ${rewardName(k)}`).join(', '); }
+function pickWeighted(rng, pool) {
+  let s = 0;
+  for (const p of pool) s += p.w;
+  let x = rng() * s;
+  for (const p of pool) { x -= p.w; if (x < 0) return p; }
+  return pool[pool.length - 1];
+}
+function drawFrom(w, g, pool, what) {
+  const rng = makeRng(hash32(w.seed, what, g.id, g.evp.n++));
+  const p = pickWeighted(rng, pool);
+  if (p.sc) return { ['sc:' + rng.pick(p.sc === 'epic' ? EPICS : LEGENDS)]: p.n };
+  return { ...p.rw };
+}
+function addTo(total, rw) { for (const k in rw) total[k] = (total[k] || 0) + rw[k]; return total; }
+// ---------------------------------------------------------------- event windows
+function eventWindow(w, id) {
+  const c = EVENT_CAL[id];
+  const d = 1 + Math.floor(w.t / DAY);
+  const k = Math.floor((d - c.from) / c.every);
+  const startDay = c.from + Math.max(0, k) * c.every;
+  let open = d >= c.from && d - startDay < c.days;
+  let start = (startDay - 1) * DAY, end = start + c.days * DAY;
+  if (id === 'legion') { start += LEGION.at; end = start + LEGION.waves * LEGION.gap + 1; open = w.t >= start && w.t < end; }
+  const next = w.t < start ? start : (c.from + (Math.max(0, k) + 1) * c.every - 1) * DAY + (id === 'legion' ? LEGION.at : 0);
+  if (w.devSw?.events && id !== 'legion') return { id, open: true, key: 'dev' + d, start: (d - 1) * DAY, end: d * DAY, next: d * DAY };
+  return { id, open, key: String(Math.max(0, k)), start, end, next };
+}
+// progress inside the current window of an event (reset when a new window opens)
+function winState(w, g, id) {
+  const key = eventWindow(w, id).key;
+  let s = g.evp.win[id];
+  if (!s || s.key !== key) s = g.evp.win[id] = { key, n: 0, got: 0, best: 0, flip: 0, board: 0, unlocked: 1, spent: 0 };
+  return s;
+}
+function featuredOf(w, id) {
+  const ewin = eventWindow(w, id);
+  const k = Number(String(ewin.key).replace('dev', '')) || 0;
+  return FEATURED[(k + (id === 'cards' ? 5 : 0)) % FEATURED.length];
+}
+function claimMilestones(w, g, s, list, value, f, title) {
+  const got = [];
+  list.forEach((m, k) => {
+    if (value >= m.at && !(s.got & (1 << k))) {
+      s.got |= 1 << k;
+      const rw = f ? withFeatured(m.rw, f) : m.rw;
+      give(w, g, rw);
+      got.push(rw);
+      if (g.human) note(w, 'event', `${title}: ${rewardText(rw)}.`, 2);
+    }
+  });
+  return got;
+}
+
+// ================================================================ daily objectives
+function actClaimDaily(w, g, k) {
+  const e = dailyOf(w, g);
+  const ch = DAILY_CHESTS[k];
+  if (!ch) return { ok: false, err: 'Unknown chest.' };
+  if (e.got & (1 << k)) return { ok: false, err: 'Already claimed today.' };
+  if (dailyPoints(e) < ch.at) return { ok: false, err: `This chest opens at ${ch.at} activity points.` };
+  e.got |= 1 << k;
+  give(w, g, ch.rw);
+  return { ok: true, rw: ch.rw };
+}
+// ================================================================ items
+function speedQueue(g, q, unit) {
+  if (q === 'train') return own(g.q.train, unit) ? g.q.train[unit] : null;
+  return q === 'build' || q === 'research' || q === 'heal' ? g.q[q] : null;
+}
+function actUseItem(w, g, o) {
+  const id = o.id;
+  if (!own(ITEMS, id)) return { ok: false, err: 'Unknown item.' };
+  const it = ITEMS[id];
+  const n = Math.floor(Number(o.n) || 1);
+  if (!(n >= 1 && n <= 100000)) return { ok: false, err: 'Choose how many to use.' };
+  const have = g.inv.items[id] || 0;
+  if (have < n) return { ok: false, err: `You have ${have} ${it.name}.` };
+  const take = k => { g.inv.items[id] -= k; if (!g.inv.items[id]) delete g.inv.items[id]; };
+  switch (it.kind) {
+    case 'speed': {
+      const q = speedQueue(g, String(o.q || ''), String(o.unit || ''));
+      if (!q) return { ok: false, err: 'Nothing is in that queue.' };
+      const left = q.end - w.t;
+      if (left <= 0) return { ok: false, err: 'That is already finished.' };
+      // never spend more than the queue needs
+      const k = Math.min(n, Math.ceil(left / it.min));
+      q.end = Math.max(w.t, q.end - it.min * k);
+      take(k);
+      processGov(w, g);
+      return { ok: true, used: k };
+    }
+    case 'tome': {
+      if (!own(g.cmds, o.cmd)) return { ok: false, err: 'Choose one of your commanders.' };
+      if (g.cmds[o.cmd].lv >= CMD_MAX_LEVEL) return { ok: false, err: `${CMD[o.cmd].name} is already at the highest level.` };
+      take(n);
+      giveXp(w, g, o.cmd, it.xp * n);
+      return { ok: true, used: n };
+    }
+    case 'ap': settleAp(w, g); g.ap += it.ap * n; take(n); return { ok: true, used: n };
+    case 'res': settle(w, g, w.t); for (const r in it.res) g.res[r] += it.res[r] * n; take(n); return { ok: true, used: n };
+    case 'box': {
+      const total = {};
+      for (let k = 0; k < n; k++) addTo(total, drawFrom(w, g, BOX, 'box'));
+      take(n);
+      give(w, g, total);
+      return { ok: true, used: n, rw: total };
+    }
+    case 'shield': {
+      if (g.shield > w.t) return { ok: false, err: 'Your shield is already up.' };
+      g.shield = w.t + it.minutes;
+      take(1);
+      return { ok: true, used: 1 };
+    }
+    case 'key': return { ok: false, err: 'Keys open chests in the Tavern.' };
+    case 'tele': return { ok: false, err: 'Choose a place on the map, then Move city, to use a Teleport.' };
+  }
+  return { ok: false, err: 'That item cannot be used.' };
+}
+// ================================================================ tavern and sculptures
+function chestFree(w, g, kind) {
+  const d = Math.floor(w.t / DAY);
+  return kind === 'silver' ? !dailyOf(w, g).freeS : d - g.evp.freeG >= CHESTS.gold.every;
+}
+function actOpenChest(w, g, kind, n) {
+  const c = own(CHESTS, kind) ? CHESTS[kind] : null;
+  if (!c) return { ok: false, err: 'Unknown chest.' };
+  n = Math.floor(Number(n) || 1);
+  if (!(n >= 1 && n <= 50)) return { ok: false, err: 'Open between 1 and 50 at a time.' };
+  const free = chestFree(w, g, kind) ? 1 : 0;
+  const keys = n - free;
+  if ((g.inv.items[c.key] || 0) < keys) return { ok: false, err: free ? `The free chest opens one. More need ${ITEMS[c.key].name}s.` : `You need a ${ITEMS[c.key].name}.` };
+  if (free) { if (kind === 'silver') dailyOf(w, g).freeS = 1; else g.evp.freeG = Math.floor(w.t / DAY); }
+  if (keys) { g.inv.items[c.key] -= keys; if (!g.inv.items[c.key]) delete g.inv.items[c.key]; }
+  const total = {};
+  for (let k = 0; k < n; k++) addTo(total, drawFrom(w, g, c.pool, 'chest-' + kind));
+  give(w, g, total);
+  activity(w, g, 'tavern', n);
+  return { ok: true, rw: total };
+}
+function recruitWith(w, g, id, how) {
+  g.cmds[id] = { lv: 1, xp: 0, sk: [1, 1, 1, 1], tal: {} };
+  g.recruited++;
+  if (g.human) {
+    note(w, 'commander', `${CMD[id].name}, ${CMD[id].title}, joined you${how}.`, 3);
+    chronicle(w, 'commander', `${CMD[id].name}, ${CMD[id].title}, swore service to ${g.name}.`, { p: [g.id], x: g.x, y: g.y, imp: 1 });
+  }
+}
+function actRecruitSc(w, g, id) {
+  if (!own(CMD, id)) return { ok: false, err: 'Unknown commander.' };
+  if (g.cmds[id]) return { ok: false, err: `${CMD[id].name} already serves you.` };
+  const have = g.inv.sc[id] || 0;
+  if (have < SC_RECRUIT) return { ok: false, err: `Recruiting needs ${SC_RECRUIT} sculptures of ${CMD[id].name}; you have ${have}.` };
+  g.inv.sc[id] -= SC_RECRUIT;
+  recruitWith(w, g, id, ' for ten sculptures');
+  return { ok: true };
+}
+function actSkillSc(w, g, id, k) {
+  const r = own(g.cmds, id) ? g.cmds[id] : null;
+  k = Math.floor(Number(k));
+  if (!r) return { ok: false, err: 'You do not have that commander.' };
+  if (!(k >= 0 && k <= 3)) return { ok: false, err: 'Unknown skill.' };
+  if (r.sk[k] >= 5) return { ok: false, err: 'That skill is at its highest level.' };
+  if (k === 3 && r.lv < ULTIMATE_LEVEL) return { ok: false, err: `The ultimate unlocks at level ${ULTIMATE_LEVEL}.` };
+  const cost = scSkillCost(r.sk[k]), have = g.inv.sc[id] || 0;
+  if (have < cost) return { ok: false, err: `This skill level needs ${cost} sculptures of ${CMD[id].name}; you have ${have}.` };
+  g.inv.sc[id] -= cost;
+  r.sk[k]++;
+  modsChanged(g);
+  return { ok: true };
+}
+function actConvertSc(w, g, id, n) {
+  if (!own(CMD, id)) return { ok: false, err: 'Unknown commander.' };
+  n = Math.floor(Number(n) || 0);
+  const uni = CMD[id].rarity === 'epic' ? 'uniE' : 'uniL';
+  if (!(n >= 1)) return { ok: false, err: 'Choose how many to convert.' };
+  if ((g.inv.sc[uni] || 0) < n) return { ok: false, err: `You have ${g.inv.sc[uni] || 0} ${rewardName('sc:' + uni)}s.` };
+  g.inv.sc[uni] -= n;
+  g.inv.sc[id] = (g.inv.sc[id] || 0) + n;
+  return { ok: true };
+}
+// ================================================================ shops and gems
+function shopPrice(w, g, shop, item) { return item.cost; }
+function currencyOf(w, g, cur) { return cur === 'medals' ? medalsNow(w, g) : g.inv[cur]; }
+function spendGems(w, g, n) {
+  g.inv.gems -= n;
+  const mtg = eventWindow(w, 'mtg');
+  if (mtg.open) {
+    const s = winState(w, g, 'mtg');
+    s.spent += n;
+    claimMilestones(w, g, s, MTG, s.spent, null, 'More Than Gems');
+  }
+}
+function actBuy(w, g, shopId, itemId, n) {
+  const shop = own(SHOPS, shopId) ? SHOPS[shopId] : null;
+  if (!shop) return { ok: false, err: 'Unknown shop.' };
+  const item = shop.items.find(x => x.id === itemId);
+  if (!item) return { ok: false, err: 'That is not for sale here.' };
+  n = Math.floor(Number(n) || 1);
+  if (!(n >= 1 && n <= 1000)) return { ok: false, err: 'Choose how many to buy.' };
+  if (shopId === 'guild' && g.guild < 0) return { ok: false, err: 'Join a guild to use the Guild Shop.' };
+  const e = dailyOf(w, g), key = shopId + ':' + itemId;
+  if ((e.buy[key] || 0) + n > item.limit) return { ok: false, err: `You can buy ${Math.max(0, item.limit - (e.buy[key] || 0))} more today.` };
+  const cost = shopPrice(w, g, shop, item) * n;
+  if (currencyOf(w, g, shop.cur) < cost) return { ok: false, err: `That costs ${cost.toLocaleString('en-US')} ${rewardName(shop.cur)}.` };
+  if (shop.cur === 'medals') { settleMedals(w, g); g.exp.med -= cost; }
+  else if (shop.cur === 'gems') spendGems(w, g, cost);
+  else g.inv[shop.cur] -= cost;
+  e.buy[key] = (e.buy[key] || 0) + n;
+  const rw = {};
+  for (const k in item.rw) rw[k] = item.rw[k] * n;
+  give(w, g, rw);
+  return { ok: true, rw };
+}
+
+// ================================================================ battles of formations
+// a commander's army in Sunset Canyon, the Expedition and Arms Training (no real troops are risked)
+function formationArmy(g, id) {
+  const lv = g.cmds[id].lv, n = 2500 + 450 * lv, spec = CMD[id].spec;
+  if (spec === 'mix') return { inf: Math.round(n * 0.4), cav: Math.round(n * 0.3), arc: Math.round(n * 0.3), sie: 0 };
+  const t = { inf: 0, cav: 0, arc: 0, sie: 0 };
+  t[spec] = n;
+  return t;
+}
+function formationOf(g) {
+  const f = [];
+  for (const id of g.cf || []) if (own(g.cmds, id) && !f.includes(id)) f.push(id);
+  if (f.length) return f.slice(0, CANYON.size);
+  return Object.keys(g.cmds).sort((a, b) => g.cmds[b].lv - g.cmds[a].lv || (a < b ? -1 : 1)).slice(0, CANYON.size);
+}
+// an army's bonuses do not change between its fights: worked out once, then given each fight's troops
+function govLine(w, g, ids, ctx) {
+  return ids.map(id => {
+    let base = null;
+    return { name: CMD[id].name, cmd: id, lv: g.cmds[id].lv, troops: formationArmy(g, id), mk: tr => { base = base || armySide(w, g, tr, id, null, ctx, `${g.name}: ${CMD[id].name}`); return { ...base, units: { inf: tr.inf || 0, cav: tr.cav || 0, arc: tr.arc || 0, sie: tr.sie || 0 } }; } };
+  });
+}
+function neutralLine(list) {
+  return list.map(x => ({ name: x.name, cmd: null, lv: x.level, troops: { ...x.troops }, mk: tr => neutralSide(x.name, tr, x.level) }));
+}
+// the first armies of each line fight; the winner carries its survivors into the next opponent
+function lineBattle(seed, A, B, kind) {
+  const fights = [];
+  let i = 0, j = 0;
+  while (i < A.length && j < B.length && fights.length < 40) {
+    const input = { seed: hash32(seed, fights.length), a: A[i].mk(A[i].troops), d: B[j].mk(B[j].troops), terrain: T.plains, wall: null, kind };
+    const res = fight(input);
+    const won = res.winner === 'a';
+    fights.push({ a: A[i].name, d: B[j].name, won, aStart: troopsTotal(res.a.start), aLeft: troopsTotal(res.a.end), dStart: troopsTotal(res.d.start), dLeft: troopsTotal(res.d.end) });
+    if (won) { A[i].troops = { ...res.a.end }; j++; } else { B[j].troops = { ...res.d.end }; i++; }
+  }
+  return { won: j >= B.length, fights, left: A.slice(i).map(x => ({ name: x.name, troops: x.troops })), aIndex: i };
+}
+
+// ================================================================ Sunset Canyon
+function canyonRanks(w) {
+  if (!w.canyon || w.canyon.rank.length !== w.govs.length) {
+    const order = w.govs.map(g => g.id).sort((a, b) => w.govs[b].power - w.govs[a].power || a - b);
+    w.canyon = { rank: order, log: [] };
+  }
+  return w.canyon.rank;
+}
+// three opponents ranked above: the one just above, and the two weakest-looking lines among the twenty above
+function lineStrength(g) { return formationOf(g).reduce((a, id) => a + 2500 + 450 * g.cmds[id].lv, 0); }
+function canyonChoices(w, g) {
+  const rank = canyonRanks(w), r = rank.indexOf(g.id);
+  if (r === 0) return rank.slice(1, 4);
+  const above = rank.slice(Math.max(0, r - 20), r - 1).map(id => ({ id, s: lineStrength(w.govs[id]) })).sort((a, b) => a.s - b.s || a.id - b.id);
+  return [rank[r - 1], ...above.slice(0, 2).map(x => x.id)];
+}
+function actCanyon(w, g, target) {
+  const e = dailyOf(w, g);
+  if (e.cy >= CANYON.attempts) return { ok: false, err: 'No attempts left today. Five return each game day.' };
+  if (!canyonChoices(w, g).includes(target)) return { ok: false, err: 'Choose one of the offered opponents.' };
+  const A = formationOf(g);
+  if (!A.length) return { ok: false, err: 'You need a commander.' };
+  const d = w.govs[target];
+  const rank = canyonRanks(w);
+  const before = rank.indexOf(g.id), theirs = rank.indexOf(d.id);
+  e.cy++;
+  const res = lineBattle(hash32(w.seed, 'canyon', g.id, w.t, e.cy), govLine(w, g, A, { attack: true, field: true }), govLine(w, d, formationOf(d), { defend: true, field: true }), 'canyon');
+  if (res.won && theirs < before) { rank[before] = d.id; rank[theirs] = g.id; }
+  const after = rank.indexOf(g.id);
+  activity(w, g, 'canyon');
+  if (g.human || d.human) {
+    w.canyon.log.push({ t: w.t, a: g.id, aName: g.name, d: d.id, dName: d.name, won: res.won, fights: res.fights, before: before + 1, after: after + 1 });
+    if (w.canyon.log.length > 20) w.canyon.log.shift();
+    if (d.human) note(w, 'event', `${g.name} challenged your Sunset Canyon defense and ${res.won ? 'won' : 'lost'}. Your rank: ${rank.indexOf(d.id) + 1}.`, 1);
+  }
+  return { ok: true, won: res.won, fights: res.fights, rank: after + 1, before: before + 1 };
+}
+function canyonReward(k) {
+  if (k === 0) return { gems: 300, keyG: 1 };
+  if (k < 10) return { gems: 200, keyS: 2 };
+  if (k < 50) return { gems: 120, keyS: 1 };
+  if (k < 200) return { gems: 60, tome1: 2 };
+  return { gems: 20, tome1: 1 };
+}
+function canyonDaily(w) {
+  const rank = canyonRanks(w);
+  rank.forEach((id, k) => {
+    const g = w.govs[id], rw = canyonReward(k);
+    give(w, g, rw);
+    if (g.human) note(w, 'event', `Sunset Canyon, rank ${k + 1}: ${rewardText(rw)}.`, 2);
+  });
+}
+
+// ================================================================ the Expedition
+function expStage(s) {
+  const n = Math.min(5, 1 + Math.floor(s / 6));
+  const per = Math.round(2400 * Math.pow(1.09, s));
+  const mixes = [{ inf: 1 }, { arc: 1 }, { cav: 1 }, { inf: 0.5, arc: 0.5 }, { cav: 0.6, arc: 0.4 }];
+  const armies = [];
+  for (let k = 0; k < n; k++) {
+    const mix = mixes[(s + k) % mixes.length], troops = { inf: 0, cav: 0, arc: 0, sie: 0 };
+    for (const u in mix) troops[u] = Math.round(per * mix[u]);
+    armies.push({ name: `${EXP_CHAPTERS[Math.floor(s / 5)]} warband ${k + 1}`, troops, level: s + 1 });
+  }
+  return { name: `${EXP_CHAPTERS[Math.floor(s / 5)]}, stage ${(s % 5) + 1}`, armies, first: (s + 1) % 5 === 0 ? { gems: 100, keyG: 1, tome2: 1 } : { tome1: 2, medals: 50 } };
+}
+function medalsNow(w, g) { return g.exp.med + Math.max(0, w.t - g.exp.at) / HOUR * EXPEDITION.medals * g.exp.st; }
+function settleMedals(w, g) { g.exp.med = medalsNow(w, g); g.exp.at = w.t; }
+function actExpedition(w, g) {
+  const e = dailyOf(w, g);
+  if (g.exp.st >= EXPEDITION.stages) return { ok: false, err: 'You have cleared every stage of the Expedition.' };
+  if (e.ex >= EXPEDITION.attempts) return { ok: false, err: `You have fought ${EXPEDITION.attempts} stages today.` };
+  const A = formationOf(g);
+  if (!A.length) return { ok: false, err: 'You need a commander.' };
+  e.ex++;
+  const st = expStage(g.exp.st);
+  const res = lineBattle(hash32(w.seed, 'exp', g.id, g.exp.st, w.t, e.ex), govLine(w, g, A, { attack: true, field: true }), neutralLine(st.armies), 'expedition');
+  activity(w, g, 'expedition');
+  if (res.won) {
+    settleMedals(w, g);
+    g.exp.st++;
+    give(w, g, st.first);
+    for (const id of A) giveXp(w, g, id, 150 + 60 * g.exp.st);
+  }
+  return { ok: true, won: res.won, fights: res.fights, stage: g.exp.st, rw: res.won ? st.first : null };
+}
+
+// ================================================================ guild helps and donations
+const HELP_KINDS = ['build', 'research', 'heal'];
+function helpable(w, g, q) { return q && q.end > w.t && (q.hp ? q.hp.length : 0) < HELP.max && !(q.hp && q.hp.includes(g.id)); }
+function helpRequests(w, g) {
+  const out = [];
+  if (g.guild < 0) return out;
+  for (const id of w.guilds[g.guild].members) {
+    if (id === g.id) continue;
+    const m = w.govs[id];
+    for (const k of HELP_KINDS) if (helpable(w, g, m.q[k])) out.push({ gov: id, name: m.name, kind: k, helps: m.q[k].hp ? m.q[k].hp.length : 0 });
+  }
+  return out;
+}
+function actHelpAll(w, g) {
+  if (g.guild < 0) return { ok: false, err: 'Join a guild to help its members.' };
+  const e = dailyOf(w, g);
+  let n = 0;
+  for (const id of w.guilds[g.guild].members) {
+    if (id === g.id) continue;
+    const m = w.govs[id];
+    for (const k of HELP_KINDS) {
+      const q = m.q[k];
+      if (!helpable(w, g, q)) continue;
+      (q.hp || (q.hp = [])).push(g.id);
+      q.end = Math.max(w.t, q.end - Math.max(1, Math.round((q.end - q.start) * 0.01)));
+      n++;
+    }
+  }
+  if (!n) return { ok: false, err: 'Nobody needs help right now.' };
+  const paid = Math.max(0, Math.min(n, HELP.paid - e.helpN));
+  e.helpN += n;
+  g.inv.credits += paid * HELP.credits;
+  activity(w, g, 'help', n);
+  return { ok: true, n, credits: paid * HELP.credits };
+}
+function donateCost(g) { const k = 1 + g.b.hall * 0.25; return { food: Math.round(1500 * k), wood: Math.round(1500 * k), gold: Math.round(150 * k) }; }
+function actDonate(w, g) {
+  if (g.guild < 0) return { ok: false, err: 'Join a guild to donate to its technology.' };
+  settle(w, g, w.t);
+  const e = dailyOf(w, g);
+  if (e.don >= DONATE.max) return { ok: false, err: `You have donated ${DONATE.max} times today.` };
+  const cost = donateCost(g);
+  if (!canAfford(g, cost)) return { ok: false, err: 'Not enough resources.' };
+  pay(g, cost);
+  const gd = w.guilds[g.guild];
+  for (const r in cost) gd.treasury[r] = (gd.treasury[r] || 0) + cost[r];
+  g.stats.contributed += costValue(cost);
+  g.inv.credits += DONATE.credits;
+  e.don++;
+  activity(w, g, 'donate');
+  return { ok: true, credits: DONATE.credits };
+}
+
+// ================================================================ Wheel of Fortune and Card King
+function actSpin(w, g, n) {
+  const ew = eventWindow(w, 'wheel');
+  if (!ew.open) return { ok: false, err: 'The Wheel of Fortune is closed.' };
+  n = n == null ? 1 : Number(n);
+  if (n !== 1 && n !== 10) return { ok: false, err: 'Spin once or ten times.' };
+  const e = dailyOf(w, g), s = winState(w, g, 'wheel'), f = featuredOf(w, 'wheel');
+  const free = !e.spin && n === 1;
+  const cost = free ? 0 : n === 10 ? WHEEL_COST * 9 : WHEEL_COST;
+  if (g.inv.gems < cost) return { ok: false, err: `That costs ${cost} gems.` };
+  if (free) e.spin = 1; else spendGems(w, g, cost);
+  const total = {}, slots = [];
+  for (let k = 0; k < n; k++) {
+    const rng = makeRng(hash32(w.seed, 'wheel', g.id, s.key, s.n++));
+    const p = pickWeighted(rng, WHEEL);
+    slots.push(WHEEL.indexOf(p));
+    addTo(total, withFeatured(p.rw, f));
+  }
+  give(w, g, total);
+  claimMilestones(w, g, s, WHEEL_MILESTONES, s.n, f, 'Wheel of Fortune');
+  return { ok: true, rw: total, slots, spins: s.n };
+}
+function cardBoard(w, g, s) {
+  const rng = makeRng(hash32(w.seed, 'cards', g.id, s.key, s.board));
+  const order = [0, 1, 2, 3, 4, 5];
+  for (let i = 5; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  return order;
+}
+function bits(x) { let n = 0; while (x) { n += x & 1; x >>= 1; } return n; }
+function actFlip(w, g, pos) {
+  const ew = eventWindow(w, 'cards');
+  if (!ew.open) return { ok: false, err: 'Card King is closed.' };
+  pos = Math.floor(Number(pos));
+  if (!(pos >= 0 && pos < 6)) return { ok: false, err: 'Choose a card.' };
+  const s = winState(w, g, 'cards'), f = featuredOf(w, 'cards');
+  if (s.flip & (1 << pos)) return { ok: false, err: 'That card is already face up.' };
+  const cost = CARD_COSTS[bits(s.flip)];
+  if (g.inv.gems < cost) return { ok: false, err: `This flip costs ${cost} gems.` };
+  spendGems(w, g, cost);
+  const card = CARDS[cardBoard(w, g, s)[pos]];
+  const rw = withFeatured(card, f);
+  give(w, g, rw);
+  s.flip |= 1 << pos;
+  let done = false;
+  if (s.flip === 63) { s.flip = 0; s.board++; done = true; claimMilestones(w, g, s, CARD_MILESTONES, s.board, f, 'Card King'); }
+  return { ok: true, rw, card: cardBoard(w, g, done ? { ...s, board: s.board - 1 } : s)[pos], boardDone: done };
+}
+
+// ================================================================ Arms Training
+function loharWave(k) {
+  const n = Math.round(2500 * Math.pow(1.22, k - 1));
+  const mixes = [{ inf: 0.5, arc: 0.5 }, { cav: 0.6, inf: 0.4 }, { arc: 0.6, cav: 0.4 }, { inf: 0.4, cav: 0.3, arc: 0.3 }];
+  const mix = mixes[(k - 1) % mixes.length], troops = { inf: 0, cav: 0, arc: 0, sie: 0 };
+  for (const u in mix) troops[u] = Math.round(n * mix[u]);
+  return { name: `Armsmaster Lohar, wave ${k}`, troops, level: k };
+}
+function actArms(w, g) {
+  const ew = eventWindow(w, 'arms');
+  if (!ew.open) return { ok: false, err: 'Arms Training is closed.' };
+  const e = dailyOf(w, g);
+  if (e.arms >= ARMS.attempts) return { ok: false, err: `You have trained ${ARMS.attempts} times today.` };
+  const ids = formationOf(g);
+  if (!ids.length) return { ok: false, err: 'You need a commander.' };
+  e.arms++;
+  const s = winState(w, g, 'arms');
+  const line = govLine(w, g, ids, { attack: true, field: true });
+  let cleared = 0;
+  const log = [];
+  for (let k = 1; k <= ARMS.waves; k++) {
+    const res = lineBattle(hash32(w.seed, 'arms', g.id, w.t, e.arms, k), line, neutralLine([loharWave(k)]), 'arms');
+    log.push({ wave: k, won: res.won, left: res.left.reduce((a, x) => a + troopsTotal(x.troops), 0) });
+    if (!res.won) break;
+    cleared = k;
+    // the survivors fight on; armies that fell stay down
+    line.splice(0, res.aIndex);
+  }
+  s.best = Math.max(s.best, cleared);
+  const got = claimMilestones(w, g, s, ARMS.milestones, s.best, null, 'Arms Training');
+  return { ok: true, waves: cleared, best: s.best, log, got };
+}
+
+// ================================================================ Ceroli Crisis
+// a raid of four: every member's strength comes from their commander and their governor's attack research
+function raidStrength(w, g, id) {
+  const r = g.cmds[id];
+  const m = techMods(g);
+  return (200 + r.lv * 30 + (r.sk[0] + r.sk[1] + r.sk[2] + r.sk[3]) * 40 + g.b.hall * 20) * (1 + (m.atk || 0));
+}
+function ceroliTeam(w, g, role, cmd) {
+  const pool = g.guild >= 0 ? w.guilds[g.guild].members.filter(id => id !== g.id) : [];
+  const near = pool.length >= 3 ? pool : w.govs.filter(x => x.id !== g.id && Math.abs(x.b.hall - g.b.hall) <= 3).map(x => x.id);
+  const mates = near.slice().sort((a, b) => Math.abs(w.govs[a].power - g.power) - Math.abs(w.govs[b].power - g.power) || a - b).slice(0, 3);
+  const team = [{ gov: g.id, role, cmd }];
+  const need = [];
+  if (role !== 'tank') need.push('tank');
+  if (role !== 'healer') need.push('healer');
+  while (need.length < 3) need.push('dps');
+  mates.forEach((id, k) => { const m = w.govs[id]; team.push({ gov: id, role: need[k], cmd: formationOf(m)[0] }); });
+  return team;
+}
+function ceroliRaid(w, team, diff, seed) {
+  const rng = makeRng(seed);
+  const bossMax = 60000 * Math.pow(1.7, diff - 1);
+  let boss = bossMax;
+  const m = team.map(x => {
+    const s = raidStrength(w, w.govs[x.gov], x.cmd);
+    const hp = s * 6 * (x.role === 'tank' ? 2.2 : 1);
+    return { ...x, s, hp, max: hp, dmg: 0 };
+  });
+  let round = 0;
+  for (round = 1; round <= CEROLI.rounds && boss > 0; round++) {
+    for (const x of m) if (x.hp > 0) { const d = x.s * (x.role === 'dps' ? 2.2 : x.role === 'tank' ? 0.8 : 0.5) * (0.9 + rng() * 0.2); boss -= d; x.dmg += d; }
+    if (boss <= 0) break;
+    const hit = 600 * Math.pow(1.5, diff - 1) * (1 + round * 0.08);
+    const tank = m.find(x => x.role === 'tank' && x.hp > 0);
+    const alive = m.filter(x => x.hp > 0);
+    if (!alive.length) break;
+    const target = tank || alive[Math.floor(rng() * alive.length)];
+    target.hp -= hit * (target === tank ? 0.5 : 1);
+    for (const hl of m) if (hl.role === 'healer' && hl.hp > 0) { const low = m.filter(x => x.hp > 0).sort((a, b) => a.hp / a.max - b.hp / b.max)[0]; if (low) low.hp = Math.min(low.max, low.hp + hl.s * 1.6); }
+    if (!m.some(x => x.hp > 0)) break;
+  }
+  const won = boss <= 0;
+  return { won, rounds: Math.min(round, CEROLI.rounds), bossMax: Math.round(bossMax), bossLeft: Math.max(0, Math.round(boss)), members: m.map(x => ({ gov: x.gov, role: x.role, cmd: x.cmd, dmg: Math.round(x.dmg), alive: x.hp > 0 })) };
+}
+function ceroliTokens(diff, dmgShare, won) { return Math.round(30 * diff * dmgShare * 4 + (won ? 40 * diff : 0)); }
+function actCeroli(w, g, o) {
+  const ew = eventWindow(w, 'ceroli');
+  if (!ew.open) return { ok: false, err: 'Ceroli Crisis is closed.' };
+  const e = dailyOf(w, g), s = winState(w, g, 'ceroli');
+  if (e.ce >= CEROLI.attempts) return { ok: false, err: `You have raided ${CEROLI.attempts} times today.` };
+  const role = String(o.role);
+  if (!own(CEROLI_ROLES, role)) return { ok: false, err: 'Choose Tank, Damage or Healer.' };
+  if (!own(g.cmds, o.cmd)) return { ok: false, err: 'Choose one of your commanders.' };
+  const diff = Math.floor(Number(o.diff) || 1);
+  if (!(diff >= 1 && diff <= s.unlocked)) return { ok: false, err: `Difficulty ${s.unlocked} is the highest you have unlocked.` };
+  e.ce++;
+  const team = ceroliTeam(w, g, role, o.cmd);
+  const res = ceroliRaid(w, team, diff, hash32(w.seed, 'ceroli', g.id, w.t, e.ce));
+  const total = res.members.reduce((a, x) => a + x.dmg, 0) || 1;
+  // every member of the raid is paid by the same rule
+  for (const x of res.members) give(w, w.govs[x.gov], { tokens: ceroliTokens(diff, x.dmg / total, res.won) });
+  const mine = ceroliTokens(diff, res.members[0].dmg / total, res.won);
+  if (res.won && diff === s.unlocked && s.unlocked < CEROLI.levels) s.unlocked++;
+  return { ok: true, ...res, tokens: mine, unlocked: s.unlocked, team: res.members.map(x => ({ ...x, name: w.govs[x.gov].name })) };
+}
+
+// ================================================================ the Shadow Legion Invasion
+function legionArmy(g, k) {
+  const target = troopPower(g.troops) * (0.25 + 0.12 * k);
+  const unit = (UNITS.inf.atk + UNITS.inf.def + UNITS.inf.hp + UNITS.cav.atk + UNITS.cav.def + UNITS.cav.hp + UNITS.arc.atk + UNITS.arc.def + UNITS.arc.hp) / 30;
+  const n = Math.max(30, Math.round(target / unit / 3));
+  return { inf: n, cav: n, arc: n, sie: 0 };
+}
+function legionTick(w) {
+  const ew = eventWindow(w, 'legion');
+  if (!ew.open) {
+    if (w.legion && !w.legion.paid && w.legion.wave >= LEGION.waves) legionRewards(w);
+    return;
+  }
+  if (!w.legion || w.legion.key !== ew.key) {
+    if (w.legion && !w.legion.paid) legionRewards(w);
+    w.legion = { key: ew.key, wave: 0, pts: {}, broken: {}, paid: false };
+    if (w.govs[PLAYER].guild >= 0) note(w, 'event', 'The Shadow Legion is marching on guild territory. Five waves strike every member\'s city inside it, ten minutes apart.', 3);
+  }
+  const L = w.legion;
+  while (L.wave < LEGION.waves && w.t >= ew.start + L.wave * LEGION.gap) legionWave(w, ++L.wave);
+  if (L.wave >= LEGION.waves && !L.paid) legionRewards(w);
+}
+function legionWave(w, k) {
+  const L = w.legion;
+  for (const g of w.govs) {
+    if (g.guild < 0 || L.broken[g.id] || w.guilds[g.guild].collapsed) continue;
+    const i = idx(g.x, g.y);
+    if (w.map.terr[i] !== g.guild + 1) continue;
+    if (troopsTotal(g.troops) < 50) { L.broken[g.id] = 1; continue; }
+    const busy = busyCommanders(w, g);
+    const cmd = g.defender && g.cmds[g.defender] && !busy.has(g.defender) ? g.defender : Object.keys(g.cmds).find(c => !busy.has(c)) || null;
+    const input = { seed: hash32(w.seed, 'legion', L.key, k, g.id), a: neutralSide(`Shadow Legion, wave ${k}`, legionArmy(g, k), 4 + 3 * k), d: armySide(w, g, g.troops, cmd, null, { defend: true, city: true, territory: true, terrain: w.map.ter[i] }, g.name + tagOf(w, g)), terrain: w.map.ter[i], wall: null, kind: 'legion' };
+    const res = fight(input);
+    w.stats.battles++;
+    // most of the city's fallen are only wounded
+    const dw = woundedSplit(res.d.lost, 0.85);
+    for (const u of UNIT_KEYS) g.troops[u] = res.d.end[u];
+    admitWounded(w, g, dw.wd);
+    g.stats.deaths += troopsTotal(dw.dead);
+    g.stats.kills += troopsTotal(res.a.lost);
+    const held = res.winner === 'd';
+    if (held) L.pts[g.id] = (L.pts[g.id] || 0) + 100 * k;
+    else L.broken[g.id] = 1;
+    if (g.human) report(w, { kind: 'battle', title: `${held ? 'Held' : 'Broken'}: Shadow Legion wave ${k}`, view: 'd', won: held, input, res, extra: { dWounded: dw.wd }, explain: explainBattle(input, res, 'd'), x: g.x, y: g.y });
+  }
+}
+function legionRewards(w) {
+  const L = w.legion;
+  L.paid = true;
+  const gpts = w.guilds.map(gd => gd.members.reduce((a, id) => a + (L.pts[id] || 0), 0));
+  const order = w.guilds.map(gd => gd.id).filter(gi => gpts[gi] > 0).sort((a, b) => gpts[b] - gpts[a] || a - b);
+  L.guilds = order.map(gi => ({ guild: gi, pts: gpts[gi] }));
+  for (const g of w.govs) {
+    const p = L.pts[g.id] || 0;
+    const total = {};
+    for (const r of LEGION_REWARDS) if (p >= r.at) addTo(total, r.rw);
+    if (g.guild >= 0 && gpts[g.guild] > 0) { const gr = order.indexOf(g.guild); addTo(total, { gems: gr === 0 ? 300 : gr < 3 ? 200 : 100 }); }
+    if (Object.keys(total).length) give(w, g, total);
+    if (g.human && (p > 0 || Object.keys(total).length)) note(w, 'event', `Shadow Legion over: you scored ${p} points${g.guild >= 0 ? `, your guild ${gpts[g.guild]}` : ''}. ${Object.keys(total).length ? 'Rewards: ' + rewardText(total) + '.' : ''}`, 3);
+  }
+  chronicle(w, 'legion', order.length ? `The Shadow Legion was driven off. ${w.guilds[order[0]].name} [${w.guilds[order[0]].tag}] held the most cities, with ${gpts[order[0]].toLocaleString('en-US')} points.` : 'The Shadow Legion swept through and found nobody inside guild territory to stop it.', { g: order.slice(0, 1), imp: 2 });
+}
+
+// ================================================================ barbarian forts (rally targets)
+function spawnFort(w, rng) {
+  const p = freeTileNear(w, CX, CY, N * 0.71, rng, { minR: 14, awayFromMarks: 4 });
+  if (!p) return null;
+  const z = zoneAt(w, p[0], p[1]);
+  const lv = clamp(z === 1 ? rng.int(1, 2) : z === 2 ? rng.int(2, 4) : rng.int(4, 5), 1, 5);
+  const base = 6000 * lv * Math.pow(1.6, lv - 1);
+  const camp = { id: w.nid++, x: p[0], y: p[1], lv, fort: true, troops: { inf: Math.round(base * 0.4), cav: Math.round(base * 0.3), arc: Math.round(base * 0.3), sie: 0 } };
+  camp.base = { ...camp.troops };
+  w.camps.push(camp);
+  camp.occ = OCC_CAMP + (camp.id % 9999);
+  w.map.occ[idx(camp.x, camp.y)] = camp.occ;
+  return camp;
+}
+function campDrop(lv) { return lv >= 4 ? { tome1: 2, speed5: 1 + Math.floor(lv / 3) } : { tome1: 1, speed5: 1 }; }
+function fortReward(lv) { return { tome2: lv, speed60: 1 + lv, speed15: 2 }; }
+function battleFort(w, m) {
+  const g = w.govs[m.owner];
+  const c = w.camps.find(x => x.id === m.target.id);
+  const parts = m.parts || [{ gov: g.id, troops: { ...m.troops }, c1: m.c1, c2: m.c2 }];
+  if (!c || idx(c.x, c.y) !== m.to) {
+    if (g.human) note(w, 'camp', 'The fort was gone when the rally arrived.', 1);
+    for (const p of splitParts(parts, m.troops, null)) partHome(w, m.to, p);
+    removeMarch(w, m);
+    return;
+  }
+  const terrain = w.map.ter[m.to];
+  const input = { seed: battleSeed(w), a: attackerSide(w, m, { attack: true, field: true, rally: true, terrain }), d: neutralSide(`Barbarian fort (level ${c.lv})`, c.troops, 4 + c.lv * 2), terrain, wall: null, kind: 'fort' };
+  const res = fight(input);
+  w.stats.battles++;
+  const aw = woundedSplit(res.a.lost, 0.75);
+  const won = res.winner === 'a';
+  c.lastHit = w.t;
+  if (won) {
+    w.camps.splice(w.camps.indexOf(c), 1);
+    if (w.map.occ[m.to] === c.occ) w.map.occ[m.to] = 0;
+    (w.fortRespawn || (w.fortRespawn = [])).push(w.t + 6 * HOUR);
+  } else for (const u of UNIT_KEYS) c.troops[u] = res.d.end[u];
+  const killed = troopsTotal(res.d.lost);
+  for (const p of parts) {
+    const pg = w.govs[p.gov];
+    pg.stats.kills += Math.round(killed / parts.length);
+    if (won) { pg.stats.wins++; give(w, pg, fortReward(c.lv)); if (pg.human) note(w, 'event', `The barbarian fort fell: ${rewardText(fortReward(c.lv))}.`, 2); }
+    else pg.stats.losses++;
+    if (p.c1) giveXp(w, pg, p.c1, killed * 0.4 / parts.length + (won ? 1500 * c.lv : 0));
+  }
+  recordBattle(w, m, g, null, input, res, { kind: 'rally on a fort', dName: `Barbarian fort (level ${c.lv})`, dGuild: -1, aw });
+  for (const p of splitParts(parts, res.a.end, aw.wd)) partHome(w, m.to, p);
+  removeMarch(w, m);
+}
+function regrowForts(w) {
+  // a fort's warriors return six hours after the last attack
+  for (const c of w.camps) if (c.fort && c.base && w.t - (c.lastHit || 0) > 6 * HOUR) c.troops = { ...c.base };
+  if (!w.fortRespawn || !w.fortRespawn.length) return;
+  const rng = makeRng(hash32(w.seed, 'fortspawn', w.t));
+  w.fortRespawn = w.fortRespawn.filter(t => { if (t <= w.t) { spawnFort(w, rng); return false; } return true; });
+}
+
+// ================================================================ the clock
+function eventsTick(w) {
+  legionTick(w);
+}
+function eventsDaily(w) {
+  canyonDaily(w);
+}
+
+// ================================================================ AI governors take part by the same rules
+function aiEvents(w, g) {
+  const e = dailyOf(w, g);
+  // daily chests and free tavern chests
+  const pts = dailyPoints(e);
+  DAILY_CHESTS.forEach((c, k) => { if (pts >= c.at && !(e.got & (1 << k))) actClaimDaily(w, g, k); });
+  if (chestFree(w, g, 'silver')) actOpenChest(w, g, 'silver', 1);
+  if (chestFree(w, g, 'gold')) actOpenChest(w, g, 'gold', 1);
+  if (g.inv.items.keyS) actOpenChest(w, g, 'silver', Math.min(50, g.inv.items.keyS));
+  if (g.inv.items.keyG) actOpenChest(w, g, 'gold', Math.min(50, g.inv.items.keyG));
+  if (g.inv.items.box) actUseItem(w, g, { id: 'box', n: g.inv.items.box });
+  // sculptures: recruit, then raise the best commander's skills
+  for (const id in g.inv.sc) if (own(CMD, id) && !g.cmds[id] && g.inv.sc[id] >= SC_RECRUIT) actRecruitSc(w, g, id);
+  const top = formationOf(g)[0];
+  if (top) {
+    const uni = CMD[top].rarity === 'epic' ? 'uniE' : 'uniL';
+    if (g.inv.sc[uni]) actConvertSc(w, g, top, g.inv.sc[uni]);
+    for (let k = 0; k < 4; k++) actSkillSc(w, g, top, k);
+    // tomes go to the best commander
+    for (const t of ['tome3', 'tome2', 'tome1']) if (g.inv.items[t] && g.cmds[top].lv < CMD_MAX_LEVEL) actUseItem(w, g, { id: t, cmd: top, n: g.inv.items[t] });
+  }
+  // speedups on a long building upgrade
+  if (g.q.build && g.q.build.end - w.t > 60) for (const s of ['speed480', 'speed180', 'speed60', 'speed15', 'speed5']) if (g.inv.items[s] && g.q.build && g.q.build.end - w.t >= ITEMS[s].min) actUseItem(w, g, { id: s, q: 'build', n: Math.min(g.inv.items[s], Math.floor((g.q.build.end - w.t) / ITEMS[s].min)) });
+  for (const c of ['crateFood', 'crateWood', 'crateStone', 'crateIron', 'crateGold']) if (g.inv.items[c]) actUseItem(w, g, { id: c, n: g.inv.items[c] });
+  // guild duties
+  if (g.guild >= 0) {
+    if (rnd(w) < 0.3 + g.t.loyal * 0.6) actHelpAll(w, g);
+    if (e.don < 3 + Math.round(g.t.loyal * 12) && g.res.food > 40000 && g.res.wood > 40000 && g.res.gold > 4000) actDonate(w, g);
+  }
+  // Sunset Canyon: the opponent whose commanders look weakest
+  if (e.cy < CANYON.attempts && rnd(w) < 0.1 + g.t.activity * 0.25) {
+    const ch = canyonChoices(w, g);
+    let best = null, bv = Infinity;
+    for (const id of ch) { const v = lineStrength(w.govs[id]); if (v < bv) { bv = v; best = id; } }
+    if (best != null) actCanyon(w, g, best);
+  }
+  if (e.ex < 2 && g.exp.st < EXPEDITION.stages && rnd(w) < 0.2 + g.t.activity * 0.4) actExpedition(w, g);
+  // shops
+  if (medalsNow(w, g) >= 300) { for (const it of ['scBoudica', 'tome2', 'speed60']) actBuy(w, g, 'expedition', it, 1); }
+  if (g.inv.tokens >= 150) actBuy(w, g, 'ceroli', 'scUniE', 1);
+  if (g.inv.credits >= 400) actBuy(w, g, 'guild', 'speed60', 1);
+  // event windows
+  if (!e.spin && eventWindow(w, 'wheel').open) actSpin(w, g, 1);
+  if (!e.arms && eventWindow(w, 'arms').open && rnd(w) < 0.3 + g.t.activity * 0.4) actArms(w, g);
+  if (!e.ce && eventWindow(w, 'ceroli').open && top && rnd(w) < 0.2 + g.t.activity * 0.4) { const s = winState(w, g, 'ceroli'); actCeroli(w, g, { role: 'dps', cmd: top, diff: s.unlocked }); }
+}
+// guild leaders and officers rally on barbarian forts when the guild has nothing else under way
+function aiFortRally(w, gd) {
+  if (w.rallies.some(r => r.guild === gd.id && r.state !== 'done')) return;
+  const leads = [gd.leader, ...gd.officers].map(id => w.govs[id]).filter(g => g && !g.human && g.guild === gd.id);
+  for (const g of leads) {
+    if (apNow(w, g) < FORT_AP) continue;
+    const reach = reachMaskOf(w, g);
+    let best = null, bd = Infinity;
+    for (const c of w.camps) {
+      if (!c.fort) continue;
+      const d = dist(g.x, g.y, c.x, c.y);
+      if (d > 45 || !inReach(w, reach, idx(c.x, c.y))) continue;
+      if (d + c.lv * 6 < bd) { bd = d + c.lv * 6; best = c; }
+    }
+    if (!best) continue;
+    const army = pickArmy(w, g, 0.7, best.troops);
+    if (!army) continue;
+    let help = 0;
+    for (const id of gd.members) { const mg = w.govs[id]; if (id !== g.id && dist(mg.x, mg.y, g.x, g.y) < 50) help += troopPower(mg.troops) * 0.25 * mg.t.loyal; }
+    if (troopPower(army.troops) + help < troopPower(best.troops) * (1 + best.lv * 0.05) * lerp(1.6, 1.15, g.t.risk)) continue;
+    const r = startRally(w, g, { to: idx(best.x, best.y), troops: army.troops, c1: army.c1, c2: army.c2, wait: 30 });
+    if (r.ok) { decide(w, g, 'rally', `Called the guild to rally on a level ${best.lv} barbarian fort.`, 'guild'); return; }
+  }
+}
+
+// ================================================================ views and commands
+function eventsView(w) {
+  const P = w.govs[PLAYER];
+  const e = dailyOf(w, P);
+  const pts = dailyPoints(e);
+  const rank = canyonRanks(w);
+  const r = rank.indexOf(P.id);
+  const windows = {};
+  for (const id in EVENT_CAL) {
+    const ew = eventWindow(w, id);
+    windows[id] = { ...ew, name: EVENT_CAL[id].name, text: EVENT_CAL[id].text };
+  }
+  const wheel = winState(w, P, 'wheel'), cards = winState(w, P, 'cards'), mtg = winState(w, P, 'mtg'), arms = winState(w, P, 'arms'), ceroli = winState(w, P, 'ceroli');
+  const st = P.exp.st < EXPEDITION.stages ? expStage(P.exp.st) : null;
+  const cmdLine = g => formationOf(g).map(id => ({ id, lv: g.cmds[id].lv }));
+  return {
+    t: w.t, day: day(w),
+    ap: Math.floor(apNow(w, P)), apMax: AP_MAX, apEvery: AP_EVERY,
+    inv: JSON.parse(JSON.stringify(P.inv)),
+    daily: { pts, got: e.got, tasks: DAILY_TASKS.map(t => ({ k: t.k, name: t.name, pts: Math.min(t.max, Math.floor((e.cnt[t.k] || 0) / (t.per || 1)) * t.pts), max: t.max, each: t.pts, per: t.per || 1 })), chests: DAILY_CHESTS.map((c, k) => ({ at: c.at, rw: c.rw, got: !!(e.got & (1 << k)), ready: pts >= c.at })), resets: (e.d + 1) * DAY },
+    tavern: { silver: { free: chestFree(w, P, 'silver'), keys: P.inv.items.keyS || 0 }, gold: { free: chestFree(w, P, 'gold'), keys: P.inv.items.keyG || 0, next: (P.evp.freeG + CHESTS.gold.every) * DAY } },
+    canyon: { rank: r + 1, of: rank.length, left: CANYON.attempts - e.cy, formation: formationOf(P), custom: (P.cf || []).length > 0,
+      choices: canyonChoices(w, P).map(id => { const d = w.govs[id]; return { id, name: d.name, rank: rank.indexOf(id) + 1, power: d.power, line: cmdLine(d) }; }),
+      top: rank.slice(0, 10).map((id, k) => ({ id, rank: k + 1, name: w.govs[id].name, guild: w.govs[id].guild })), reward: canyonReward(r), log: (w.canyon.log || []).slice(-8).reverse() },
+    expedition: { stage: P.exp.st, of: EXPEDITION.stages, left: EXPEDITION.attempts - e.ex, medals: Math.floor(medalsNow(w, P)), rate: EXPEDITION.medals * P.exp.st, next: st },
+    guild: P.guild >= 0 ? { requests: helpRequests(w, P), donated: e.don, donateMax: DONATE.max, donateCost: donateCost(P), helpsPaid: Math.max(0, HELP.paid - e.helpN), mine: HELP_KINDS.filter(k => P.q[k]).map(k => ({ kind: k, helps: P.q[k].hp ? P.q[k].hp.length : 0, max: HELP.max })) } : null,
+    shops: Object.keys(SHOPS).map(id => ({ id, name: SHOPS[id].name, cur: SHOPS[id].cur, items: SHOPS[id].items.map(it => ({ id: it.id, rw: it.rw, cost: it.cost, left: it.limit - (e.buy[id + ':' + it.id] || 0) })) })),
+    windows,
+    wheel: { featured: featuredOf(w, 'wheel'), spins: wheel.n, free: !e.spin, cost: WHEEL_COST, slots: WHEEL.map(s => withFeatured(s.rw, featuredOf(w, 'wheel'))), milestones: WHEEL_MILESTONES.map((m, k) => ({ at: m.at, rw: withFeatured(m.rw, featuredOf(w, 'wheel')), got: !!(wheel.got & (1 << k)) })) },
+    cards: { featured: featuredOf(w, 'cards'), board: cards.board, flipped: [0, 1, 2, 3, 4, 5].map(k => (cards.flip & (1 << k)) ? withFeatured(CARDS[cardBoard(w, P, cards)[k]], featuredOf(w, 'cards')) : null), cost: CARD_COSTS[bits(cards.flip)] ?? 0, milestones: CARD_MILESTONES.map((m, k) => ({ at: m.at, rw: withFeatured(m.rw, featuredOf(w, 'cards')), got: !!(cards.got & (1 << k)) })) },
+    mtg: { spent: mtg.spent, milestones: MTG.map((m, k) => ({ at: m.at, rw: m.rw, got: !!(mtg.got & (1 << k)) })) },
+    arms: { left: ARMS.attempts - e.arms, best: arms.best, milestones: ARMS.milestones.map((m, k) => ({ at: m.at, rw: m.rw, got: !!(arms.got & (1 << k)) })), first: loharWave(1) },
+    ceroli: { left: CEROLI.attempts - e.ce, unlocked: ceroli.unlocked, levels: CEROLI.levels, roles: CEROLI_ROLES, boss: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(d => Math.round(60000 * Math.pow(1.7, d - 1))) },
+    legion: w.legion ? { wave: w.legion.wave, pts: w.legion.pts[PLAYER] || 0, broken: !!w.legion.broken[PLAYER], guilds: (w.legion.guilds || []).map(x => ({ ...x, name: w.guilds[x.guild].name })) } : null,
+    inTerritory: P.guild >= 0 && w.map.terr[idx(P.x, P.y)] === P.guild + 1,
+    recruit: SC_RECRUIT,
+  };
+}
+// a small summary for every frame: action points, gems and how many rewards wait to be claimed
+function eventsBadge(w, P) {
+  const e = dailyOf(w, P);
+  const pts = dailyPoints(e);
+  let n = 0;
+  DAILY_CHESTS.forEach((c, k) => { if (pts >= c.at && !(e.got & (1 << k))) n++; });
+  if (chestFree(w, P, 'silver')) n++;
+  if (chestFree(w, P, 'gold')) n++;
+  if (eventWindow(w, 'wheel').open && !e.spin) n++;
+  return { ap: Math.floor(apNow(w, P)), apMax: AP_MAX, gems: P.inv.gems, ready: n, pts, help: helpRequests(w, P).length, tele: P.inv.items.tele || 0 };
+}
+function eventCommand(w, P, a) {
+  switch (a.type) {
+    case 'ev:daily': return actClaimDaily(w, P, Math.floor(Number(a.k)));
+    case 'ev:use': return actUseItem(w, P, { id: String(a.id), n: a.n, q: a.q, unit: a.unit, cmd: a.cmd });
+    case 'ev:chest': return actOpenChest(w, P, String(a.kind), a.n);
+    case 'ev:recruit': return actRecruitSc(w, P, String(a.cmd));
+    case 'ev:skill': return actSkillSc(w, P, String(a.cmd), a.skill);
+    case 'ev:convert': return actConvertSc(w, P, String(a.cmd), a.n);
+    case 'ev:buy': return actBuy(w, P, String(a.shop), String(a.id), a.n);
+    case 'ev:formation': {
+      if (!Array.isArray(a.cmds) || a.cmds.length > CANYON.size) return { ok: false, err: `Choose up to ${CANYON.size} commanders.` };
+      const f = [];
+      for (const id of a.cmds) { if (!own(P.cmds, id)) return { ok: false, err: 'You do not have that commander.' }; if (!f.includes(id)) f.push(id); }
+      P.cf = f;
+      return { ok: true };
+    }
+    case 'ev:canyon': return actCanyon(w, P, Math.floor(Number(a.target)));
+    case 'ev:expedition': return actExpedition(w, P);
+    case 'ev:help': return actHelpAll(w, P);
+    case 'ev:donate': return actDonate(w, P);
+    case 'ev:spin': return actSpin(w, P, a.n);
+    case 'ev:flip': return actFlip(w, P, a.pos);
+    case 'ev:arms': return actArms(w, P);
+    case 'ev:ceroli': return actCeroli(w, P, { role: a.role, cmd: a.cmd, diff: a.diff });
+  }
+  return { ok: false, err: 'Unknown command.' };
+}
+
 /* ----- conquest/api.js ----- */
 /* Age of Conquest actions, player commands, views, saves and the server loop. Every action validates its input and
    is shared by the AI and the player, so both play by the same rules. Views only show the player what they have
@@ -4912,7 +6023,7 @@ function actShield(w, g) {
   return { ok: true };
 }
 function relocateCost(g) { return g.freeMoveUsed || g.guild >= 0 ? 800 * g.b.hall : 0; }
-function actRelocate(w, g, x, y, isAi) {
+function actRelocate(w, g, x, y, isAi, tele) {
   x = Math.floor(Number(x)); y = Math.floor(Number(y));
   if (!inMap(x, y) || x < 2 || y < 2 || x > N - 3 || y > N - 3) return { ok: false, err: 'That is off the map.' };
   const i = idx(x, y);
@@ -4927,9 +6038,11 @@ function actRelocate(w, g, x, y, isAi) {
   if (!isAi && !w.explored[i]) return { ok: false, err: 'You can only move to land you have explored.' };
   if (w.marches.some(m => m.owner === g.id && m.kind !== 'scout')) return { ok: false, err: 'Bring every army home before moving the city.' };
   settle(w, g, w.t);
-  const cost = { gold: relocateCost(g) };
+  if (tele && !(g.inv.items.tele > 0)) return { ok: false, err: 'You have no Teleport.' };
+  const cost = { gold: tele ? 0 : relocateCost(g) };
   if (!canAfford(g, cost)) return { ok: false, err: `Moving costs ${cost.gold.toLocaleString('en-US')} Gold.` };
   pay(g, cost);
+  if (tele) { g.inv.items.tele--; if (!g.inv.items.tele) delete g.inv.items.tele; }
   if (!cost.gold) g.freeMoveUsed = true;
   relocate(w, g, x, y);
   g.freeMoveUsed = true;
@@ -5017,6 +6130,7 @@ function playerCommandRaw(w, cmd, opts) {
   if (!cmd || typeof cmd !== 'object' || typeof cmd.type !== 'string') return { ok: false, err: 'Bad command.' };
   settle(w, P, w.t);
   const a = cmd;
+  if (a.type.startsWith('ev:')) return eventCommand(w, P, a);
   switch (a.type) {
     case 'free': return actFree(w, P, String(a.q), String(a.unit || ''));
     case 'collect': return actCollect(w, P, String(a.id));
@@ -5030,7 +6144,7 @@ function playerCommandRaw(w, cmd, opts) {
     }
     case 'trade': return actTrade(w, P, a.sell, a.buy, a.amount);
     case 'shield': return actShield(w, P);
-    case 'relocate': return actRelocate(w, P, a.x, a.y, false);
+    case 'relocate': return actRelocate(w, P, a.x, a.y, false, a.item === 'tele');
     case 'exchange': return actExchange(w, P);
     case 'march': {
       const kind = String(a.kind);
@@ -5051,6 +6165,8 @@ function playerCommandRaw(w, cmd, opts) {
         r.state = 'done';
         return { ok: true };
       }
+      // a camp attack called back before it arrives returns its action points
+      if (m.ap && m.kind === 'attack' && m.state === 'out') { settleAp(w, P); P.ap += m.ap; m.ap = 0; }
       sendHome(w, m);
       return { ok: true };
     }
@@ -5257,6 +6373,8 @@ function devCommand(w, a) {
     case 'dev:shield': P.shield = w.t + 7 * DAY; return { ok: true };
     case 'dev:unlimited': w.devSw.unlimited = !!a.on; if (w.devSw.unlimited) devRefill(w); return { ok: true };
     case 'dev:instant': w.devSw.instant = !!a.on; if (w.devSw.instant) devFinishNow(w); return { ok: true };
+    case 'dev:events': w.devSw.events = !!a.on; return { ok: true };
+    case 'dev:items': give(w, P, { gems: 50000, keyS: 20, keyG: 10, speed60: 20, tome2: 20, ap200: 10, 'sc:uniL': 20, 'sc:uniE': 20 }); settleAp(w, P); P.ap = Math.max(P.ap, AP_MAX); return { ok: true };
     default: return { ok: false, err: 'Unknown developer command.' };
   }
 }
@@ -5325,7 +6443,7 @@ function frameView(w, since) {
   }
   // battles seen in the last few game minutes flash on the map
   out.fights = w.battles.filter(b => w.t - b.t <= 8 && (b.seen || b.a === PLAYER || b.d === PLAYER)).map(b => ({ x: b.x, y: b.y, t: b.t }));
-  out.camps = w.camps.filter(c => ex[idx(c.x, c.y)]).map(c => ({ id: c.id, x: c.x, y: c.y, lv: c.lv }));
+  out.camps = w.camps.filter(c => ex[idx(c.x, c.y)]).map(c => ({ id: c.id, x: c.x, y: c.y, lv: c.lv, fort: !!c.fort }));
   out.nodes = w.nodes.filter(n => ex[idx(n.x, n.y)]).map(n => ({ id: n.id, x: n.x, y: n.y, res: n.res, lv: n.lv, amount: vis[idx(n.x, n.y)] ? n.amount : null, max: n.max, busy: !!n.by && vis[idx(n.x, n.y)] >= 2 }));
   out.marks = w.marks.map(mk => ({ id: mk.id, kind: mk.kind, name: mk.name, x: mk.x, y: mk.y, owner: mk.owner, since: mk.since, level: mk.level, tier: mk.tier || 0, known: !!ex[idx(mk.x, mk.y)], cleared: (mk.cleared || []).includes(PLAYER), region: mk.region, opens: mk.opens, site: mk.site || null, blessing: mk.blessing || null, gate: mk.gate ?? null, links: mk.links || null }));
   out.guilds = w.guilds.map(gd => guildBrief(w, gd));
@@ -5334,6 +6452,7 @@ function frameView(w, since) {
   out.quests = QUESTS.map(q => { const [a, b] = q.prog(P); return { id: q.id, ch: q.ch, chapter: CHAPTERS[q.ch], text: q.text, how: q.how, reward: q.reward, prog: [Math.min(a, b), b], done: a >= b, claimed: !!w.quests.claimed[q.id] }; });
   out.crates = crateView(w, P);
   out.devSw = { ...w.devSw };
+  out.ev = eventsBadge(w, P);
   out.unread = w.reports.filter(r => !r.read).length;
   if (P.guild >= 0 && w.guilds[P.guild].leader === PLAYER) { const gd = w.guilds[P.guild]; out.proposals = gd.proposals.map(p => ({ ...p, fromName: w.guilds[p.from].name })); out.applicants = gd.applicants.map(id => publicGov(w, w.govs[id])); }
   out.ages = w.ages.slice();
@@ -5479,7 +6598,7 @@ function tileView(w, i) {
   const t = tileTarget(w, i);
   out.target = t;
   if (t?.type === 'city') out.city = inspect(w, t.id);
-  if (t?.type === 'camp') { const c = w.camps.find(x => x.id === t.id); out.camp = { id: c.id, lv: c.lv, troops: { ...c.troops }, reserved: c.reserved === PLAYER && w.t < c.until ? c.until : null }; }
+  if (t?.type === 'camp') { const c = w.camps.find(x => x.id === t.id); out.camp = { id: c.id, lv: c.lv, fort: !!c.fort, troops: { ...c.troops }, reserved: c.reserved === PLAYER && w.t < c.until ? c.until : null }; }
   if (t?.type === 'node') { const n = nodeById(w, t.id); out.node = { id: n.id, res: n.res, lv: n.lv, amount: out.visible ? n.amount : null, max: n.max, busy: !!n.by && out.visible, byName: n.by && out.visible ? w.govs[w.marches.find(m => m.id === n.by)?.owner]?.name : null }; }
   if (t?.type === 'mark') {
     const mk = w.marks[t.id];
@@ -5555,9 +6674,11 @@ function deserialize(json) {
   w.explored = rleDecode(w.exploredRle, N2);
   delete w.exploredRle;
   for (const g of w.govs) if (g.human) g.next = Infinity;
+  if (w.needForts) { delete w.needForts; const frng = makeRng(hash32(w.seed, 'forts')); for (let k = 0; k < FORTS; k++) spawnFort(w, frng); }
   rebuildBuckets(w);
   recomputeTerritory(w);
   updatePlayerVision(w);
+  canyonRanks(w);
   const problems = validateWorld(w);
   if (problems.length) return { ok: false, err: 'The save failed its checks: ' + problems.slice(0, 3).join('; '), problems };
   return { ok: true, world: w };
@@ -5570,6 +6691,9 @@ function migrate(w, v) {
   if (!w.devSw) w.devSw = { unlimited: false, instant: false };
   for (const g of w.govs || []) if (!g.crate) g.crate = {};
   if (v < 3) replaceCommanders(w);
+  // schema 4: events, items and action points start fresh for every governor; forts are placed on the next load
+  for (const g of w.govs || []) if (!g.inv) initEvents(w, g);
+  if (v < 4) w.needForts = true;
 }
 // schema 3: seven commanders without paintings left the game; each save's copies become the commander who replaced them
 function replaceCommanders(w) {
@@ -5642,6 +6766,12 @@ function validateWorld(w) {
     for (const b in g.b) if (!(g.b[b] >= 0 && g.b[b] <= MAX_LEVEL) || (b !== 'hall' && g.b[b] > g.b.hall)) p.push(`governor ${i} building ${b} level ${g.b[b]} is out of range`);
     for (const t in g.tech) if (!(g.tech[t] >= 0 && g.tech[t] <= TECH_MAX)) p.push(`governor ${i} tech ${t} out of range`);
     for (const c in g.cmds) if (!CMD[c]) p.push(`governor ${i} has an unknown commander ${c}`);
+    if (!g.inv || !(g.inv.gems >= 0) || !(g.inv.credits >= 0) || !(g.inv.tokens >= 0)) p.push(`governor ${i} has a bad purse`);
+    else {
+      for (const k in g.inv.items) if (!own(ITEMS, k) || !(g.inv.items[k] >= 0)) p.push(`governor ${i} has a bad item ${k}`);
+      for (const k in g.inv.sc) if ((!own(CMD, k) && k !== 'uniE' && k !== 'uniL') || !(g.inv.sc[k] >= 0)) p.push(`governor ${i} has bad sculptures ${k}`);
+    }
+    if (!(g.ap >= 0)) p.push(`governor ${i} has bad action points`);
     const key = g.x + ',' + g.y;
     if (seenTile.has(key)) p.push(`two cities share tile ${key}`);
     seenTile.add(key);
@@ -5741,6 +6871,7 @@ function createServer(host) {
               case 'quote': res = { got: tradeQuote(S.w, S.w.govs[PLAYER], a.sell, a.buy, Math.max(0, Math.floor(Number(a.amount) || 0))), price: { ...S.w.market.price } }; break;
               case 'achievements': { const P = S.w.govs[PLAYER]; res = ACHIEVEMENTS.map(x => ({ id: x.id, name: x.name, text: x.text, done: !!x.check(P) })); break; }
               case 'exchange': res = exchangeCheck(S.w, S.w.govs[PLAYER]); break;
+              case 'events': res = eventsView(S.w); break;
               case 'diag': res = diagnostics(S.w); break;
               case 'validate': res = validateWorld(S.w); break;
               default: res = null;
@@ -5786,7 +6917,7 @@ function diagnostics(w) {
   };
 }
 
-root.AOC = { RES, RES_NAME, RES_VALUE, UNITS, UNIT_KEYS, COUNTER, TERRAIN, T, BUILDINGS, BUILDING_KEYS, TECHS, TECH_KEYS, TECH_MAX, CIVS, CIV, COMMANDERS, CMD, SYNERGY, TALENT_STATS, TALENT_NAME, RECRUIT, ARCHETYPES, SERVER, GUILD_MAX, GUILD_COUNT, GOVERNORS, OFFICERS_MAX, THRONE_OPENS, THRONE_HOLD, EXCHANGE, SHIELD, NEWCOMER_SHIELD, MAP_N, HOUR, DAY, MAX_LEVEL, CMD_MAX_LEVEL, CMD_REPLACED, ULTIMATE_LEVEL, GUILD_TECH, QUESTS, CHAPTERS, ACHIEVEMENTS, PLAYER, SCHEMA, EVENTS, ROLE_NAME, FREE_FINISH, CRATE, ZONES, REGIONS, PASS_LEVELS, SITES, BLESSINGS, GATES, ALL_GATES, buildingCost, buildingMinutes, buildingReq, productionAt, BASE_PRODUCTION, protectedAmount, protectedStock, affordable, hospitalCap, wallDurability, visionRadius, marchCapacity, marchSlots, techCost, techMinutes, cmdXpToNext, skillCost, clock, roman, troopsTotal, troopPower, createWorld, createServer, step, advance, serialize, deserialize, validateWorld, playerCommand, frameView, inspect, guildDetail, rankings, chronicleView, historyView, tileView, diagnostics, fight, explainBattle, findPath, pathCost, settle, production, cityMods, upkeepPerHour, computePower, armySide, neutralSide, startMarch, startRally, joinRally, actBuild, buildCheck, actFree, freeCheck, actCollect, crateCheck, actResearch, researchCheck, actTrain, trainCheck, actHeal, actTrade, actShield, actRelocate, actContribute, applyToGuild, joinGuild, leaveGuild, declareWar, makePeace, treaty, setTreaty, succession, collapseGuild, refoundGuild, thinkGuild, think, scoutAccuracy, intelOn, garrisonOf, marchPos, makeRng, hash32, generateTerrain, recomputeTerritory, updatePlayerVision, idx, tx, ty, rleEncode, rleDecode, PF, projectRes, tierOf, marchCap, marchSpeed, checkRecruits, giveXp, endAge, dist, tileTarget, busyCommanders, regionAt, zoneAt, zoneOfRegion, regionCenter, edgeDist, gateAccess, regionsReachable, canReach, reachMaskOf, inReach, blessingMods, planObjective };
+root.AOC = { RES, RES_NAME, RES_VALUE, UNITS, UNIT_KEYS, COUNTER, TERRAIN, T, BUILDINGS, BUILDING_KEYS, TECHS, TECH_KEYS, TECH_MAX, CIVS, CIV, COMMANDERS, CMD, SYNERGY, TALENT_STATS, TALENT_NAME, RECRUIT, ARCHETYPES, SERVER, GUILD_MAX, GUILD_COUNT, GOVERNORS, OFFICERS_MAX, THRONE_OPENS, THRONE_HOLD, EXCHANGE, SHIELD, NEWCOMER_SHIELD, MAP_N, HOUR, DAY, MAX_LEVEL, CMD_MAX_LEVEL, CMD_REPLACED, ULTIMATE_LEVEL, GUILD_TECH, QUESTS, CHAPTERS, ACHIEVEMENTS, PLAYER, SCHEMA, EVENTS, ROLE_NAME, FREE_FINISH, CRATE, ZONES, REGIONS, PASS_LEVELS, SITES, BLESSINGS, GATES, ALL_GATES, buildingCost, buildingMinutes, buildingReq, productionAt, BASE_PRODUCTION, protectedAmount, protectedStock, affordable, hospitalCap, wallDurability, visionRadius, marchCapacity, marchSlots, techCost, techMinutes, cmdXpToNext, skillCost, clock, roman, troopsTotal, troopPower, createWorld, createServer, step, advance, serialize, deserialize, validateWorld, playerCommand, frameView, inspect, guildDetail, rankings, chronicleView, historyView, tileView, diagnostics, fight, explainBattle, findPath, pathCost, settle, production, cityMods, upkeepPerHour, computePower, armySide, neutralSide, startMarch, startRally, joinRally, actBuild, buildCheck, actFree, freeCheck, actCollect, crateCheck, actResearch, researchCheck, actTrain, trainCheck, actHeal, actTrade, actShield, actRelocate, actContribute, applyToGuild, joinGuild, leaveGuild, declareWar, makePeace, treaty, setTreaty, succession, collapseGuild, refoundGuild, thinkGuild, think, scoutAccuracy, intelOn, garrisonOf, marchPos, makeRng, hash32, generateTerrain, recomputeTerritory, updatePlayerVision, idx, tx, ty, rleEncode, rleDecode, PF, projectRes, tierOf, marchCap, marchSpeed, checkRecruits, giveXp, endAge, dist, tileTarget, busyCommanders, regionAt, zoneAt, zoneOfRegion, regionCenter, edgeDist, gateAccess, regionsReachable, canReach, reachMaskOf, inReach, blessingMods, planObjective, AP_MAX, AP_EVERY, FORT_AP, FORTS, campAp, ITEMS, ITEM_KEYS, SC_RECRUIT, scSkillCost, DAILY_TASKS, DAILY_CHESTS, CHESTS, SHOPS, EVENT_CAL, FEATURED, WHEEL, WHEEL_COST, CARD_COSTS, CARDS, MTG, ARMS, CEROLI, CEROLI_ROLES, LEGION, CANYON, EXPEDITION, HELP, DONATE, EPICS, LEGENDS, apNow, spendAp, give, rewardName, rewardText, dailyOf, dailyPoints, activity, eventWindow, winState, featuredOf, actClaimDaily, actUseItem, actOpenChest, chestFree, actRecruitSc, actSkillSc, actConvertSc, actBuy, spendGems, formationOf, formationArmy, lineBattle, canyonRanks, canyonChoices, actCanyon, canyonDaily, expStage, medalsNow, actExpedition, helpRequests, actHelpAll, donateCost, actDonate, actSpin, actFlip, cardBoard, loharWave, actArms, ceroliRaid, ceroliTeam, actCeroli, legionTick, legionArmy, spawnFort, battleFort, campDrop, fortReward, aiEvents, aiFortRally, eventsView, eventsBadge };
 })(typeof self !== 'undefined' ? self : globalThis);
 
 </script>
@@ -6396,7 +7527,7 @@ U.go = (id, arg) => {
   const root = document.getElementById('aoc');
   for (const [sid, def] of screens) { if (def.el) def.el.hidden = sid !== id; }
   root.querySelectorAll('.aoc-tab').forEach(b => b.setAttribute('aria-current', b.dataset.tab === id ? 'page' : 'false'));
-  if (!s.el) { s.el = el(`<section class="aoc-screen aoc-screen-${id}" aria-label="${esc(TABS.find(t => t.id === id)?.label || id)}"></section>`); root.querySelector('.aoc-screens').appendChild(s.el); s.mount?.(s.el); }
+  if (!s.el) { s.el = el(`<section class="aoc-screen aoc-screen-${id}" aria-label="${esc(TABS.find(t => t.id === id)?.label || id[0].toUpperCase() + id.slice(1))}"></section>`); root.querySelector('.aoc-screens').appendChild(s.el); s.mount?.(s.el); }
   s.el.hidden = false;
   const prev = U.current;
   U.current = id;
@@ -6695,7 +7826,7 @@ U.goQuest = id => {
     case 'warehouse': return city('warehouse');
     case 'train': U.closeSheets(); U.go('city'); return setTimeout(() => { U.home.focus('barracks', true); U.trainSheet('inf'); }, 60);
     case 'research': return P.b.academy > 0 ? (U.closeSheets(), U.cityPanel('research')) : city(P.b.hall >= A.BUILDINGS.academy.needHall ? 'academy' : 'hall');
-    case 'scout': case 'camp': case 'wins5': { const c = near(f.camps.filter(x => x.lv <= Math.max(1, Math.ceil(P.b.hall / 2)))) || near(f.camps); if (c) { U.closeSheets(); U.mapFocus(c.x, c.y, 14); setTimeout(() => U.openTile(c.y * A.MAP_N + c.x), 120); } else U.go('map'); return; }
+    case 'scout': case 'camp': case 'wins5': { const c = near(f.camps.filter(x => !x.fort && x.lv <= Math.max(1, Math.ceil(P.b.hall / 2)))) || near(f.camps.filter(x => !x.fort)); if (c) { U.closeSheets(); U.mapFocus(c.x, c.y, 14); setTimeout(() => U.openTile(c.y * A.MAP_N + c.x), 120); } else U.go('map'); return; }
     case 'gather': { const n = near(f.nodes.filter(x => !x.busy)); if (n) { U.closeSheets(); U.mapFocus(n.x, n.y, 14); setTimeout(() => U.openTile(n.y * A.MAP_N + n.x), 120); } else U.go('map'); return; }
     case 'guild': case 'rally': U.closeSheets(); return U.go('guild');
     default: return U.go('city');
@@ -7987,6 +9118,9 @@ function refreshDom(f) {
     if (cmdBtn) U.badge(cmdBtn.querySelector('.aoc-badge'), 0);
     const dev = side.querySelector('[data-side="dev"]');
     if (dev) dev.hidden = !U.dev;
+    U.badge(side.querySelector('[data-side="events"] .aoc-badge'), f.ev ? f.ev.ready : 0);
+    const help = side.querySelector('[data-side="help"]');
+    if (help) { help.hidden = !(f.ev && f.ev.help); U.badge(help.querySelector('.aoc-badge'), f.ev ? f.ev.help : 0); }
   }
 }
 // a number floating up from where something was collected
@@ -8026,6 +9160,9 @@ async function onTown(e) {
   if (side === 'goals') U.cityPanel('goals');
   if (side === 'guild') U.go('guild');
   if (side === 'cmds') U.go('army', 'cmds');
+  if (side === 'events') U.openEvents();
+  if (side === 'items') U.openEvents('items');
+  if (side === 'help') { const r = await U.run({ type: 'ev:help' }); if (r) U.toast(`You helped ${r.n} time${r.n === 1 ? '' : 's'}${r.credits ? ` (+${r.credits} guild credits)` : ''}.`, 'good'); }
   if (side === 'dev') U.devPanel?.();
 }
 async function freeFinish(kind, id) {
@@ -8196,6 +9333,9 @@ function mount(root) {
         <button type="button" class="aoc-sidebtn" data-side="goals"><span class="aoc-sidebtn-i">${U.icon('chest', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Goals</span></button>
         <button type="button" class="aoc-sidebtn" data-side="guild"><span class="aoc-sidebtn-i">${U.icon('guild', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Guild</span></button>
         <button type="button" class="aoc-sidebtn" data-side="cmds"><span class="aoc-sidebtn-i">${U.icon('hero', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Heroes</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="events"><span class="aoc-sidebtn-i">${U.icon('gift', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Events</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="items"><span class="aoc-sidebtn-i">${U.icon('bag', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Items</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="help" hidden><span class="aoc-sidebtn-i">${U.icon('heart', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Help</span></button>
         <button type="button" class="aoc-sidebtn" data-side="dev" hidden><span class="aoc-sidebtn-i">${U.icon('dev', 26)}</span><span class="aoc-sidebtn-l">Dev</span></button>
       </div>
     </div>
@@ -8606,9 +9746,10 @@ function draw() {
     for (const c of z < 2.5 ? [] : f.camps) {
       if (!inView(c.x, c.y)) continue;
       const [sx, sy] = toScreen(c.x + 0.5, c.y + 0.5);
-      const r = Math.max(2.5, z * 0.36);
-      g.fillStyle = '#b4483a';
-      g.beginPath(); g.moveTo(sx, sy - r); g.lineTo(sx + r, sy + r * 0.8); g.lineTo(sx - r, sy + r * 0.8); g.closePath(); g.fill();
+      const r = Math.max(2.5, z * (c.fort ? 0.5 : 0.36));
+      g.fillStyle = c.fort ? '#7a2b8f' : '#b4483a';
+      if (c.fort) g.fillRect(sx - r, sy - r * 0.8, r * 2, r * 1.6);
+      else { g.beginPath(); g.moveTo(sx, sy - r); g.lineTo(sx + r, sy + r * 0.8); g.lineTo(sx - r, sy + r * 0.8); g.closePath(); g.fill(); }
       if (z >= 11) { g.fillStyle = '#f3e5d6'; g.font = `600 ${Math.round(z * 0.45)}px Barlow, sans-serif`; g.textAlign = 'center'; g.fillText(String(c.lv), sx, sy + r * 0.75); }
     }
     // cities
@@ -8797,7 +9938,8 @@ function drawSprites(g, f, z, inView, gcol, P) {
     if (!inView(c.x, c.y)) continue;
     const [sx, sy] = at(c.x, c.y), k = z * 1.4 / 34;
     objs.push({ y: c.y, f: () => {
-      if (!ART.paint(g, c.lv <= 3 ? 'camp-1' : c.lv <= 7 ? 'camp-2' : 'camp-3', sx, sy + z * 0.55, z * (c.lv <= 7 ? 2.7 : 3))) ART.put(g, ART.mapCamp(c.lv), sx, sy + z * 0.3, 24, 36, k);
+      if (c.fort) { if (!ART.paint(g, 'bastion', sx, sy + z * 0.6, z * 3.4)) ART.put(g, ART.mapCamp(10), sx, sy + z * 0.3, 24, 36, k * 1.3); }
+      else if (!ART.paint(g, c.lv <= 3 ? 'camp-1' : c.lv <= 7 ? 'camp-2' : 'camp-3', sx, sy + z * 0.55, z * (c.lv <= 7 ? 2.7 : 3))) ART.put(g, ART.mapCamp(c.lv), sx, sy + z * 0.3, 24, 36, k);
       if (z >= 9) { const r = Math.max(6, z * 0.26); g.fillStyle = '#5f1214'; g.beginPath(); g.arc(sx - z * 0.45, sy - z * 0.45, r, 0, 7); g.fill(); g.strokeStyle = '#e9b45e'; g.lineWidth = 1.2; g.stroke(); g.fillStyle = '#fff2dc'; g.font = `800 ${Math.round(r * 1.2)}px Barlow, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(c.lv), sx - z * 0.45, sy - z * 0.43); g.textBaseline = 'alphabetic'; }
     } });
   }
@@ -8898,6 +10040,7 @@ function mountMap(root) {
     <canvas class="aoc-map-cv" aria-label="World map. Drag to move, pinch or use the buttons to zoom, tap a place to see it."></canvas>
     <div class="aoc-map-bottom"><div class="aoc-quest" hidden></div></div>
     <div class="aoc-map-where" aria-live="off"></div>
+    <button type="button" class="aoc-map-ap" data-act="events" aria-label="Action points: open events"></button>
     <div class="aoc-map-tools">
       <button type="button" class="aoc-iconbtn" data-act="home" aria-label="Center on your city">${U.icon('home', 20)}</button>
       <button type="button" class="aoc-iconbtn" data-act="find" aria-label="Find passes, holy sites and the Capital">${U.icon('search', 20)}</button>
@@ -8913,6 +10056,7 @@ function mountMap(root) {
   M.ctx = M.cv.getContext('2d', { alpha: false });
   const ro = new ResizeObserver(() => { resize(); schedule(); });
   ro.observe(M.cv.parentElement);
+  root.querySelector('.aoc-map-ap').addEventListener('click', () => U.openEvents('daily'));
   root.querySelector('.aoc-map-tools').addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
@@ -9058,10 +10202,16 @@ async function openTile(i) {
         if (P.guild >= 0 && (P.role === 'leader' || P.role === 'officer' || P.b.hall >= 12)) acts.push({ label: 'Rally', kind: 'red', icon: 'flag', onClick: () => U.marchSheet({ kind: 'rally', to: i, name: c.name, intel: c.intel }) });
       }
     }
+  } else if (t.camp && t.camp.fort) {
+    title = `Barbarian fort, level ${t.camp.lv}`;
+    if (U.art) parts.push(ppic('bastion', () => U.art.mapCamp(10)));
+    parts.push(`<p class="aoc-p">Too strong for one army: only a guild rally can take it. Everyone in a winning rally earns Tomes of Knowledge, speedups and commander experience. Leading or joining costs ${A.FORT_AP} action points (you have ${full(f.ev?.ap || 0)}).</p><div class="aoc-intel"><span class="aoc-kicker">Garrison</span><div>${U.troopLine(t.camp.troops)}</div></div>`);
+    if (P.guild >= 0 && (P.role === 'leader' || P.role === 'officer' || P.b.hall >= 12)) acts.push({ label: 'Call a rally', kind: 'red', icon: 'flag', onClick: () => U.marchSheet({ kind: 'rally', to: i, name: title, enemy: t.camp.troops }) });
+    else parts.push(`<p class="aoc-muted">${P.guild < 0 ? 'Join a guild to rally on forts.' : 'Leaders, officers and governors with a level 12 Town Hall call rallies; join one from the Guild tab.'}</p>`);
   } else if (t.camp) {
     title = `Bandit camp, level ${t.camp.lv}`;
     if (U.art) parts.push(ppic(t.camp.lv <= 3 ? 'camp-1' : t.camp.lv <= 7 ? 'camp-2' : 'camp-3', () => U.art.mapCamp(t.camp.lv)));
-    parts.push(`<p class="aoc-p">Beat the bandits for loot and commander experience.${t.camp.reserved ? ` <b>Reserved for you until ${A.clock(t.camp.reserved)}.</b>` : ''}</p><div class="aoc-intel"><span class="aoc-kicker">Garrison</span><div>${U.troopLine(t.camp.troops)}</div></div>`);
+    parts.push(`<p class="aoc-p">Beat the bandits for loot, Tomes of Knowledge, speedups and commander experience. Attacking costs <b>${A.campAp(t.camp.lv)}</b> action points (you have ${full(f.ev?.ap || 0)}).${t.camp.reserved ? ` <b>Reserved for you until ${A.clock(t.camp.reserved)}.</b>` : ''}</p><div class="aoc-intel"><span class="aoc-kicker">Garrison</span><div>${U.troopLine(t.camp.troops)}</div></div>`);
     acts.push({ label: 'Attack', kind: 'red', icon: 'sword', onClick: () => U.marchSheet({ kind: 'attack', to: i, name: title, enemy: t.camp.troops, level: t.camp.lv }) });
   } else if (t.node) {
     const n = t.node;
@@ -9143,10 +10293,11 @@ async function sendScout(i) {
   return !!r;
 }
 function relocate(x, y) {
-  const P = U.F.player;
-  U.confirm({
-    title: 'Move your city?', text: `Your city moves to (${x}, ${y}) at once. ${P.relocateCost ? `It costs ${full(P.relocateCost)} Gold.` : 'Your first move as an independent is free.'} Every army must be home first.`,
-    ok: 'Move the city', onOk: async () => { const r = await U.run({ type: 'relocate', x, y }, 'Your city has moved.'); if (r) home(true); },
+  const P = U.F.player, tele = U.F.ev?.tele || 0;
+  const go = async item => { const r = await U.run({ type: 'relocate', x, y, item }, 'Your city has moved.'); if (r) home(true); };
+  U.sheet({
+    title: 'Move your city?', body: `<p class="aoc-p">Your city moves to (${x}, ${y}) at once. ${P.relocateCost ? `It costs ${full(P.relocateCost)} Gold${tele ? `, or one of your ${tele} Teleports` : ''}.` : 'Your first move as an independent is free.'} Every army must be home first.</p>`,
+    actions: [{ label: 'Cancel', kind: 'ghost' }, tele && P.relocateCost ? { label: 'Use a Teleport', kind: 'blue', onClick: () => go('tele') } : null, { label: 'Move the city', onClick: () => go(null) }],
   });
 }
 
@@ -9155,7 +10306,11 @@ window.addEventListener('aoc-art', () => { if (U.current === 'map') schedule(); 
 U.screen('map', {
   mount: mountMap,
   show() { resize(); if (!M.homed && U.F) { M.homed = true; home(false); M.view.z = 9; } schedule(); },
-  update(f) { U.questBar(document.querySelector('.aoc-screen-map .aoc-quest'), f); if (U.current === 'map' && performance.now() - M.lastDraw > 150) schedule(); },
+  update(f) {
+    U.questBar(document.querySelector('.aoc-screen-map .aoc-quest'), f);
+    if (f.ev) U.setHtml(document.querySelector('.aoc-screen-map .aoc-map-ap'), `${U.icon('power', 16)}${U.full(f.ev.ap)}<span>/ ${U.full(f.ev.apMax)} AP</span>`);
+    if (U.current === 'map' && performance.now() - M.lastDraw > 150) schedule();
+  },
 });
 } catch (e) { console.error('[build] conquest/ui-map.js failed to load', e); }
 })();
@@ -10147,7 +11302,7 @@ function battleSheet(r) {
     <div class="aoc-bdetails" hidden>
     <p class="aoc-result ${won ? 'aoc-good' : 'aoc-bad'}">${won ? 'Victory' : 'Defeat'} · ${A.clock(r.t)} · ${esc(A.TERRAIN[input.terrain]?.name || '')}${input.ambush ? ' · ambush' : ''}</p>
     <div class="aoc-sides">${side(input.a.label, input.a, res.a.lost, res.a.end, x.aWounded, input.a.cmd)}${side(input.d.label, input.d, res.d.lost, res.d.end, x.dWounded, input.d.cmd)}</div>
-    ${x.plunder ? `<p class="aoc-p">${view === 'a' ? 'Taken' : 'Lost'}: ${U.cost(x.plunder)}</p>` : ''}
+    ${x.plunder ? `<p class="aoc-p">${view === 'a' ? 'Taken' : 'Lost'}: ${U.cost(x.plunder)}</p>` : ''}${x.items && U.rewardLine ? `<p class="aoc-p">Found: ${U.rewardLine(x.items, 18)}</p>` : ''}
     ${x.sacked ? `<p class="aoc-p aoc-bad">${view === 'a' ? 'The walls fell and the city was sacked.' : 'Your walls fell and the city was sacked.'}</p>` : ''}
     ${x.captured ? '<p class="aoc-p aoc-good">The landmark was captured.</p>' : ''}
     <h3 class="aoc-h4">Why</h3><ul class="aoc-list">${(r.explain || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
@@ -10473,6 +11628,7 @@ const GUIDE = [
   ['Your city', 'Tap a building to open it and upgrade it. The Town Hall sets every other building\'s limit. Farms, mills, quarries, mines and the market fill a crate every 4 hours: tap it to collect. Troops eat Food every hour. A Warehouse protects part of your stock from raiders.'],
   ['Armies and fog', 'Tap the map to send armies: attack bandit camps for loot, gather at resource fields, scout before you attack. You only see what your city, your armies and your guild can see; scout reports are estimates and grow stale.'],
   ['Combat', 'Infantry beat cavalry, cavalry beat archers, archers beat infantry. Terrain, walls, morale and commander skills matter: a smaller, better-matched army can win. Every battle report explains the result and can be replayed.'],
+  ['Events', 'The Events button in the city holds daily objectives (five chests a game day), Sunset Canyon, the Expedition, guild helps, the Tavern, your items and the shops, and the week\'s events: the Wheel of Fortune, Card King, More Than Gems, Ceroli Crisis and Arms Training. Attacking bandit camps costs action points; barbarian forts fall only to guild rallies; every five days the Shadow Legion strikes the guilds\' cities. The AI governors play all of it by the same rules.'],
   ['Guilds and the Age', 'Join a guild for protection, shared vision and rallies. Guilds sign pacts, betray them, form coalitions and go to war. Hold the Ember Throne for 3 days, or build the Grand Exchange, to win the Age.'],
 ];
 U.intro = () => {
@@ -10508,7 +11664,8 @@ U.showOffline = m => {
 try {
 /* Age of Conquest developer panel. Hidden by default: tap the logo on the start screen 7 times to turn developer
    mode on (U.devMode()). The city then shows a Dev button with unlimited resources, instant builds and training,
-   max buildings, troops, every commander, the whole map, a long shield, finished timers and time skips. Every
+   max buildings, troops, every commander, items and gems, every event open, the whole map, a long shield,
+   finished timers and time skips. Every
    switch and action is a developer command that the simulation refuses outside developer mode. */
 
 const U = window.AOCUI;
@@ -10518,7 +11675,8 @@ const { esc, fmt } = U;
 const ACTIONS = [
   ['dev:hall', 'Max every building', 'Town Hall and every building to level 25', 'Every building raised.'],
   ['dev:troops', '+100,000 of each troop', 'Infantry, cavalry, archers and siege, at home', 'Troops added.'],
-  ['dev:commanders', 'Every commander at max level', 'All twelve at level 40, ultimates unlocked', 'Commanders maxed.'],
+  ['dev:commanders', 'Every commander at max level', 'All twenty at level 40, ultimates unlocked', 'Commanders maxed.'],
+  ['dev:items', 'Gems, keys and items', '50,000 gems, keys, speedups, tomes, sculptures and full action points', 'Items added.'],
   ['dev:finish', 'Finish all timers', 'Building, research, training, healing and the Exchange', 'Timers finished.'],
   ['dev:reveal', 'Reveal the whole map', 'Every tile explored', 'The map is revealed.'],
   ['dev:shield', 'Seven-day shield', 'Nobody can attack your city', 'Shield up for 7 days.'],
@@ -10534,6 +11692,7 @@ function panelHtml(sw) {
     <h3 class="aoc-h4">Always on</h3>
     ${toggle('unlimited', 'Unlimited resources', `Every resource kept at ${fmt(50e6)}`, sw.unlimited)}
     ${toggle('instant', 'Instant builds and training', 'Building, research, training and healing finish as they start', sw.instant)}
+    ${toggle('events', 'Every event open', 'The Wheel, Card King, More Than Gems, Ceroli Crisis and Arms Training run every day', sw.events)}
     <h3 class="aoc-h4">One tap</h3>
     <div class="aoc-dev-grid">${ACTIONS.map(([c, label, note]) => `<button type="button" class="aoc-dev-act" data-dev="${c}"><b>${esc(label)}</b><span>${esc(note)}</span></button>`).join('')}</div>
     <h3 class="aoc-h4">Skip time</h3>
@@ -10543,12 +11702,13 @@ function panelHtml(sw) {
 }
 U.devPanel = () => {
   if (!U.dev) return null;
-  const sw = U.F?.devSw || { unlimited: false, instant: false };
+  const sw = U.F?.devSw || { unlimited: false, instant: false, events: false };
   const h = U.sheet({
     title: 'Developer', body: panelHtml(sw),
     actions: [{ label: 'Developer mode off', kind: 'red', id: 'aoc-dev-off', onClick: async () => {
       await U.host.cmd({ type: 'dev:unlimited', on: false });
       await U.host.cmd({ type: 'dev:instant', on: false });
+      await U.host.cmd({ type: 'dev:events', on: false });
       U.setDevMode(false);
       U.toast('Developer mode off', 'info');
       U.backToStart();
@@ -10698,6 +11858,426 @@ function tick() {
 U.guideTarget = () => { try { return target(); } catch (e) { return null; } };
 U.onFrame(() => { if (!G.timer) G.timer = setInterval(tick, 200); });
 } catch (e) { console.error('[build] conquest/ui-guide.js failed to load', e); }
+})();
+
+/* ===== conquest/ui-events.js ===== */
+;(function () {
+'use strict';
+try {
+/* Age of Conquest events hub: daily objectives, the event calendar (Wheel of Fortune, Card King, More Than Gems,
+   Ceroli Crisis, Arms Training, the Shadow Legion, barbarian forts), Sunset Canyon, the Expedition, guild helps
+   and donations, the tavern and sculptures, items and the shops. Everything shown comes from the engine's events
+   view; every button sends a command the engine validates. */
+
+const A = window.AOC;
+const U = window.AOCUI;
+const { esc, el, fmt, full, dur, realDur, setHtml } = U;
+
+const E = { tab: 'daily', v: null, busy: false, last: 0, shop: 'gems', prev: 'city', role: 'dps', diff: 0, cmd: null };
+const ETABS = [['daily', 'Daily', 'calendar'], ['events', 'Events', 'star'], ['canyon', 'Canyon', 'sword'], ['expedition', 'Expedition', 'map'], ['guild', 'Guild', 'guild'], ['tavern', 'Tavern', 'chest'], ['items', 'Items', 'bag'], ['shops', 'Shops', 'gem']];
+const SVG = {
+  key: c => `<svg class="aico" width="S" height="S" viewBox="0 0 24 24" aria-hidden="true"><circle cx="7.5" cy="12" r="4.6" fill="none" stroke="${c}" stroke-width="2.6"/><path d="M12 12h9.5M18 12v3.6M21 12v2.6" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/><circle cx="7.5" cy="12" r="4.6" fill="none" stroke="#1d1408" stroke-width=".6" opacity=".5"/></svg>`,
+  ap: `<svg class="aico" width="S" height="S" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#2a6cc2" stroke="#0e2f5c" stroke-width="1"/><path d="M13.4 4.5 7.5 13h4.1l-1.2 6.5 6.1-9h-4.2Z" fill="#9fe0ff" stroke="#0e2f5c" stroke-width=".8" stroke-linejoin="round"/></svg>`,
+  tele: `<svg class="aico" width="S" height="S" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#3a2a6e" stroke="#c9b6ff" stroke-width="1.2"/><path d="M12 5.5a6.5 6.5 0 1 1-6.1 4.3M12 9a3 3 0 1 1-2.8 2" fill="none" stroke="#d9cbff" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+  medal: `<svg class="aico" width="S" height="S" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2.5h4l1.5 6-3 1Zm10 0h-4l-1.5 6 3 1Z" fill="#c0392b" stroke="#5e1410" stroke-width=".8"/><circle cx="12" cy="15" r="6.5" fill="#f2c04e" stroke="#8a5a12" stroke-width="1.1"/><path d="M12 11.2l1.1 2.3 2.5.3-1.8 1.7.5 2.5-2.3-1.2-2.3 1.2.5-2.5-1.8-1.7 2.5-.3Z" fill="#fff1c2"/></svg>`,
+  token: `<svg class="aico" width="S" height="S" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#6b1d24" stroke="#f2c04e" stroke-width="1.4"/><path d="M12 5.5c2.6 2 4.6 3.4 4.6 6.4a4.6 4.6 0 0 1-9.2 0c0-3 2-4.4 4.6-6.4Z" fill="#ff7a4a" stroke="#f2c04e" stroke-width=".8"/></svg>`,
+  credit: `<svg class="aico" width="S" height="S" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#2f7a4a" stroke="#bff0cf" stroke-width="1.2"/><path d="M7 13.5l3 2.8 7-7.8" fill="none" stroke="#e8fff0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+};
+const svg = (s, size) => s.replace(/width="S" height="S"/, `width="${size}" height="${size}"`);
+// the picture for a reward or an item
+function itemIcon(k, s = 36) {
+  if (k === 'gems') return U.icon('gem', s);
+  if (k === 'credits') return svg(SVG.credit, s);
+  if (k === 'tokens') return svg(SVG.token, s);
+  if (k === 'medals') return svg(SVG.medal, s);
+  if (k.startsWith('sc:')) {
+    const id = k.slice(3);
+    if (id === 'uniE' || id === 'uniL') return `<span class="aoc-ev-statue is-${id === 'uniL' ? 'leg' : 'epic'}" style="width:${s}px;height:${s}px"${U.art?.pmeta('statue') ? ` data-statue="1"` : ''}></span>`;
+    return A.CMD[id] ? U.portrait(A.CMD[id], s) : '';
+  }
+  const it = A.ITEMS[k];
+  if (!it) return U.icon('gift', s);
+  switch (it.kind) {
+    case 'speed': return U.icon('speedup', s);
+    case 'tome': return `<span class="aoc-ev-tome t${k.slice(-1)}">${U.icon('scroll', s)}</span>`;
+    case 'key': return svg(SVG.key(k === 'keyG' ? '#f2c04e' : '#d6dde6'), s);
+    case 'ap': return svg(SVG.ap, s);
+    case 'res': return U.resIcon(Object.keys(it.res)[0], s);
+    case 'box': return U.icon('gift', s);
+    case 'shield': return U.icon('shield', s);
+    case 'tele': return svg(SVG.tele, s);
+  }
+  return U.icon('gift', s);
+}
+const rname = k => A.rewardName(k);
+function rewardLine(rw, s = 18) { return Object.keys(rw || {}).map(k => `<span class="aoc-ev-rw" title="${esc(rname(k))}">${itemIcon(k, s)}<b>${fmt(rw[k])}</b></span>`).join(''); }
+U.rewardLine = rewardLine;
+U.itemIcon = itemIcon;
+function rewardTiles(rw) { return Object.keys(rw || {}).map(k => `<div class="aoc-reward-item"><span class="aoc-tile">${itemIcon(k, 40)}<b>${fmt(rw[k])}</b></span><span class="aoc-reward-name">${esc(rname(k))}</span></div>`).join(''); }
+// a reward pop-up for items, sculptures and currencies
+U.rewardItems = (rw, title = 'Reward') => new Promise(res => {
+  if (!rw || !Object.keys(rw).length) { res(); return; }
+  const chest = U.art?.pmeta('chest-2');
+  const wrap = el(`<div class="aoc-reward" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="aoc-scrim"></div>
+    <div class="aoc-reward-card" tabindex="-1"><div class="aoc-reward-rays" aria-hidden="true"></div>${chest ? `<img class="aoc-reward-chest" src="${chest.src}" alt="" width="96" height="90">` : ''}<div class="aoc-reward-title">${esc(title)}</div>
+      <div class="aoc-reward-grid">${rewardTiles(rw)}</div><button type="button" class="aoc-btn gold wide aoc-reward-ok">OK</button></div></div>`);
+  const done = () => { wrap.remove(); res(); };
+  wrap.querySelector('.aoc-reward-ok').addEventListener('click', done);
+  wrap.querySelector('.aoc-scrim').addEventListener('click', done);
+  U.layer().appendChild(wrap);
+  try { wrap.querySelector('.aoc-reward-ok').focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+});
+const statueCss = () => {
+  const m = U.art?.pmeta('statue');
+  if (!m || document.getElementById('aoc-ev-statue')) return;
+  const st = document.createElement('style');
+  st.id = 'aoc-ev-statue';
+  st.textContent = `.aoc-ev-statue[data-statue]{background-image:url(${m.src})}`;
+  document.head.appendChild(st);
+};
+window.addEventListener('aoc-art', statueCss);
+
+// ================================================================ data
+async function refresh(force) {
+  if (E.busy && !force) return;
+  E.busy = true;
+  try { E.v = await U.host.query('events'); E.last = performance.now(); } finally { E.busy = false; }
+  render();
+}
+async function act(cmd, opts = {}) {
+  const r = await U.host.cmd(cmd);
+  if (!r || !r.ok) { U.toast(r?.err || 'That did not work.', 'bad'); return null; }
+  if (opts.ok) U.toast(opts.ok, 'good');
+  await refresh(true);
+  return r;
+}
+const cmdName = id => A.CMD[id]?.name || id;
+function timeLeft(w) {
+  const t = E.v.t;
+  return w.open ? `<span class="aoc-pill is-good">Open · ends in ${dur(w.end - t)}</span>` : `<span class="aoc-pill">Opens in ${dur(w.next - t)} (${realDur(w.next - t)} at 1x)</span>`;
+}
+function bar(a, b) { return `<span class="aoc-ev-bar"><i style="width:${Math.round(Math.min(1, a / Math.max(1, b)) * 100)}%"></i></span>`; }
+function milestones(list, value, unit) {
+  return `<div class="aoc-ev-miles">${list.map(m => `<div class="aoc-ev-mile${m.got ? ' is-got' : value >= m.at ? ' is-ready' : ''}"><span class="aoc-ev-mile-at">${fmt(m.at)}${unit ? ' ' + unit : ''}</span><span>${rewardLine(m.rw, 16)}</span>${m.got ? `<span class="aoc-good">${U.icon('check', 14)}</span>` : ''}</div>`).join('')}</div>`;
+}
+function lineHtml(line, size = 30) { return `<span class="aoc-ev-line">${line.map(x => `<span class="aoc-ev-lc">${U.portrait(A.CMD[x.id || x], size)}${x.lv ? `<b>${x.lv}</b>` : ''}</span>`).join('')}</span>`; }
+function fightsHtml(fights) {
+  return `<ul class="aoc-list aoc-small aoc-ev-fights">${fights.map(x => `<li><b>${esc(x.a)}</b> (${full(x.aStart)}) against <b>${esc(x.d)}</b> (${full(x.dStart)}): <span class="${x.won ? 'aoc-good' : 'aoc-bad'}">${x.won ? 'won' : 'lost'}</span>, ${full(x.won ? x.aLeft : x.dLeft)} left standing</li>`).join('')}</ul>`;
+}
+
+// ================================================================ tabs
+function daily(v) {
+  const d = v.daily;
+  const chests = d.chests.map((c, k) => `<button type="button" class="aoc-ev-chest${c.got ? ' is-got' : c.ready ? ' is-ready' : ''}" style="left:${c.at}%" data-daily="${k}" aria-label="Chest at ${c.at} points${c.got ? ', claimed' : c.ready ? ', ready' : ''}">${U.icon(c.got ? 'check' : 'chest', 22)}<span>${c.at}</span></button>`).join('');
+  return `<div class="aoc-card"><div class="aoc-ev-pts"><b>${Math.min(100, d.pts)}</b><span>activity points today</span><span class="aoc-muted aoc-small">New objectives in ${dur(d.resets - v.t)}</span></div>
+    <div class="aoc-ev-track"><span class="aoc-ev-bar"><i style="width:${Math.min(100, d.pts)}%"></i></span>${chests}</div>
+    <p class="aoc-muted aoc-small">Tap a chest when it shines. The last one holds gems, an epic sculpture, a Magic Box and a Gold Key.</p></div>
+    <div class="aoc-card"><h3 class="aoc-h4">How to earn points</h3>${d.tasks.map(t => `<div class="aoc-ev-task"><span>${esc(t.name)} <span class="aoc-muted aoc-small">+${t.each}${t.per > 1 ? ` per ${t.per}` : ' each'}</span></span><b>${t.pts}/${t.max}</b>${bar(t.pts, t.max)}</div>`).join('')}</div>
+    <div class="aoc-card"><h3 class="aoc-h4">${svg(SVG.ap, 18)} Action points</h3><p class="aoc-p"><b>${full(v.ap)}</b> of ${full(v.apMax)}. One returns every ${v.apEvery} game minutes. Attacking a bandit camp costs ${A.campAp(1)} to ${A.campAp(10)} by its level; leading or joining a rally on a barbarian fort costs ${A.FORT_AP}.</p></div>`;
+}
+function evCard(id, title, w, body, pic) {
+  return `<div class="aoc-card aoc-ev-card${w && w.open ? ' is-open' : ''}" data-ev="${id}"><div class="aoc-ev-card-h">${pic || ''}<div><h3 class="aoc-h3">${esc(title)}</h3>${w ? timeLeft(w) : ''}</div></div>${w ? `<p class="aoc-muted aoc-small">${esc(w.text)}</p>` : ''}${body}</div>`;
+}
+function events(v) {
+  const W = v.windows, P = U.F.player;
+  const own = Object.keys(P.cmds).sort((a, b) => P.cmds[b].lv - P.cmds[a].lv);
+  if (!E.cmd || !P.cmds[E.cmd]) E.cmd = own[0];
+  const out = [];
+  // Wheel of Fortune
+  {
+    const wv = v.wheel, w = W.wheel;
+    out.push({ open: w.open, at: w.next, html: evCard('wheel', 'Wheel of Fortune', w, `<div class="aoc-ev-feat">${U.portrait(A.CMD[wv.featured], 54)}<div><b>${esc(cmdName(wv.featured))}</b><div class="aoc-muted aoc-small">Featured: ten sculptures recruit, more raise skills. ${wv.spins} spins this event.</div></div></div>
+      <div class="aoc-ev-slots">${wv.slots.map(rw => `<span class="aoc-ev-slot">${rewardLine(rw, 22)}</span>`).join('')}</div>
+      ${w.open ? `<div class="aoc-chips"><button type="button" class="aoc-btn gold small" data-spin="1">${wv.free ? 'Free spin' : `Spin · ${wv.cost} ${U.icon('gem', 14)}`}</button><button type="button" class="aoc-btn blue small" data-spin="10">Spin 10 · ${fmt(wv.cost * 9)} ${U.icon('gem', 14)}</button></div>` : ''}
+      ${milestones(wv.milestones, wv.spins, 'spins')}`) });
+  }
+  // Card King
+  {
+    const cv = v.cards, w = W.cards;
+    out.push({ open: w.open, at: w.next, html: evCard('cards', 'Card King', w, `<div class="aoc-ev-feat">${U.portrait(A.CMD[cv.featured], 54)}<div><b>${esc(cmdName(cv.featured))}</b><div class="aoc-muted aoc-small">Board ${cv.board + 1}. The top card holds five of their sculptures.</div></div></div>
+      <div class="aoc-ev-cards">${cv.flipped.map((rw, k) => rw ? `<span class="aoc-ev-cardface is-up">${rewardLine(rw, 26)}</span>` : `<button type="button" class="aoc-ev-cardface" data-flip="${k}"${w.open ? '' : ' disabled'} aria-label="Flip card ${k + 1}"><span class="aoc-ev-q">?</span></button>`).join('')}</div>
+      ${w.open ? `<p class="aoc-small">Next flip: <b>${cv.cost}</b> ${U.icon('gem', 14)} · you have ${full(v.inv.gems)}</p>` : ''}${milestones(cv.milestones, cv.board, 'boards')}`) });
+  }
+  // More Than Gems
+  {
+    const w = W.mtg, m = v.mtg;
+    out.push({ open: w.open, at: w.next, html: evCard('mtg', 'More Than Gems', w, `<p class="aoc-p">Spent so far: <b>${full(m.spent)}</b> ${U.icon('gem', 14)}</p>${bar(m.spent, 25000)}${milestones(m.milestones, m.spent, 'gems')}`) });
+  }
+  // Ceroli Crisis
+  {
+    const w = W.ceroli, c = v.ceroli;
+    if (!(E.diff >= 1 && E.diff <= c.unlocked)) E.diff = c.unlocked;
+    out.push({ open: w.open, at: w.next, html: evCard('ceroli', 'Ceroli Crisis', w, `<p class="aoc-small">Raids left today: <b>${c.left}</b> · difficulty ${c.unlocked} of ${c.levels} unlocked · ${full(v.inv.tokens)} tokens</p>
+      ${w.open ? `<div class="aoc-chips" role="group" aria-label="Role">${Object.entries(c.roles).map(([k, n]) => `<button type="button" class="aoc-btn ${E.role === k ? 'gold' : 'ghost'} tiny" data-role="${k}">${esc(n)}</button>`).join('')}</div>
+      <label class="aoc-label">Commander<select data-cecmd>${own.map(id => `<option value="${id}"${id === E.cmd ? ' selected' : ''}>${esc(cmdName(id))} (level ${P.cmds[id].lv})</option>`).join('')}</select></label>
+      <label class="aoc-label">Difficulty<select data-cediff>${Array.from({ length: c.unlocked }, (_, k) => `<option value="${k + 1}"${k + 1 === E.diff ? ' selected' : ''}>${k + 1} · Ceroli has ${fmt(c.boss[k])} health</option>`).join('')}</select></label>
+      <div class="aoc-chips"><button type="button" class="aoc-btn red small" data-ceroli="1"${c.left > 0 ? '' : ' disabled'}>${U.icon('sword', 15)}<span>Start the raid</span></button><button type="button" class="aoc-btn ghost small" data-shop="ceroli">Ceroli shop</button></div>` : ''}
+      <p class="aoc-muted aoc-small">Three guild mates join you. A Tank takes Ceroli's blows, Damage brings her down, a Healer keeps the team standing. Tokens follow your share of the damage; a win unlocks the next difficulty.</p>`) });
+  }
+  // Arms Training
+  {
+    const w = W.arms, a = v.arms;
+    out.push({ open: w.open, at: w.next, html: evCard('arms', 'Arms Training', w, `<p class="aoc-small">Attempts left today: <b>${a.left}</b> · best: <b>${a.best}</b> waves</p>
+      <p class="aoc-muted aoc-small">Wave 1: ${U.troopLine(a.first.troops)}. Each wave is about a fifth stronger. Your Sunset Canyon line fights (no real troops are lost).</p>
+      ${w.open ? `<div class="aoc-chips"><button type="button" class="aoc-btn red small" data-arms="1"${a.left > 0 ? '' : ' disabled'}>${U.icon('sword', 15)}<span>Face Lohar</span></button></div>` : ''}${milestones(a.milestones, a.best, 'waves')}`) });
+  }
+  // Shadow Legion
+  {
+    const w = W.legion, L = v.legion;
+    const where = P.guild < 0 ? 'Join a guild: the Legion only strikes cities inside guild territory.' : v.inTerritory ? 'Your city stands inside your guild\'s territory: it will be attacked. Keep troops at home and a Defender set.' : 'Your city is outside your guild\'s territory and will not take part. Move it inside to earn points.';
+    out.push({ open: w.open, at: w.next, html: evCard('legion', 'Shadow Legion Invasion', w, `<p class="aoc-p">${esc(where)}</p>
+      ${L ? `<p class="aoc-small">Last invasion: wave ${L.wave} of 5 · your points <b>${full(L.pts)}</b>${L.broken ? ' · your city was broken' : ''}</p>${L.guilds.length ? `<ol class="aoc-list aoc-small">${L.guilds.slice(0, 3).map(x => `<li>${esc(x.name)}: ${full(x.pts)} points</li>`).join('')}</ol>` : ''}` : ''}
+      <p class="aoc-muted aoc-small">Each wave you hold scores 100 times its number. Rewards: 100 points a speedup, 300 two tomes, 600 two silver keys, 1,000 a gold key, 1,500 a universal legendary sculpture; the best guilds earn gems for every member.</p>`) });
+  }
+  out.sort((a, b) => (b.open - a.open) || a.at - b.at);
+  // always on: barbarian forts
+  const forts = `<div class="aoc-card aoc-ev-card"><div class="aoc-ev-card-h">${U.art?.pmeta('bastion') ? `<img class="aoc-ev-pic" src="${U.art.pmeta('bastion').src}" alt="" width="64" height="56">` : ''}<div><h3 class="aoc-h3">Barbarian forts</h3><span class="aoc-pill is-good">Always open</span></div></div>
+    <p class="aoc-p">Sixty forts stand across the kingdom, stronger toward the centre. They fall only to guild rallies (${A.FORT_AP} action points to lead or join). Everyone in a winning rally earns Tomes of Knowledge, speedups and commander experience.</p>
+    <div class="aoc-chips"><button type="button" class="aoc-btn ghost small" data-fort="1">${U.icon('map', 15)}<span>Show the nearest fort</span></button></div></div>`;
+  return out.map(x => x.html).join('') + forts;
+}
+function canyon(v) {
+  const c = v.canyon;
+  return `<div class="aoc-card"><div class="aoc-ev-rank"><b>#${c.rank}</b><span>of ${c.of} in Sunset Canyon</span></div>
+    <p class="aoc-small">Battles left today: <b>${c.left}</b> of ${A.CANYON.attempts}. At the end of each game day your rank pays ${rewardLine(c.reward, 16)}</p>
+    <h3 class="aoc-h4">Your line</h3><div class="aoc-ev-myline">${lineHtml(c.formation.map(id => ({ id, lv: U.F.player.cmds[id]?.lv })), 44)}<button type="button" class="aoc-btn ghost small" data-formation="1">Change</button></div>
+    <p class="aoc-muted aoc-small">${c.custom ? 'Your chosen order.' : 'Your five best commanders (choose your own order with Change).'} The first fights first; a winner carries its survivors into the next enemy. Each commander leads an army sized by their level, so no troops are lost. The same line defends your rank.</p></div>
+    <h3 class="aoc-h4">Challenge</h3>${c.choices.map(o => `<div class="aoc-row"><div class="aoc-row-main"><b>${esc(o.name)}</b> <span class="aoc-muted aoc-small">#${o.rank} · ${fmt(o.power)} power</span><div>${lineHtml(o.line, 28)}</div></div><div class="aoc-row-act"><button type="button" class="aoc-btn red small" data-canyon="${o.id}"${c.left > 0 ? '' : ' disabled'}>Fight</button></div></div>`).join('')}
+    ${c.log.length ? `<h3 class="aoc-h4">Recent battles</h3><ul class="aoc-list aoc-small">${c.log.map(x => `<li><span class="aoc-muted">${A.clock(x.t)}</span> ${x.a === U.F.player.id ? `You ${x.won ? 'beat' : 'lost to'} ${esc(x.dName)}${x.after !== x.before ? ` (rank ${x.before} to ${x.after})` : ''}` : `${esc(x.aName)} ${x.won ? 'beat' : 'failed against'} your defense`}</li>`).join('')}</ul>` : ''}
+    <h3 class="aoc-h4">The top ten</h3><ol class="aoc-list aoc-small">${c.top.map(x => `<li>${esc(x.name)}${x.guild >= 0 ? ` <span class="aoc-tag">[${esc(U.F.guilds[x.guild].tag)}]</span>` : ''}</li>`).join('')}</ol>`;
+}
+function expedition(v) {
+  const x = v.expedition;
+  const st = x.next;
+  return `<div class="aoc-card"><div class="aoc-ev-rank"><b>${x.stage}/${x.of}</b><span>stages cleared</span></div>
+    <p class="aoc-small">${svg(SVG.medal, 16)} <b>${full(x.medals)}</b> medals · +${fmt(x.rate)} every game hour (4 per stage cleared, forever)</p>
+    <div class="aoc-chips"><button type="button" class="aoc-btn ghost small" data-shop="expedition">Expedition shop</button></div></div>
+    ${st ? `<div class="aoc-card"><h3 class="aoc-h3">${esc(st.name)}</h3>${st.armies.map(a => `<div class="aoc-ev-task"><span>${esc(a.name)}</span><span>${U.troopLine(a.troops)}</span></div>`).join('')}
+      <p class="aoc-small">First clear: ${rewardLine(st.first, 16)}</p>
+      <div class="aoc-chips"><button type="button" class="aoc-btn red small" data-exp="1"${x.left > 0 ? '' : ' disabled'}>${U.icon('sword', 15)}<span>Fight (${x.left} left today)</span></button></div>
+      <p class="aoc-muted aoc-small">Your Sunset Canyon line fights here too. Lost fights cost nothing; try a different order or raise your commanders.</p></div>` : '<p class="aoc-p">You have cleared every stage. Your medals keep coming.</p>'}`;
+}
+function guild(v) {
+  const g = v.guild;
+  if (!g) return `<div class="aoc-card"><p class="aoc-p">Join a guild to help its members, donate to its technology and shop with guild credits.</p><div class="aoc-chips"><button type="button" class="aoc-btn gold small" data-go="guild">Find a guild</button></div></div>`;
+  return `<div class="aoc-card"><h3 class="aoc-h3">Help your guild mates</h3>
+    <p class="aoc-small">${g.requests.length ? `<b>${g.requests.length}</b> upgrades and heals are waiting for help.` : 'Nobody needs help right now.'} Each help takes 1% (at least a minute) off their timer; you earn ${A.HELP.credits} credits a help for ${g.helpsPaid} more today.</p>
+    <div class="aoc-chips"><button type="button" class="aoc-btn green small" data-help="1"${g.requests.length ? '' : ' disabled'}>Help all</button></div>
+    ${g.mine.length ? `<p class="aoc-muted aoc-small">Helps on your own timers: ${g.mine.map(m => `${esc(m.kind)} ${m.helps}/${m.max}`).join(', ')}. Your guild mates help when they log in.</p>` : ''}</div>
+    <div class="aoc-card"><h3 class="aoc-h3">Technology donations</h3><p class="aoc-small">Donate ${U.cost(g.donateCost, U.F.player.res)} to the guild treasury for ${A.DONATE.credits} credits. ${g.donated}/${g.donateMax} today.</p>
+    <div class="aoc-chips"><button type="button" class="aoc-btn gold small" data-donate="1"${g.donated < g.donateMax ? '' : ' disabled'}>Donate</button></div>
+    <p class="aoc-muted aoc-small">The treasury pays for the guild's technology: Shared Granaries, War Banners and the Bulwark Pact.</p></div>
+    <div class="aoc-card"><p class="aoc-p">${svg(SVG.credit, 18)} <b>${full(v.inv.credits)}</b> guild credits</p><div class="aoc-chips"><button type="button" class="aoc-btn ghost small" data-shop="guild">Guild shop</button></div></div>`;
+}
+function tavern(v) {
+  const t = v.tavern, P = U.F.player;
+  const chest = (kind, pic, name, c) => `<div class="aoc-ev-tchest">${U.art?.pmeta(pic) ? `<img src="${U.art.pmeta(pic).src}" alt="" width="96" height="84">` : U.icon('chest', 64)}<b>${name}</b>
+    <span class="aoc-small">${c.free ? '<span class="aoc-good">One free now</span>' : kind === 'gold' ? `Free again in ${dur(Math.max(0, c.next - v.t))}` : 'Free again tomorrow'} · ${c.keys} ${kind === 'gold' ? 'Gold' : 'Silver'} Keys</span>
+    <span class="aoc-chips"><button type="button" class="aoc-btn gold small" data-chest="${kind}" data-n="1"${c.free || c.keys ? '' : ' disabled'}>Open</button><button type="button" class="aoc-btn blue small" data-chest="${kind}" data-n="10"${c.keys + (c.free ? 1 : 0) >= 10 ? '' : ' disabled'}>Open 10</button></span></div>`;
+  const sc = v.inv.sc;
+  const rows = A.COMMANDERS.map(c => {
+    const n = sc[c.id] || 0, r = P.cmds[c.id];
+    if (!n && r) return '';
+    const uni = c.rarity === 'epic' ? 'uniE' : 'uniL';
+    return `<div class="aoc-row"><div class="aoc-row-main aoc-ev-scrow">${U.portrait(c, 40)}<span><b>${esc(c.name)}</b> <span class="aoc-muted aoc-small">${esc(c.rarity)}</span><div class="aoc-small">${n} sculpture${n === 1 ? '' : 's'}${r ? ` · serves you at level ${r.lv}` : ` · ${v.recruit} recruit`}</div></span></div>
+      <div class="aoc-row-act">${!r ? `<button type="button" class="aoc-btn gold tiny" data-recruit="${c.id}"${n >= v.recruit ? '' : ' disabled'}>Recruit</button>` : `<button type="button" class="aoc-btn ghost tiny" data-skills="${c.id}"${n ? '' : ' disabled'}>Skills</button>`}${sc[uni] ? `<button type="button" class="aoc-btn ghost tiny" data-convert="${c.id}">+${Math.min(sc[uni], 10)} from universal</button>` : ''}</div></div>`;
+  }).join('');
+  return `<div class="aoc-ev-tavern">${chest('silver', 'chest-1', 'Silver Chest', t.silver)}${chest('gold', 'chest-2', 'Gold Chest', t.gold)}</div>
+    <p class="aoc-muted aoc-small">Silver chests hold epic sculptures, tomes and speedups; gold chests legendary sculptures. Keys come from daily objectives, Sunset Canyon, events and the shops.</p>
+    <h3 class="aoc-h4">Sculptures</h3><p class="aoc-small">Universal: ${itemIcon('sc:uniE', 18)} ${sc.uniE || 0} epic · ${itemIcon('sc:uniL', 18)} ${sc.uniL || 0} legendary. ${v.recruit} sculptures recruit a commander before their deed; more raise their skills (2 per skill level).</p>
+    ${rows || `<p class="aoc-muted">${A.COMMANDERS.every(c => P.cmds[c.id]) ? 'Every commander serves you, and you hold no spare sculptures.' : 'Sculptures you hold are listed here.'}</p>`}
+    ${A.COMMANDERS.filter(c => !P.cmds[c.id] && !(sc[c.id] > 0)).length ? `<details class="aoc-ev-more"><summary>Commanders you can still find</summary><p class="aoc-small">${A.COMMANDERS.filter(c => !P.cmds[c.id] && !(sc[c.id] > 0)).map(c => esc(c.name)).join(', ')}</p></details>` : ''}`;
+}
+function items(v) {
+  const inv = v.inv;
+  const keys = A.ITEM_KEYS.filter(k => inv.items[k] > 0);
+  return `<div class="aoc-ev-purse">${['gems', 'credits', 'tokens'].map(k => `<span class="aoc-rchip">${itemIcon(k, 20)}${full(inv[k])}</span>`).join('')}<span class="aoc-rchip">${svg(SVG.medal, 20)}${full(v.expedition.medals)}</span><span class="aoc-rchip">${svg(SVG.ap, 20)}${full(v.ap)}</span></div>
+    ${keys.length ? `<div class="aoc-ev-grid">${keys.map(k => `<button type="button" class="aoc-ev-item" data-item="${k}"><span class="aoc-tile">${itemIcon(k, 40)}<b>${fmt(inv.items[k])}</b></span><span class="aoc-small">${esc(A.ITEMS[k].name)}</span></button>`).join('')}</div>` : '<p class="aoc-muted">Your bag is empty. Daily objectives, bandit camps, chests and events fill it.</p>'}`;
+}
+function shops(v) {
+  const s = v.shops.find(x => x.id === E.shop) || v.shops[0];
+  const have = s.cur === 'medals' ? v.expedition.medals : v.inv[s.cur];
+  return `<div class="aoc-seg" role="tablist">${v.shops.map(x => `<button type="button" role="tab" aria-selected="${x.id === s.id}" data-shop="${x.id}">${esc(x.name)}</button>`).join('')}</div>
+    <p class="aoc-p">${s.cur === 'medals' ? svg(SVG.medal, 18) : itemIcon(s.cur, 18)} You have <b>${full(have)}</b> ${esc(rname(s.cur))}.</p>
+    ${s.id === 'guild' && U.F.player.guild < 0 ? '<p class="aoc-muted">Join a guild to use its shop.</p>' : ''}
+    ${s.items.map(it => `<div class="aoc-row"><div class="aoc-row-main aoc-ev-scrow"><span class="aoc-tile is-small">${itemIcon(Object.keys(it.rw)[0], 30)}</span><span><b>${esc(rname(Object.keys(it.rw)[0]))}</b>${it.rw[Object.keys(it.rw)[0]] > 1 ? ` ×${it.rw[Object.keys(it.rw)[0]]}` : ''}<div class="aoc-small aoc-muted">${it.left} left today</div></span></div>
+      <div class="aoc-row-act"><button type="button" class="aoc-btn gold tiny" data-buy="${it.id}"${it.left > 0 && have >= it.cost ? '' : ' disabled'}>${fmt(it.cost)}</button></div></div>`).join('')}`;
+}
+const RENDER = { daily, events, canyon, expedition, guild, tavern, items, shops };
+
+// ================================================================ the screen
+function mount(root) {
+  root.innerHTML = `<div class="aoc-scroll aoc-events">
+    <div class="aoc-ev-head"><button type="button" class="aoc-iconbtn" data-back="1" aria-label="Back">${U.icon('chevron_left', 20)}</button><h2 class="aoc-h3">Events</h2><span class="aoc-ev-gems"></span></div>
+    <div class="aoc-seg aoc-ev-tabs" role="tablist">${ETABS.map(([id, label, icon]) => `<button type="button" role="tab" data-etab="${id}">${U.icon(icon, 16)}<span>${label}</span><i class="aoc-badge" hidden></i></button>`).join('')}</div>
+    <div class="aoc-ev-body"></div></div>`;
+  root.addEventListener('click', onClick);
+  root.addEventListener('change', e => {
+    if (e.target.matches('[data-cecmd]')) E.cmd = e.target.value;
+    if (e.target.matches('[data-cediff]')) E.diff = Number(e.target.value);
+  });
+  statueCss();
+}
+function render() {
+  const root = document.querySelector('.aoc-screen-events');
+  if (!root || !E.v) return;
+  const v = E.v;
+  root.querySelectorAll('[data-etab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.etab === E.tab)));
+  setHtml(root.querySelector('.aoc-ev-gems'), `<span class="aoc-rchip">${U.icon('gem', 18)}${full(v.inv.gems)}</span><span class="aoc-rchip">${svg(SVG.ap, 18)}${full(v.ap)}</span>`);
+  const badge = (id, n) => U.badge(root.querySelector(`[data-etab="${id}"] .aoc-badge`), n);
+  badge('daily', v.daily.chests.filter(c => c.ready && !c.got).length);
+  badge('tavern', (v.tavern.silver.free ? 1 : 0) + (v.tavern.gold.free ? 1 : 0));
+  badge('events', v.windows.wheel.open && v.wheel.free ? 1 : 0);
+  badge('guild', v.guild ? (v.guild.requests.length ? 1 : 0) : 0);
+  badge('canyon', v.canyon.left > 0 ? v.canyon.left : 0);
+  const body = root.querySelector('.aoc-ev-body');
+  if (body.contains(document.activeElement) && document.activeElement.tagName === 'SELECT') return;
+  setHtml(body, RENDER[E.tab](v));
+}
+async function onClick(e) {
+  const b = e.target.closest('button');
+  if (!b || b.disabled) return;
+  const d = b.dataset;
+  if (d.back) { U.go(E.prev || 'city'); return; }
+  if (d.etab) { E.tab = d.etab; render(); return; }
+  if (d.go) { U.go(d.go); return; }
+  if (d.daily != null) { const r = await act({ type: 'ev:daily', k: Number(d.daily) }); if (r) U.rewardItems(r.rw, 'Daily objectives'); return; }
+  if (d.spin) { const r = await act({ type: 'ev:spin', n: Number(d.spin) }); if (r) U.rewardItems(r.rw, 'Wheel of Fortune'); return; }
+  if (d.flip != null) { const r = await act({ type: 'ev:flip', pos: Number(d.flip) }); if (r) U.rewardItems(r.rw, r.boardDone ? 'Card King: board cleared' : 'Card King'); return; }
+  if (d.ceroli) return ceroli();
+  if (d.arms) return arms();
+  if (d.fort) return showFort();
+  if (d.canyon) return canyonFight(Number(d.canyon));
+  if (d.formation) return formationSheet();
+  if (d.exp) return expFight();
+  if (d.help) { await act({ type: 'ev:help' }, { ok: 'Helped your guild mates.' }); return; }
+  if (d.donate) { await act({ type: 'ev:donate' }, { ok: `Donated: +${A.DONATE.credits} credits.` }); return; }
+  if (d.shop) { E.shop = d.shop; E.tab = 'shops'; render(); return; }
+  if (d.buy) { const r = await act({ type: 'ev:buy', shop: E.shop, id: d.buy, n: 1 }); if (r) U.toast(`Bought: ${A.rewardText(r.rw)}.`, 'good'); return; }
+  if (d.chest) { const r = await act({ type: 'ev:chest', kind: d.chest, n: Number(d.n) }); if (r) U.rewardItems(r.rw, d.chest === 'gold' ? 'Gold Chest' : 'Silver Chest'); return; }
+  if (d.recruit) { await act({ type: 'ev:recruit', cmd: d.recruit }, { ok: `${cmdName(d.recruit)} joined you.` }); return; }
+  if (d.convert) { const n = Math.min(10, E.v.inv.sc[A.CMD[d.convert].rarity === 'epic' ? 'uniE' : 'uniL'] || 0); await act({ type: 'ev:convert', cmd: d.convert, n }, { ok: `${n} universal sculptures became ${cmdName(d.convert)}'s.` }); return; }
+  if (d.skills) return skillSheet(d.skills);
+  if (d.item) return itemSheet(d.item);
+}
+async function canyonFight(id) {
+  const r = await act({ type: 'ev:canyon', target: id });
+  if (!r) return;
+  U.sheet({ title: r.won ? 'Victory in the canyon' : 'Defeat in the canyon', body: `<p class="aoc-p">${r.won ? (r.rank < r.before ? `You climbed from rank ${r.before} to <b>${r.rank}</b>.` : `You won and keep rank ${r.rank}.`) : `Your line broke. You stay at rank ${r.rank}.`}</p>${fightsHtml(r.fights)}` });
+}
+async function expFight() {
+  const r = await act({ type: 'ev:expedition' });
+  if (!r) return;
+  U.sheet({ title: r.won ? 'Stage cleared' : 'Stage lost', body: `${r.won ? `<p class="aoc-p">You reached stage ${r.stage + 1 > A.EXPEDITION.stages ? 'the end' : r.stage + 1}. First clear: ${rewardLine(r.rw, 18)}</p>` : '<p class="aoc-p">The enemy held. Nothing was lost; change your line or raise your commanders.</p>'}${fightsHtml(r.fights)}` });
+}
+async function ceroli() {
+  const r = await act({ type: 'ev:ceroli', role: E.role, cmd: E.cmd, diff: E.diff || 1 });
+  if (!r) return;
+  const roles = A.CEROLI_ROLES;
+  U.sheet({ title: r.won ? 'Ceroli is defeated' : 'Ceroli escaped', body: `<p class="aoc-p">${r.won ? `Down in ${r.rounds} rounds.` : `She had ${full(r.bossLeft)} of ${full(r.bossMax)} health left after ${r.rounds} rounds.`} You earned <b>${full(r.tokens)}</b> tokens.${r.won && r.unlocked > E.diff ? ` Difficulty ${r.unlocked} is open.` : ''}</p>
+    <ul class="aoc-list aoc-small">${r.team.map(x => `<li><b>${esc(x.name)}</b> · ${esc(roles[x.role])} · ${esc(cmdName(x.cmd))}: ${full(x.dmg)} damage${x.alive ? '' : ' <span class="aoc-bad">(fell)</span>'}</li>`).join('')}</ul>` });
+}
+async function arms() {
+  const r = await act({ type: 'ev:arms' });
+  if (!r) return;
+  U.sheet({ title: `Arms Training: ${r.waves} waves`, body: `<p class="aoc-p">You held ${r.waves} wave${r.waves === 1 ? '' : 's'} of Armsmaster Lohar. Best this event: ${r.best}.</p><ul class="aoc-list aoc-small">${r.log.map(x => `<li>Wave ${x.wave}: <span class="${x.won ? 'aoc-good' : 'aoc-bad'}">${x.won ? 'held' : 'broken'}</span>${x.won ? `, ${full(x.left)} still standing` : ''}</li>`).join('')}</ul>${r.got.length ? `<p class="aoc-p">New rewards: ${r.got.map(rw => rewardLine(rw, 16)).join(' ')}</p>` : ''}` });
+}
+function showFort() {
+  const f = U.F, P = f.player;
+  const forts = f.camps.filter(c => c.fort);
+  if (!forts.length) { U.toast('You have not found a fort yet. Scout further out.', 'info'); return; }
+  const c = forts.sort((a, b) => Math.hypot(a.x - P.x, a.y - P.y) - Math.hypot(b.x - P.x, b.y - P.y))[0];
+  U.go('map');
+  U.mapFocus(c.x, c.y, 14);
+  setTimeout(() => U.openTile(c.y * A.MAP_N + c.x), 120);
+}
+function formationSheet() {
+  const P = U.F.player;
+  let pick = E.v.canyon.formation.slice();
+  const own = Object.keys(P.cmds).sort((a, b) => P.cmds[b].lv - P.cmds[a].lv);
+  const h = U.sheet({ title: 'Your canyon line', body: '' });
+  const draw = () => {
+    h.body.innerHTML = `<p class="aoc-small">Tap commanders in the order they should fight (up to ${A.CANYON.size}). Tap again to take one out.</p>
+      <div class="aoc-ev-myline">${pick.length ? lineHtml(pick.map(id => ({ id, lv: P.cmds[id].lv })), 44) : '<span class="aoc-muted">Nobody yet</span>'}</div>
+      <div class="aoc-ev-pick">${own.map(id => `<button type="button" class="aoc-ev-pickc${pick.includes(id) ? ' is-in' : ''}" data-pick="${id}">${U.portrait(A.CMD[id], 40)}<span class="aoc-small">${esc(cmdName(id))}<br>Lv ${P.cmds[id].lv}${pick.includes(id) ? ` · #${pick.indexOf(id) + 1}` : ''}</span></button>`).join('')}</div>`;
+  };
+  draw();
+  h.body.addEventListener('click', e => {
+    const b = e.target.closest('[data-pick]');
+    if (!b) return;
+    const id = b.dataset.pick;
+    if (pick.includes(id)) pick = pick.filter(x => x !== id);
+    else if (pick.length < A.CANYON.size) pick.push(id);
+    draw();
+  });
+  h.setActions([{ label: 'Best five', kind: 'ghost', keep: true, onClick: () => { pick = []; draw(); } }, { label: 'Save', onClick: () => act({ type: 'ev:formation', cmds: pick }, { ok: pick.length ? 'Line saved.' : 'Your five best commanders will fight.' }) }]);
+}
+function skillSheet(id) {
+  const P = U.F.player, r = P.cmds[id], c = A.CMD[id];
+  const names = [c.active.name, c.passives[0].name, c.passives[1].name, c.ultimate.name];
+  const have = E.v.inv.sc[id] || 0;
+  const h = U.sheet({ title: `${c.name}: skills`, body: `<p class="aoc-small">${have} sculptures. A skill level costs 2 sculptures per current level (or Gold and Iron on the commander's sheet).</p>${names.map((n, k) => {
+    const lv = r.sk[k], cost = A.scSkillCost(lv), locked = k === 3 && r.lv < A.ULTIMATE_LEVEL;
+    return `<div class="aoc-row"><div class="aoc-row-main"><b>${esc(n)}</b><div class="aoc-small aoc-muted">Level ${lv} of 5${locked ? ` · unlocks at commander level ${A.ULTIMATE_LEVEL}` : ''}</div></div><div class="aoc-row-act"><button type="button" class="aoc-btn gold tiny" data-sk="${k}"${lv < 5 && !locked && have >= cost ? '' : ' disabled'}>${lv >= 5 ? 'Max' : `${cost} sculptures`}</button></div></div>`;
+  }).join('')}` });
+  h.body.addEventListener('click', async e => {
+    const b = e.target.closest('[data-sk]');
+    if (!b || b.disabled) return;
+    const res = await act({ type: 'ev:skill', cmd: id, skill: Number(b.dataset.sk) }, { ok: 'Skill raised.' });
+    if (res) { h.close(); setTimeout(() => skillSheet(id), 50); }
+  });
+}
+// use an item: speedups pick a queue, tomes a commander; the rest are used straight away
+function itemSheet(k) {
+  const it = A.ITEMS[k], n = E.v.inv.items[k] || 0, f = U.F, P = f.player;
+  const rows = [];
+  if (it.kind === 'speed') {
+    const qs = [];
+    if (P.q.build) qs.push(['build', '', `Building ${A.BUILDINGS[P.q.build.id].name}`, P.q.build]);
+    if (P.q.research) qs.push(['research', '', `Researching ${A.TECHS[P.q.research.id].name}`, P.q.research]);
+    if (P.q.heal) qs.push(['heal', '', 'Healing', P.q.heal]);
+    for (const u of A.UNIT_KEYS) if (P.q.train[u]) qs.push(['train', u, `Training ${A.UNITS[u].plural}`, P.q.train[u]]);
+    if (!qs.length) rows.push('<p class="aoc-muted">Nothing is building, researching, healing or training.</p>');
+    for (const [q, unit, label, x] of qs) {
+      const left = Math.max(0, x.end - f.t), need = Math.min(n, Math.ceil(left / it.min));
+      rows.push(`<div class="aoc-row"><div class="aoc-row-main"><b>${esc(label)}</b><div class="aoc-small aoc-muted">${dur(left)} left</div></div><div class="aoc-row-act"><button type="button" class="aoc-btn gold tiny" data-use="1" data-q="${q}" data-unit="${unit}">Use 1</button>${need > 1 ? `<button type="button" class="aoc-btn blue tiny" data-use="${need}" data-q="${q}" data-unit="${unit}">Use ${need}</button>` : ''}</div></div>`);
+    }
+  } else if (it.kind === 'tome') {
+    for (const id of Object.keys(P.cmds).sort((a, b) => P.cmds[b].lv - P.cmds[a].lv)) {
+      const r = P.cmds[id];
+      if (r.lv >= A.CMD_MAX_LEVEL) continue;
+      rows.push(`<div class="aoc-row"><div class="aoc-row-main aoc-ev-scrow">${U.portrait(A.CMD[id], 34)}<span><b>${esc(cmdName(id))}</b><div class="aoc-small aoc-muted">Level ${r.lv} · ${full(r.xp)}/${full(A.cmdXpToNext(r.lv, A.CMD[id].rarity))} experience</div></span></div><div class="aoc-row-act"><button type="button" class="aoc-btn gold tiny" data-use="1" data-cmd="${id}">Use 1</button>${n > 1 ? `<button type="button" class="aoc-btn blue tiny" data-use="${n}" data-cmd="${id}">Use ${n}</button>` : ''}</div></div>`);
+    }
+    if (!rows.length) rows.push('<p class="aoc-muted">Every commander is at the highest level.</p>');
+  } else if (it.kind === 'key') rows.push(`<p class="aoc-p">Open chests in the Tavern.</p><div class="aoc-chips"><button type="button" class="aoc-btn gold small" data-tavern="1">Go to the Tavern</button></div>`);
+  else if (it.kind === 'tele') rows.push('<p class="aoc-p">Tap an empty place on the world map you have explored, then Move city, and choose to use the Teleport.</p>');
+  else rows.push(`<div class="aoc-chips"><button type="button" class="aoc-btn gold small" data-use="1">Use 1</button>${n > 1 && it.kind !== 'shield' ? `<button type="button" class="aoc-btn blue small" data-use="${n}">Use all ${n}</button>` : ''}</div>`);
+  const desc = { speed: `Takes ${dur(it.min)} off a timer.`, tome: `${full(it.xp)} experience for a commander.`, ap: `Restores ${it.ap} action points (they can pass ${A.AP_MAX}).`, res: `Adds ${Object.entries(it.res || {}).map(([r, x]) => `${full(x)} ${A.RES_NAME[r]}`).join(', ')} to your stock.`, box: 'Opens into a random speedup, tome, crate, key or gems.', shield: 'An 8-hour peace shield. Attacking breaks it.', key: 'Opens a tavern chest.', tele: 'Moves your city once, for free.' }[it.kind] || '';
+  const h = U.sheet({ title: `${it.name} (${n})`, body: `<div class="aoc-ev-iteminfo"><span class="aoc-tile">${itemIcon(k, 40)}</span><p class="aoc-p">${esc(desc)}</p></div>${rows.join('')}` });
+  h.body.addEventListener('click', async e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.tavern) { h.close(); E.tab = 'tavern'; render(); return; }
+    if (!b.dataset.use) return;
+    const r = await act({ type: 'ev:use', id: k, n: Number(b.dataset.use), q: b.dataset.q, unit: b.dataset.unit, cmd: b.dataset.cmd });
+    if (!r) return;
+    h.close();
+    if (r.rw) U.rewardItems(r.rw, it.name);
+    else U.toast(`Used ${r.used} ${it.name}.`, 'good');
+  });
+}
+// the events hub opens over the current screen; Back returns there
+U.openEvents = tab => {
+  if (U.current && U.current !== 'events') E.prev = U.current;
+  if (tab) E.tab = tab;
+  U.go('events');
+};
+U.screen('events', {
+  mount,
+  show: () => { refresh(true); },
+  update: () => { if (performance.now() - E.last > 3000) refresh(false); },
+});
+} catch (e) { console.error('[build] conquest/ui-events.js failed to load', e); }
 })();
 
 /* ===== boot ===== */

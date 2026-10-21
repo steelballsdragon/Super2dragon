@@ -50,9 +50,27 @@ The map follows the structure of a Rise of Kingdoms kingdom, researched from the
 
 Time runs at **1 game minute per real second** at 1x (a game day is 24 real minutes). You can pause, or play at 2x or 4x; developer mode adds 16x and 64x. While the game is closed, the world keeps going at a tenth of that speed, up to a limit you choose (12 game hours by default). A summary of what happened greets you when you return.
 
+### Events and daily activities
+
+The **Events** button in the city (and the action-point readout on the world map) opens the events hub, modeled on Rise of Kingdoms. Everything in it is a rule of the simulation in `events.js`: the AI governors take part by the same rules, with the same limits, from their own stock.
+
+- **Action points.** Every governor has up to 1,000; one returns every 2 game minutes, and tonics can lift the total past 1,000. Attacking a bandit camp costs 40 plus 5 per camp level, and a camp attack recalled before it arrives returns them. Leading or joining a rally on a barbarian fort costs 150. Camps now also drop Tomes of Knowledge and speedups.
+- **Barbarian forts.** 60 forts (levels 1 to 2 in Zone 1, 2 to 4 in Zone 2, 4 to 5 in the heartland) can only be taken by a guild rally. Everyone in a winning rally earns tomes, speedups and commander experience. A fallen fort returns elsewhere after 6 hours, and a damaged one recovers 6 hours after the last attack. AI leaders and officers rally on forts when their guild has nothing else under way.
+- **Daily objectives.** Points for what you do in a game day: camps, action points spent, gathering, finished builds, research, training and healing, scouts, guild helps and donations, Sunset Canyon, the Expedition, rallies and tavern chests (each with a daily cap). Chests open at 20, 40, 60, 80 and 100 points; the last holds gems, a universal epic sculpture, a Magic Box and a Gold Key. Everything resets at the start of each game day.
+- **Items.** Speedups (5 minutes to 8 hours, never spending more than the timer needs), Tomes of Knowledge (500, 2,000 and 8,000 commander experience), Silver and Gold Keys, action-point tonics, resource crates, Magic Boxes, an 8-hour peace shield and Teleports (move the city once without paying Gold).
+- **Tavern and sculptures.** A free Silver Chest every game day and a free Gold Chest every two; keys open more. Chests hold sculptures: 10 of a commander recruit them before their deed, and more raise their skills (2 per current skill level, as an alternative to Gold and Iron). Universal epic and legendary sculptures convert into any commander of that rarity.
+- **Sunset Canyon.** Every governor has a rank from 1 to 600. Five battles a game day against three offered opponents ranked above you: the one just above and the two weakest-looking lines among the twenty above. Your line of up to five commanders (your order, or your five best) each lead an army sized by their level, so no real troops are lost. The first armies fight; the winner carries its survivors into the next opponent. Beating a higher rank swaps places, and the same line defends your rank. Every rank is paid in gems, keys and tomes at the end of each game day.
+- **The Expedition.** 30 stages in 6 chapters against neutral warbands, fought by the same line. Each stage cleared adds 4 medals a game hour, forever; the first clear of a stage pays tomes and medals, every fifth gems and a Gold Key. Its shop sells Boudica sculptures (standing in for Aethelflaed, who is not in the game), universal legendary sculptures, tomes, keys and speedups. Ten fights a game day.
+- **Guild helps and donations.** Builds, research and healing ask your guild for help: each guild mate can help a timer once, up to ten helps, each taking 1% (at least a minute) off. Helping earns 10 credits a help, for 50 helps a day. Donations (up to 20 a day) pay the guild treasury, which funds guild technology, and earn 40 credits. The guild shop sells shields, teleports, speedups, tomes, tonics and keys for credits.
+- **Shops and gems.** Gems come from daily objectives, Sunset Canyon, the Expedition, events and the Shadow Legion. The gem shop sells tonics, speedups, keys, tomes, shields, teleports and gold. Every shop has daily limits.
+- **The event calendar.** Each week of game days: the **Wheel of Fortune** on days 1 to 2 (a featured legendary commander, one free spin a day, then 150 gems a spin or 1,350 for ten, with milestone rewards at 10, 25, 50 and 80 spins); **Card King** on days 3 to 4 (six hidden cards, each flip dearer, the top card five sculptures of its featured commander); **More Than Gems** on days 4 to 5 (gems spent count toward universal sculptures, from 2,000 up to 25,000); **Ceroli Crisis** on days 5 to 6 (a raid of four with you and three guild mates, choosing Tank, Damage or Healer; damage earns tokens for the Ceroli shop; a win unlocks the next of ten difficulties); **Arms Training** on days 6 to 7 (wave after wave of Armsmaster Lohar, survivors carrying on, milestone rewards by the best run).
+- **The Shadow Legion Invasion.** On day 3 and every 5 days after, at 20:00, five waves ten minutes apart strike every guild member's city inside its guild's territory, fought by the troops at home and the Defender. Most of the fallen are wounded. Each wave held scores 100 times its number; personal rewards go up to a universal legendary sculpture, and the three best guilds earn gems for every member.
+
+Not built (yet), and nothing in the game pretends otherwise: **Golden Kingdom** (a 20-floor roguelike with relics and blueprints; blueprints would need equipment, which the game does not have), **Ian's Ballads** (a five-player co-op dungeon), **Ark of Osiris** and the **Osiris League** (30-against-30 battles on a separate map), and **Kingdom versus Kingdom** with the Lost Kingdom (which needs other kingdoms; this is one server).
+
 ### Developer mode
 
-Tap the logo on the start screen 7 times quickly to turn it on (7 more turn it off; it is kept on the device). It adds the 16x and 64x speeds and a **Dev** button in the city (also in the menu) that opens the Developer panel: unlimited resources and instant builds and training (two switches saved with the world), max every building, +100,000 of each troop, every commander at max level, finish all timers, reveal the map, a 7-day shield, 50 million of each resource, and time skips. The simulation refuses every developer command when developer mode is off.
+Tap the logo on the start screen 7 times quickly to turn it on (7 more turn it off; it is kept on the device). It adds the 16x and 64x speeds and a **Dev** button in the city (also in the menu) that opens the Developer panel: unlimited resources, instant builds and training, and every event open every day (three switches saved with the world), max every building, +100,000 of each troop, every commander at max level, gems, keys and items, finish all timers, reveal the map, a 7-day shield, 50 million of each resource, and time skips. The simulation refuses every developer command when developer mode is off.
 
 ## Architecture, and why
 
@@ -115,6 +133,9 @@ src/conquest/
   sim.js         world creation, the clock, queues, marches, battles, rallies, landmarks, territory, events,
                  the chronicle, the Age, the Coalition War scenario
   ai.js          governor decisions, guild planning, diplomacy, coalitions, succession, collapse and refounding
+  events.js      action points, daily objectives, items, the tavern and sculptures, Sunset Canyon, the Expedition,
+                 guild helps and donations, the shops, the event calendar, the Shadow Legion, barbarian forts, and
+                 the AI taking part in all of them
   api.js         validated actions, player commands, fog-of-war views, saves and checks, the server loop
   bundle.mjs     joins the engine files into one script (for the page, its Web Worker and the Node tests)
   ui-core.js     interface shell: host (worker or page), saves, developer mode switch, start and new-world screens,
@@ -131,12 +152,15 @@ src/conquest/
   ui-battle.js   the battle scene played from a report's recorded rounds
   ui-intel.js    reports, battle details and replay checks
   ui-chron.js    chronicle, maps of past territory, power over time, casualties, rankings, server population
-  ui-misc.js     inspector, menu and settings, the six-page How to play, the offline summary
+  ui-misc.js     inspector, menu and settings, the How to play pages, the offline summary
   ui-dev.js      the Developer panel
   ui-guide.js    the welcome and the Tap marker for the first goals
+  ui-events.js   the events hub: daily objectives, events, Sunset Canyon, the Expedition, guild helps, the tavern,
+                 items and shops; reward pop-ups for items
   ui.css         the look of Last Furnace: navy panels, chunky type, gold, blue and green buttons, plates, banners
 public/conquest-logo.webp   the Last Furnace: Age of Conquest artwork (inlined by the build)
 tests/conquest-engine.mjs   engine tests (Node)
+tests/conquest-events.mjs   events, items and action points (Node)
 tests/conquest-demo.mjs     the Coalition War campaign test (Node)
 tests/conquest-ui.mjs       interface test (Chromium)
 tests/conquest-dev.mjs      developer mode test (Chromium)
@@ -161,7 +185,7 @@ Every push runs all suites on GitHub. The game is published only when they all p
 
 The world is one JSON document. IndexedDB stores it gzipped under `last-furnace-conquest` (keys `main` and `backup`); browser storage is the fallback. A trimmed real example is in [conquest-sample.json](conquest-sample.json).
 
-**Wrapper:** `{ format: "age-of-conquest", v: 2, check: <FNV-1a hash of body>, body: "<world as JSON text>" }`. Schema 2 is the kingdom map. A schema 1 save (the old 128-tile map) is refused with an explanation, and the save itself is left untouched until you start a new world.
+**Wrapper:** `{ format: "age-of-conquest", v: 4, check: <FNV-1a hash of body>, body: "<world as JSON text>" }`. Schema 2 is the kingdom map, 3 removed the commanders without paintings (their copies become their replacements), 4 added events, items and action points (an older save gains them, full action points and the barbarian forts when it loads). A schema 1 save (the old 128-tile map) is refused with an explanation, and the save itself is left untouched until you start a new world.
 
 To load, the save must:
 - have a matching checksum
@@ -174,6 +198,7 @@ To load, the save must:
   - building and research levels are within their caps
   - no two cities share a tile and no city is on impassable land, a mountain range or a pass road
   - exactly one human governor
+  - every commander a governor holds exists; purses, items and sculptures are known and never negative; action points are never negative
 
 **World:**
 
@@ -184,7 +209,9 @@ To load, the save must:
 | `govs[600]` | governors (below); index = id; the player is id 599 |
 | `guilds[10]` | guilds (below) |
 | `marks` | the Capital, 15 passes, 27 holy sites, 18 ruins: `{ id, kind (capital, pass, site, ruin), name, x, y, region, opens, owner, since, level (garrison level), garrison, base, wallDur, wallMax, lastHit, cleared }`; passes add `gate, tier, links` (the two regions), holy sites add `site` (sanctum, altar, shrine, temple) and `blessing` |
-| `camps`, `nodes` | bandit camps `{ id, x, y, lv, troops, reserved?, until? }`; resource fields `{ id, x, y, res, lv, amount, max, by }` |
+| `camps`, `nodes` | bandit camps `{ id, x, y, lv, troops, reserved?, until? }` and barbarian forts (the same, with `fort: true, base, lastHit`); resource fields `{ id, x, y, res, lv, amount, max, by }` |
+| `canyon` | Sunset Canyon: `rank` (every governor's id in rank order) and `log` (the player's last 20 canyon battles) |
+| `legion`, `fortRespawn` | the last Shadow Legion Invasion `{ key, wave, pts, broken, paid, guilds }`; when fallen forts return |
 | `marches` | armies in the field `{ id, kind, owner, troops, c1, c2, path, k, frac, speed, to, target, state, eta, load, wounded, rally, parts }` (paths stored as a start tile plus one letter per step) |
 | `rallies` | `{ id, leader, guild, target, to, launchAt, state, lead }` |
 | `events` | active world events `{ kind, name, res, mult, region, start, end }` |
@@ -203,6 +230,7 @@ To load, the save must:
 - record: `stats` (wins, defenses, camps, scouts, rallies, trading, healing, troops trained, kills, sacks and more)
 - what it knows and feels: `intel` (scout reports), `rel` (feelings about up to 18 governors), `mem` (up to 12 memories), `log` (its last 6 decisions with reasons and who may see them)
 - planning: `st` (grow, raid, war, defend or rebuild), `next` (next decision), `explore` (known radius), `alert`, `lastAttack`
+- events: `ap, apAt` (action points, settled lazily), `inv` (`{ gems, credits, tokens, items, sc }`: currencies, items by id, sculptures by commander or `uniE`/`uniL`), `ev` (today's counters: activity per task, claimed chests, canyon and Expedition fights, donations, helps, shop purchases, the free spin and chest; reset each game day), `exp` (Expedition `{ st, med, at }`), `cf` (the canyon line), `evp` (`{ freeG, n, win }`: the last free Gold Chest, a draw counter, and progress in the current window of each event)
 
 **Guild:**
 - identity: `name, tag, color, emblem, founded, home, civ`
@@ -221,12 +249,13 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | One 600-governor server, exactly 10 guilds (60 max) | Done | 599 simulated plus you; invariants checked on every load and in tests, including after 5 simulated days |
 | Ten servers, 6,000 governors, cross-server play | Planned | the engine is server-agnostic (identity in `SERVER`); not built or measured |
 | Game modes | Partial | Eternal Conquest, and the Coalition War demonstration campaign. The other nine modes are planned |
+| Events and daily activities | Partial | action points, 60 barbarian forts for rallies, daily objectives with five chests, items, the tavern and sculptures, Sunset Canyon (600 ranks), the Expedition (30 stages, medals, shop), guild helps, donations and shop, gems and the gem shop, the Wheel of Fortune, Card King, More Than Gems, Ceroli Crisis, Arms Training and the Shadow Legion Invasion; the AI takes part in all of them by the same rules. Golden Kingdom, Ian's Ballads, Ark of Osiris, the Osiris League and Kingdom versus Kingdom are planned |
 | World map | Done | a 384 by 384 kingdom in the Rise of Kingdoms layout: 3 zones, 10 regions walled by mountain ranges, 15 passes in 3 levels, 27 holy sites with blessings, the Capital, 18 ruins, 600 bandit camps and 1,200 resource fields that grow stronger toward the centre; lakes, rivers with fords, forests, hills, tundra; chunked painting, a whole-kingdom view with region names, clouds over unexplored land, a Find list, pan and pinch zoom; territory overlay with drawn borders |
 | City building and economy | Done | 15 buildings to level 25 with costs, times and prerequisites; production with no storage limit, food upkeep, desertion when food runs out, stock protected from plunder |
 | Resources | Partial | food, wood, stone, iron, gold. Influence, rare materials and taxation are planned |
 | Research | Done | 16 technologies in three branches (economy, military doctrine, intelligence), capped by the Academy, with prerequisites |
 | Troops | Done | infantry, cavalry, archers, siege; training in any number the stock pays for (the time grows with the number), upkeep, wounded, healing, a hospital limit, morale. Experience is held by commanders, not troops |
-| Commanders | Partial | 27 fully implemented, 12 of the world's own and 15 from history (Sun Tzu, Genghis Khan, Oda Nobunaga, Miyamoto Musashi, Cao Cao, Alexander the Great, Julius Caesar, Leonidas, Cleopatra, Hannibal Barca, Joan of Arc, Richard I, Saladin, Ragnar Lothbrok and Boudica), each recruited by a deed such as 40 camps or a level 20 Town Hall: rarity, story, civilization, specialty, active skill, two passives, ultimate (level 30), 3-branch talents, skill levels, pairings and synergies, rivals, recruitment goals for player and AI alike, City Steward and Defender roles. Equipment and more commanders are planned |
+| Commanders | Partial | 20 fully implemented and painted, 5 of the world's own and 15 from history (Sun Tzu, Genghis Khan, Oda Nobunaga, Miyamoto Musashi, Cao Cao, Alexander the Great, Julius Caesar, Leonidas, Cleopatra, Hannibal Barca, Joan of Arc, Richard I, Saladin, Ragnar Lothbrok and Boudica), each recruited by a deed such as 40 camps or a level 20 Town Hall, or with 10 sculptures: rarity, story, civilization, specialty, active skill, two passives, ultimate (level 30), 3-branch talents, skill levels, pairings and synergies, rivals, recruitment goals for player and AI alike, City Steward and Defender roles. Equipment and more commanders are planned |
 | Civilizations | Partial | 12, each with bonuses, real costs, a troop variant, a starting commander, preferred terrain, colors and city style, and lore. Culture, stability, reforms and cultural exchange are planned |
 | Combat | Done | rounds, counters, terrain, walls, towers, durability, morale, routs, pursuit, ambushes in forests, commander skills; deterministic, replayable, explained |
 | Sieges, rallies, garrisons, reinforcement | Done | rallies on passes, holy sites, the Capital and cities; joiners; garrisons hold landmarks; unguarded landmarks are lost; landmarks open on set days; sacked cities move behind a shield |
@@ -249,7 +278,7 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | Notifications, accessibility | Done | three notification levels, large text, reduced motion, keyboard map controls, labels on every control, portrait and landscape layouts; only the world map zooms (the page and the city never do, so fast taps on buttons do not zoom the screen) |
 | Pictures instead of text | Done | the drawn city as the home screen, the painted world map with castles and marching armies, battle scenes, icon-based sheets, a Tap marker instead of a written guide |
 | Last Furnace look and interactions | Done | its design system, level plates, builder chip, side buttons with red dots, chapter banner with Go and Claim, reward pop-ups, building sheets with effects and requirements, Free finish and crates (simulation rules shared with the AI) |
-| Developer mode | Done | 7 taps on the start screen logo; unlimited resources and instant switches saved with the world; max buildings, troops, commanders, timers, map, shield, resources, time skips; refused by the simulation outside developer mode |
+| Developer mode | Done | 7 taps on the start screen logo; unlimited resources, instant and every-event-open switches saved with the world; max buildings, troops, commanders, gems and items, timers, map, shield, resources, time skips; refused by the simulation outside developer mode |
 | Spectator, sandbox, editor, ironman, seasons, tournaments | Planned | |
 
 ## Test results
@@ -258,13 +287,14 @@ Run on 2026-10-21 in this repository (`node tests/all.mjs`):
 
 | Suite | Result |
 |---|---|
-| conquest-engine | 52 of 52 passed |
+| conquest-engine | 53 of 53 passed |
+| conquest-events | 20 of 20 passed |
 | conquest-demo | 5 of 5 passed |
-| conquest-ui | 18 of 18 passed |
+| conquest-ui | 19 of 19 passed |
 | conquest-dev | 10 of 10 passed |
-| conquest-robust | 6 of 6 passed (two game days at 64x: at most 751 DOM nodes, a 28 MB page heap with the paintings loaded, the town still drawing in under 4 ms a frame) |
+| conquest-robust | 6 of 6 passed (two game days at 64x: at most 784 DOM nodes, a 28 MB page heap with the paintings loaded, the town still drawing in under 4 ms a frame) |
 
-All five suites together take about 4 minutes.
+All six suites together take about 6 minutes.
 
 The engine suite covers:
 - production with no storage limit, protected stock and upkeep, building and research prerequisites, training and healing, the market
@@ -276,8 +306,19 @@ The engine suite covers:
 - memory surviving saves, no negative stock for anyone
 - sacking and recovery, the Throne and Grand Exchange victories, rallies capturing holy sites
 - invalid and malicious commands, guild-mate and ally protection, double reward claims, developer gating
-- save tampering, refusing old-map saves with a reason, determinism, save and load continuity, offline catch-up, and a speed check (one game day in under 20 seconds)
+- save tampering, refusing old-map saves with a reason, converting the removed commanders in older saves, determinism, save and load continuity, offline catch-up, and a speed check (one game day in under 20 seconds)
 - Free finish (refused too early, works in the last 10 minutes), crates (an hour of output once, refilled after 4 hours, even into a very large stock), the AI using both, goal progress and chapters, and the developer switches (only in developer mode, saved with the world)
+
+The events suite covers:
+- action points: the camp cost, refusal without enough, the refund on recall, regeneration; forts refusing lone armies; camp drops
+- a guild rally taking a barbarian fort, every member paying action points and being paid
+- daily objectives: points, per-task caps, each chest once, the reset at the next game day
+- items (speedups without waste, tomes, crates, tonics past the maximum), tavern chests (free silver daily, free gold every two days, keys), sculptures (recruit at ten, skills, universal conversion)
+- shops with currencies and daily limits; More Than Gems counting gems spent only while it is open
+- Sunset Canyon (offered opponents only, rank swaps, five battles a day, daily pay by rank), formations, the Expedition (stages, medals per hour, its shop, no troops lost)
+- guild helps (once per helper, at most ten, credits) and donations (treasury, daily limit)
+- the Wheel of Fortune, Card King, Arms Training and Ceroli Crisis in their windows, and the Shadow Legion striking only cities inside their guild's territory and paying by points
+- the AI taking part by the same rules, saves keeping everything, a schema 3 save gaining purses and forts, and 18 bad event commands refused without changing anything
 
 The demonstration campaign test:
 - An AI guild starts with 34% of the server's power, the level 1 passes out of its region and 5 holy sites (its own region's and a sanctum in each neighbouring region).
@@ -292,14 +333,14 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 | Measure | Result |
 |---|---|
 | Size of the game | 3.1 MB in one file (the 158 paintings are 1.7 MB of WebP, inlined as text); the drawn-only version was 0.8 MB |
-| Generate the kingdom's terrain | 157 ms in Node (the interface does it once per world, on the loading screen) |
-| Create a world (600 governors, map, history) | 144 ms in Node including the terrain, 372 ms to the first frame in Chromium |
-| Simulation cost per game minute, full server | 1.8 ms on day 1, 2.1 ms on day 3, 2.8 ms on day 7 (about 870 armies in the field) |
-| Throughput | 350 to 540 game minutes per second in Node; the browser worker sustains the 64x developer speed (63 game minutes per second). At 1x the simulation uses well under 1% of one core |
-| Offline catch-up | one game day in 3.5 s (12 game hours by default, about 1.8 s) |
-| Memory | about 33 MB of JavaScript heap in Node after 8 game days, most of it the big map's typed arrays and the path cache (browser page: 11 MB, the worker holds the world) |
-| Save size after 8 days | 3.2 MB of JSON, 433 KB gzipped (what is stored) |
-| Save and load | 41 ms and 128 ms (load includes regenerating the kingdom's terrain and the integrity checks) |
+| Generate the kingdom's terrain | 159 ms in Node (the interface does it once per world, on the loading screen) |
+| Create a world (600 governors, map, history) | 130 ms in Node including the terrain, 409 ms to the first frame in Chromium |
+| Simulation cost per game minute, full server | 2.5 ms on day 1, 2.7 ms on day 3, 4.8 ms on day 7 (about 960 armies in the field). The events (every AI governor's daily objectives, Sunset Canyon and Expedition fights, chests, helps and shops, and the Shadow Legion) added about a third: before them it was 1.8, 2.1 and 2.8 ms |
+| Throughput | 210 to 400 game minutes per second in Node; the browser worker sustains the 64x developer speed (63 game minutes per second). At 1x the simulation uses under 1% of one core |
+| Offline catch-up | one game day in 5.5 s (12 game hours by default, about 2.8 s) |
+| Memory | the heap measured in Node after 8 game days went from 33 MB to 13 MB between the two runs, so treat it as noisy (garbage collection timing); most of it is the big map's typed arrays and the path cache (browser page: 18 MB, the worker holds the world) |
+| Save size after 8 days | 3.8 MB of JSON, 518 KB gzipped (what is stored) |
+| Save and load | 46 ms and 186 ms (load includes regenerating the kingdom's terrain and the integrity checks) |
 | Command round trip, page to worker and back | 0.3 ms |
 | Path search | 1.2 ms on average for a 242-tile march between two random cities with every pass open (most cross several regions) |
 | Drawing the city | 1.5 ms per frame (median; 2.2 ms at the 95th percentile when it was zoomed out; the city no longer zooms) with Town Hall 25 and every building, on a 390 by 844 screen at 3x density in headless Chromium; the town redraws at about 30 frames a second while it is on screen |
@@ -310,11 +351,11 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 ## Known limitations
 
 - One server, one mode, and a demonstration campaign. Cross-server features, the other modes, the sandbox, the spectator view and the scenario editor are not built.
-- The kingdom copies the shape of a Rise of Kingdoms kingdom (zones, regions, passes, holy sites), not all of its systems: there are no alliance flags or player-built fortresses (territory comes from cities and landmarks), no teleport items, and no Lost Kingdom. An army already marching keeps going through a pass that changes hands on the way; new marches respect the new owner.
+- The kingdom copies the shape of a Rise of Kingdoms kingdom (zones, regions, passes, holy sites), not all of its systems: there are no alliance flags or player-built fortresses (territory comes from cities and landmarks), and no Lost Kingdom. An army already marching keeps going through a pass that changes hands on the way; new marches respect the new owner.
 - Rally battles use the rally leader's bonuses (civilization, research, commanders) for the whole army; joiners contribute troops, not bonuses.
 - Battles are fought by army totals over rounds, not by units on a battlefield. The battle scene animates those rounds with representative soldiers (up to 34 a side), so a figure is a share of the army, not one unit.
-- The paintings were cut from flat art sheets, so they have no separate animation layers (soldiers have 3 to 6 frames per action; buildings do not move). The terrain, trees, walls and seven commanders are still drawn in code. The commanders sheet came at 1206 by 663 pixels, so those portraits and figures are small (portraits 50 pixels across before scaling). The city's buildings are paintings of different sizes placed on square plots, so large Town Hall stages overlap the plots behind them. There is no sound.
-- There is no shop, no gems and no speed-up items: Free finish (10 game minutes) is the only way to hurry, and it is the same for the AI. The Last Furnace city game's heroes, stages, shop and events went with it.
+- The paintings were cut from flat art sheets, so they have no separate animation layers (soldiers have 3 to 6 frames per action; buildings do not move). The terrain, trees and walls are still drawn in code, and so are the icons for keys, tonics, medals, tokens and credits. The commanders sheet came at 1206 by 663 pixels, so those portraits and figures are small (portraits 50 pixels across before scaling). The city's buildings are paintings of different sizes placed on square plots, so large Town Hall stages overlap the plots behind them. There is no sound.
+- Gems are earned only in the game (daily objectives, Sunset Canyon, the Expedition, events); there is nothing to buy with money. Golden Kingdom, Ian's Ballads, Ark of Osiris, the Osiris League and Kingdom versus Kingdom are not built. Ceroli Crisis is resolved as a quick simulation of the raid (strength from commander level, skills, Town Hall and attack research), not fought on a map. Sunset Canyon, the Expedition and Arms Training use the same formation battles (no real troops); the Shadow Legion fights your real troops at home.
 - No supply lines, fatigue or combat weather; no equipment; no caravans, loans, tribute or sanctions; no spies or sabotage beyond false reports and discovering secret pacts.
 - Culture, stability, public order and civilization reforms are not modeled.
 - Offline time runs at a tenth of play speed and is capped. Long caps take several seconds to catch up on slower phones.

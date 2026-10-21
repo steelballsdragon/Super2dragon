@@ -9,6 +9,7 @@ It looks and plays like the Last Furnace city game it replaces, a mobile strateg
 - **World**: the whole kingdom on one painted map. Zone 1, the outer ring, has six regions where everyone starts; Zone 2 has three richer regions; Zone 3 is the heartland around the Ember Throne. Mountain ranges wall every region, and the only ways through are 15 passes (level 1 between Zone 1 regions, level 2 into Zone 2, level 3 into the heartland) that a guild must capture with a rally before its members and allies can march through. 27 holy sites bless every member of the guild that holds them, and bandit camps and fields grow stronger toward the centre. Unexplored land lies under clouds; zoomed out you see the ranges and the region names; the search button lists every pass and holy site. Tap a place to attack, scout, gather, reinforce or call a rally.
 - **Commanders**: 20 painted commanders lead your armies, 5 of the world's own (Kael, Amara, Temur, Veyra and Orun) and 15 from history (Sun Tzu, Genghis Khan, Oda Nobunaga, Miyamoto Musashi, Cao Cao, Alexander the Great, Julius Caesar, Leonidas, Cleopatra, Hannibal Barca, Joan of Arc, Richard I, Saladin, Ragnar Lothbrok and Boudica). Each has its own skills, talents and story and joins you after a deed, such as defeating 40 bandit camps or raising the Town Hall to level 20. The AI governors recruit them by the same rules.
 - **Army, Guild, Mail, History, Ranks**: troops and commanders, guild politics and rallies, battle reports that play out with soldiers, the server's chronicle and the rankings.
+- **Events**: the Events button in the city opens daily objectives (five chests a day, the last with gems, an epic sculpture, a Magic Box and a Gold Key), the event calendar, Sunset Canyon (five battles a day for a rank among all 600 governors), the Expedition (30 stages that pay medals every hour), guild helps and donations, the Tavern (free Silver and Gold Chests, keys, sculptures that recruit commanders and raise their skills), your items (speedups, Tomes of Knowledge, keys, action-point tonics, crates, shields, teleports) and four shops. Attacking bandit camps costs action points; 60 barbarian forts fall only to guild rallies. Each week brings the Wheel of Fortune, Card King, More Than Gems, Ceroli Crisis (a four-player raid with Tank, Damage and Healer roles) and Arms Training, and every five days the Shadow Legion assaults every guild city inside guild territory. The AI governors take part in all of it by the same rules.
 
 The simulated governors get the same conveniences: they collect their crates and finish nearly done builds free too.
 
@@ -28,6 +29,10 @@ Architecture, save format, feature checklist, test results, measured performance
 Every push to `main` or `claude/last-furnace-game` is tested on GitHub, and only when every test passes is `dist/` published to the `gh-pages` branch, which GitHub Pages serves at the link above.
 
 **Installing it like an app:** open the public link on the phone. On Android the start screen shows an **Install the game** button. On iPhone and iPad tap **Share**, then **Add to Home Screen**. You can also save `dist/index.html` and open it from any folder.
+
+## Events not built yet
+
+Golden Kingdom (a 20-floor roguelike whose blueprints need equipment, which the game does not have yet), Ian's Ballads (a five-player co-op dungeon), Ark of Osiris and the Osiris League (30-against-30 battles on their own map) and Kingdom versus Kingdom (which needs other kingdoms; the game is one server) are not in the game. Aethelflaed is not a commander here, so the Expedition shop sells Boudica's sculptures in her place.
 
 ## No limits on resources or training
 

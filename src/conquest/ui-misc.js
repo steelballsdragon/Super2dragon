@@ -80,6 +80,7 @@ const GUIDE = [
   ['Your city', 'Tap a building to open it and upgrade it. The Town Hall sets every other building\'s limit. Farms, mills, quarries, mines and the market fill a crate every 4 hours: tap it to collect. Troops eat Food every hour. A Warehouse protects part of your stock from raiders.'],
   ['Armies and fog', 'Tap the map to send armies: attack bandit camps for loot, gather at resource fields, scout before you attack. You only see what your city, your armies and your guild can see; scout reports are estimates and grow stale.'],
   ['Combat', 'Infantry beat cavalry, cavalry beat archers, archers beat infantry. Terrain, walls, morale and commander skills matter: a smaller, better-matched army can win. Every battle report explains the result and can be replayed.'],
+  ['Events', 'The Events button in the city holds daily objectives (five chests a game day), Sunset Canyon, the Expedition, guild helps, the Tavern, your items and the shops, and the week\'s events: the Wheel of Fortune, Card King, More Than Gems, Ceroli Crisis and Arms Training. Attacking bandit camps costs action points; barbarian forts fall only to guild rallies; every five days the Shadow Legion strikes the guilds\' cities. The AI governors play all of it by the same rules.'],
   ['Guilds and the Age', 'Join a guild for protection, shared vision and rallies. Guilds sign pacts, betray them, form coalitions and go to war. Hold the Ember Throne for 3 days, or build the Grand Exchange, to win the Age.'],
 ];
 U.intro = () => {

@@ -16,7 +16,7 @@ import { engineSource, WORKER_GLUE, ENGINE_FILES } from './src/conquest/bundle.m
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SRC = join(ROOT, 'src');
-const UI = ['ui-core.js', 'ui-art.js', 'ui-home.js', 'ui-map.js', 'ui-city.js', 'ui-army.js', 'ui-guild.js', 'ui-battle.js', 'ui-intel.js', 'ui-chron.js', 'ui-misc.js', 'ui-dev.js', 'ui-guide.js'];
+const UI = ['ui-core.js', 'ui-art.js', 'ui-home.js', 'ui-map.js', 'ui-city.js', 'ui-army.js', 'ui-guild.js', 'ui-battle.js', 'ui-intel.js', 'ui-chron.js', 'ui-misc.js', 'ui-dev.js', 'ui-guide.js', 'ui-events.js'];
 
 // ---------- arguments
 function parseArgs(argv) {

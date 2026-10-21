@@ -1,6 +1,7 @@
 /* Age of Conquest developer panel. Hidden by default: tap the logo on the start screen 7 times to turn developer
    mode on (U.devMode()). The city then shows a Dev button with unlimited resources, instant builds and training,
-   max buildings, troops, every commander, the whole map, a long shield, finished timers and time skips. Every
+   max buildings, troops, every commander, items and gems, every event open, the whole map, a long shield,
+   finished timers and time skips. Every
    switch and action is a developer command that the simulation refuses outside developer mode. */
 
 const U = window.AOCUI;
@@ -10,7 +11,8 @@ const { esc, fmt } = U;
 const ACTIONS = [
   ['dev:hall', 'Max every building', 'Town Hall and every building to level 25', 'Every building raised.'],
   ['dev:troops', '+100,000 of each troop', 'Infantry, cavalry, archers and siege, at home', 'Troops added.'],
-  ['dev:commanders', 'Every commander at max level', 'All twelve at level 40, ultimates unlocked', 'Commanders maxed.'],
+  ['dev:commanders', 'Every commander at max level', 'All twenty at level 40, ultimates unlocked', 'Commanders maxed.'],
+  ['dev:items', 'Gems, keys and items', '50,000 gems, keys, speedups, tomes, sculptures and full action points', 'Items added.'],
   ['dev:finish', 'Finish all timers', 'Building, research, training, healing and the Exchange', 'Timers finished.'],
   ['dev:reveal', 'Reveal the whole map', 'Every tile explored', 'The map is revealed.'],
   ['dev:shield', 'Seven-day shield', 'Nobody can attack your city', 'Shield up for 7 days.'],
@@ -26,6 +28,7 @@ function panelHtml(sw) {
     <h3 class="aoc-h4">Always on</h3>
     ${toggle('unlimited', 'Unlimited resources', `Every resource kept at ${fmt(50e6)}`, sw.unlimited)}
     ${toggle('instant', 'Instant builds and training', 'Building, research, training and healing finish as they start', sw.instant)}
+    ${toggle('events', 'Every event open', 'The Wheel, Card King, More Than Gems, Ceroli Crisis and Arms Training run every day', sw.events)}
     <h3 class="aoc-h4">One tap</h3>
     <div class="aoc-dev-grid">${ACTIONS.map(([c, label, note]) => `<button type="button" class="aoc-dev-act" data-dev="${c}"><b>${esc(label)}</b><span>${esc(note)}</span></button>`).join('')}</div>
     <h3 class="aoc-h4">Skip time</h3>
@@ -35,12 +38,13 @@ function panelHtml(sw) {
 }
 U.devPanel = () => {
   if (!U.dev) return null;
-  const sw = U.F?.devSw || { unlimited: false, instant: false };
+  const sw = U.F?.devSw || { unlimited: false, instant: false, events: false };
   const h = U.sheet({
     title: 'Developer', body: panelHtml(sw),
     actions: [{ label: 'Developer mode off', kind: 'red', id: 'aoc-dev-off', onClick: async () => {
       await U.host.cmd({ type: 'dev:unlimited', on: false });
       await U.host.cmd({ type: 'dev:instant', on: false });
+      await U.host.cmd({ type: 'dev:events', on: false });
       U.setDevMode(false);
       U.toast('Developer mode off', 'info');
       U.backToStart();

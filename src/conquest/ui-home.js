@@ -501,6 +501,9 @@ function refreshDom(f) {
     if (cmdBtn) U.badge(cmdBtn.querySelector('.aoc-badge'), 0);
     const dev = side.querySelector('[data-side="dev"]');
     if (dev) dev.hidden = !U.dev;
+    U.badge(side.querySelector('[data-side="events"] .aoc-badge'), f.ev ? f.ev.ready : 0);
+    const help = side.querySelector('[data-side="help"]');
+    if (help) { help.hidden = !(f.ev && f.ev.help); U.badge(help.querySelector('.aoc-badge'), f.ev ? f.ev.help : 0); }
   }
 }
 // a number floating up from where something was collected
@@ -540,6 +543,9 @@ async function onTown(e) {
   if (side === 'goals') U.cityPanel('goals');
   if (side === 'guild') U.go('guild');
   if (side === 'cmds') U.go('army', 'cmds');
+  if (side === 'events') U.openEvents();
+  if (side === 'items') U.openEvents('items');
+  if (side === 'help') { const r = await U.run({ type: 'ev:help' }); if (r) U.toast(`You helped ${r.n} time${r.n === 1 ? '' : 's'}${r.credits ? ` (+${r.credits} guild credits)` : ''}.`, 'good'); }
   if (side === 'dev') U.devPanel?.();
 }
 async function freeFinish(kind, id) {
@@ -710,6 +716,9 @@ function mount(root) {
         <button type="button" class="aoc-sidebtn" data-side="goals"><span class="aoc-sidebtn-i">${U.icon('chest', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Goals</span></button>
         <button type="button" class="aoc-sidebtn" data-side="guild"><span class="aoc-sidebtn-i">${U.icon('guild', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Guild</span></button>
         <button type="button" class="aoc-sidebtn" data-side="cmds"><span class="aoc-sidebtn-i">${U.icon('hero', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Heroes</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="events"><span class="aoc-sidebtn-i">${U.icon('gift', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Events</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="items"><span class="aoc-sidebtn-i">${U.icon('bag', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Items</span></button>
+        <button type="button" class="aoc-sidebtn" data-side="help" hidden><span class="aoc-sidebtn-i">${U.icon('heart', 26)}<i class="aoc-badge" hidden></i></span><span class="aoc-sidebtn-l">Help</span></button>
         <button type="button" class="aoc-sidebtn" data-side="dev" hidden><span class="aoc-sidebtn-i">${U.icon('dev', 26)}</span><span class="aoc-sidebtn-l">Dev</span></button>
       </div>
     </div>

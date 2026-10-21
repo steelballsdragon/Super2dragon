@@ -436,7 +436,7 @@ U.go = (id, arg) => {
   const root = document.getElementById('aoc');
   for (const [sid, def] of screens) { if (def.el) def.el.hidden = sid !== id; }
   root.querySelectorAll('.aoc-tab').forEach(b => b.setAttribute('aria-current', b.dataset.tab === id ? 'page' : 'false'));
-  if (!s.el) { s.el = el(`<section class="aoc-screen aoc-screen-${id}" aria-label="${esc(TABS.find(t => t.id === id)?.label || id)}"></section>`); root.querySelector('.aoc-screens').appendChild(s.el); s.mount?.(s.el); }
+  if (!s.el) { s.el = el(`<section class="aoc-screen aoc-screen-${id}" aria-label="${esc(TABS.find(t => t.id === id)?.label || id[0].toUpperCase() + id.slice(1))}"></section>`); root.querySelector('.aoc-screens').appendChild(s.el); s.mount?.(s.el); }
   s.el.hidden = false;
   const prev = U.current;
   U.current = id;
@@ -735,7 +735,7 @@ U.goQuest = id => {
     case 'warehouse': return city('warehouse');
     case 'train': U.closeSheets(); U.go('city'); return setTimeout(() => { U.home.focus('barracks', true); U.trainSheet('inf'); }, 60);
     case 'research': return P.b.academy > 0 ? (U.closeSheets(), U.cityPanel('research')) : city(P.b.hall >= A.BUILDINGS.academy.needHall ? 'academy' : 'hall');
-    case 'scout': case 'camp': case 'wins5': { const c = near(f.camps.filter(x => x.lv <= Math.max(1, Math.ceil(P.b.hall / 2)))) || near(f.camps); if (c) { U.closeSheets(); U.mapFocus(c.x, c.y, 14); setTimeout(() => U.openTile(c.y * A.MAP_N + c.x), 120); } else U.go('map'); return; }
+    case 'scout': case 'camp': case 'wins5': { const c = near(f.camps.filter(x => !x.fort && x.lv <= Math.max(1, Math.ceil(P.b.hall / 2)))) || near(f.camps.filter(x => !x.fort)); if (c) { U.closeSheets(); U.mapFocus(c.x, c.y, 14); setTimeout(() => U.openTile(c.y * A.MAP_N + c.x), 120); } else U.go('map'); return; }
     case 'gather': { const n = near(f.nodes.filter(x => !x.busy)); if (n) { U.closeSheets(); U.mapFocus(n.x, n.y, 14); setTimeout(() => U.openTile(n.y * A.MAP_N + n.x), 120); } else U.go('map'); return; }
     case 'guild': case 'rally': U.closeSheets(); return U.go('guild');
     default: return U.go('city');

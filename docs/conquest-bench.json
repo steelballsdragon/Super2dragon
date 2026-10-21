@@ -1,20 +1,20 @@
 {
   "machine": "Intel(R) Xeon(R) Processor (4 threads), Node v22.22.0",
   "date": "2026-10-21",
-  "terrainMs": 157,
+  "terrainMs": 159,
   "map": {
     "tiles": 384,
     "regions": 10
   },
-  "createMs": 144,
-  "heapAfterCreateMB": 17.1,
+  "createMs": 130,
+  "heapAfterCreateMB": 3.8,
   "throughput": [
     {
       "day": 1,
-      "msPerGameMinute": 1.84,
-      "gameMinutesPerSecond": 543,
-      "marches": 423,
-      "battles": 74,
+      "msPerGameMinute": 2.5,
+      "gameMinutesPerSecond": 401,
+      "marches": 419,
+      "battles": 107,
       "tiers": {
         "active": 12,
         "strategic": 0,
@@ -23,51 +23,51 @@
     },
     {
       "day": 3,
-      "msPerGameMinute": 2.06,
-      "gameMinutesPerSecond": 486,
-      "marches": 613,
-      "battles": 1222,
+      "msPerGameMinute": 2.74,
+      "gameMinutesPerSecond": 365,
+      "marches": 509,
+      "battles": 1299,
       "tiers": {
-        "active": 12,
+        "active": 22,
         "strategic": 14,
-        "background": 573
+        "background": 563
       }
     },
     {
       "day": 7,
-      "msPerGameMinute": 2.84,
-      "gameMinutesPerSecond": 352,
-      "marches": 866,
-      "battles": 5057,
+      "msPerGameMinute": 4.77,
+      "gameMinutesPerSecond": 209,
+      "marches": 959,
+      "battles": 7179,
       "tiers": {
-        "active": 3,
-        "strategic": 116,
-        "background": 480
+        "active": 2,
+        "strategic": 114,
+        "background": 483
       }
     }
   ],
-  "offlineDayMs": 3512,
-  "heapAfter8DaysMB": 32.7,
-  "saveMs": 40.9,
-  "saveKB": 3237,
-  "saveGzipKB": 433,
-  "loadMs": 127.8,
+  "offlineDayMs": 5530,
+  "heapAfter8DaysMB": 12.7,
+  "saveMs": 45.6,
+  "saveKB": 3818,
+  "saveGzipKB": 518,
+  "loadMs": 185.8,
   "loadOk": true,
   "checkUs": 0,
-  "frameViewMs": 0.7,
+  "frameViewMs": 0.8,
   "path": {
     "searches": 300,
     "found": 300,
-    "avgTiles": 242,
+    "avgTiles": 243,
     "avgMs": 1.22,
-    "expandedPerSearch": 6071
+    "expandedPerSearch": 6100
   },
   "browser": {
-    "createToFirstFrameMs": 372,
+    "createToFirstFrameMs": 409,
     "mode": "worker",
     "roundTripMs": 0.3,
-    "commandMs": 0.3,
+    "commandMs": 0.4,
     "speed64GameMinutesPerSecond": 63,
-    "jsHeapMB": 11
+    "jsHeapMB": 18
   }
 }
