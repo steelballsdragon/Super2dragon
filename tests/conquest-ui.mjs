@@ -265,7 +265,8 @@ await step('the kingdom: zoom out to all ten regions, find a pass, read why the 
   await page.waitForSelector('.aoc-find-row');
   const rows = await page.locator('.aoc-find-row').count();
   check(rows >= 1 + 1 + 15 + 27, `the Find list should hold your city, the Capital, 15 passes and 27 holy sites (${rows})`);
-  const pass = await page.evaluate(() => window.AOCUI.F.marks.find(m => m.kind === 'pass' && m.tier === 2));
+  // a level 2 pass on the far side of the mountains from the player (an independent cannot reach it)
+  const pass = await page.evaluate(() => { const F = window.AOCUI.F; return F.marks.find(m => m.kind === 'pass' && m.tier === 2 && !m.links.includes(F.player.region)); });
   await page.click(`.aoc-find-row[data-goto="${pass.x},${pass.y}"] >> nth=0`);
   await page.waitForTimeout(500);
   const view = await page.locator('.aoc-map-where').textContent();
