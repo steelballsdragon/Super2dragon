@@ -7,7 +7,8 @@
   "legend": "legendary-buildings.jpg",
   "heroes": "heroes.jpg",
   "soldiers": "soldiers.jpg",
-  "civ": "civilizations.jpg"
+  "civ": "civilizations.jpg",
+  "cmd": "commanders.jpg"
  },
  "sprites": [
   {
@@ -1876,6 +1877,726 @@
    "adaptive": true,
    "center": true,
    "scale": 0.62
+  },
+  {
+   "name": "face-suntzu",
+   "sheet": "cmd",
+   "box": [
+    193,
+    181,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-suntzu",
+   "sheet": "cmd",
+   "box": [
+    43,
+    104,
+    200,
+    134
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     185,
+     173,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     107,
+     110
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-genghis",
+   "sheet": "cmd",
+   "box": [
+    429,
+    181,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-genghis",
+   "sheet": "cmd",
+   "box": [
+    275,
+    104,
+    200,
+    134
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     421,
+     173,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     107,
+     110
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-nobunaga",
+   "sheet": "cmd",
+   "box": [
+    657,
+    181,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-nobunaga",
+   "sheet": "cmd",
+   "box": [
+    508,
+    104,
+    200,
+    134
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     649,
+     173,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     107,
+     110
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-musashi",
+   "sheet": "cmd",
+   "box": [
+    889,
+    181,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-musashi",
+   "sheet": "cmd",
+   "box": [
+    741,
+    104,
+    200,
+    134
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     881,
+     173,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     107,
+     110
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-caocao",
+   "sheet": "cmd",
+   "box": [
+    1109,
+    181,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-caocao",
+   "sheet": "cmd",
+   "box": [
+    969,
+    104,
+    200,
+    134
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     1101,
+     173,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     107,
+     110
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-alexander",
+   "sheet": "cmd",
+   "box": [
+    193,
+    369,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-alexander",
+   "sheet": "cmd",
+   "box": [
+    43,
+    288,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     185,
+     361,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     289,
+     292
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-caesar",
+   "sheet": "cmd",
+   "box": [
+    429,
+    369,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-caesar",
+   "sheet": "cmd",
+   "box": [
+    275,
+    288,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     421,
+     361,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     289,
+     292
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-leonidas",
+   "sheet": "cmd",
+   "box": [
+    657,
+    369,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-leonidas",
+   "sheet": "cmd",
+   "box": [
+    508,
+    288,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     649,
+     361,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     289,
+     292
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-cleopatra",
+   "sheet": "cmd",
+   "box": [
+    889,
+    369,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-cleopatra",
+   "sheet": "cmd",
+   "box": [
+    741,
+    288,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     881,
+     361,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     289,
+     292
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-hannibal",
+   "sheet": "cmd",
+   "box": [
+    1109,
+    369,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-hannibal",
+   "sheet": "cmd",
+   "box": [
+    969,
+    288,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     1101,
+     361,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     289,
+     292
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-joan",
+   "sheet": "cmd",
+   "box": [
+    193,
+    573,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-joan",
+   "sheet": "cmd",
+   "box": [
+    43,
+    462,
+    200,
+    167
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     185,
+     565,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     486,
+     489
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-richard",
+   "sheet": "cmd",
+   "box": [
+    429,
+    573,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-richard",
+   "sheet": "cmd",
+   "box": [
+    275,
+    486,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     421,
+     565,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     486,
+     489
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-saladin",
+   "sheet": "cmd",
+   "box": [
+    657,
+    573,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-saladin",
+   "sheet": "cmd",
+   "box": [
+    508,
+    486,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     649,
+     565,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     486,
+     489
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-ragnar",
+   "sheet": "cmd",
+   "box": [
+    889,
+    573,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-ragnar",
+   "sheet": "cmd",
+   "box": [
+    741,
+    486,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     881,
+     565,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     486,
+     489
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
+  },
+  {
+   "name": "face-boudica",
+   "sheet": "cmd",
+   "box": [
+    1109,
+    573,
+    50,
+    54
+   ],
+   "pad": 0,
+   "crop": true,
+   "scale": 1.6
+  },
+  {
+   "name": "hero-boudica",
+   "sheet": "cmd",
+   "box": [
+    969,
+    486,
+    200,
+    143
+   ],
+   "pad": 0,
+   "thr": 22,
+   "keep": 0.1,
+   "center": true,
+   "clear": [
+    [
+     1101,
+     565,
+     68,
+     72
+    ]
+   ],
+   "open": 0,
+   "inpaint_rows": [
+    [
+     486,
+     489
+    ]
+   ],
+   "glow": [
+    120,
+    98,
+    52
+   ],
+   "glowres": 11
   }
  ]
 }

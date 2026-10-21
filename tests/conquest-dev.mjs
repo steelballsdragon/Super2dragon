@@ -135,7 +135,7 @@ await step('troops, every commander, the whole map, a shield and finished timers
   await devAct('dev:troops');
   await page.waitForFunction(i => window.AOCUI.F.player.troops.cav >= i + 100000, t0.cav);
   await devAct('dev:commanders');
-  await page.waitForFunction(() => Object.keys(window.AOCUI.F.player.cmds).length === 12 && Object.values(window.AOCUI.F.player.cmds).every(c => c.lv === window.AOC.CMD_MAX_LEVEL));
+  await page.waitForFunction(() => Object.keys(window.AOCUI.F.player.cmds).length === window.AOC.COMMANDERS.length && Object.values(window.AOCUI.F.player.cmds).every(c => c.lv === window.AOC.CMD_MAX_LEVEL));
   await devAct('dev:reveal');
   await page.waitForFunction(() => window.AOCUI.S.fog && window.AOCUI.S.fog.every(v => v > 0));
   await devAct('dev:shield');

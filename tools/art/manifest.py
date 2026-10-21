@@ -77,8 +77,27 @@ for u, r in units.items():
                 continue
             add(name, 'soldiers', [cx - w // 2, r['y'], w, r['h']], pad=0, thr=34, keep=0.15, open=1, adaptive=True, center=True, scale=0.62)
 
+# ---- commanders sheet (1206 x 663): 15 historical commanders, a full figure and a framed portrait in each cell
+IDS = [['suntzu', 'genghis', 'nobunaga', 'musashi', 'caocao'], ['alexander', 'caesar', 'leonidas', 'cleopatra', 'hannibal'],
+       ['joan', 'richard', 'saladin', 'ragnar', 'boudica']]
+CELL_X = [40, 272, 505, 738, 966]
+FRAME_ROW = [108, 290, 487]   # the thin frame line along the top of each row of cells
+FRAME_X = [188, 424, 652, 884, 1104]
+ROW_TOP = [104, 288, 486]
+FRAME_Y = [176, 364, 568]
+LABEL_TOP = [238, 431, 629]
+for r, row in enumerate(IDS):
+    for c, cid in enumerate(row):
+        fx, fy = FRAME_X[c], FRAME_Y[r]
+        # the portrait: the picture inside its gold frame
+        add('face-' + cid, 'cmd', [fx + 5, fy + 5, 50, 54], pad=0, crop=True, scale=1.6)
+        # the full figure: the cell without its portrait and its name
+        top = ROW_TOP[r] - (24 if cid == 'joan' else 0)   # Joan's banner rises above her cell
+        add('hero-' + cid, 'cmd', [CELL_X[c] + 3, top, 200, LABEL_TOP[r] - top], pad=0, thr=22, keep=0.1, center=True,
+            clear=[[fx - 3, fy - 3, 68, 72]], open=0, inpaint_rows=[[FRAME_ROW[r] - 1, FRAME_ROW[r] + 2]], glow=[120, 98, 52], glowres=11)
+
 man = {'sheets': {'city': 'city.jpg', 'map': 'world-map.jpg', 'ui': 'interface.jpg', 'kit': 'production-kit.jpg', 'legend': 'legendary-buildings.jpg',
-                  'heroes': 'heroes.jpg', 'soldiers': 'soldiers.jpg', 'civ': 'civilizations.jpg'}, 'sprites': S}
+                  'heroes': 'heroes.jpg', 'soldiers': 'soldiers.jpg', 'civ': 'civilizations.jpg', 'cmd': 'commanders.jpg'}, 'sprites': S}
 root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 json.dump(man, open(os.path.join(root, 'art', 'sprites.json'), 'w'), indent=1)
 print(len(S), 'sprites')

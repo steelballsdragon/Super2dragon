@@ -83,7 +83,21 @@ def adaptive_bg(a, x0, y0, x1, y1, thr, r=22, margin=60):
         bg = np.where(wsum[..., None] > 0.02, bg2, bg)
     return bg[y0 - Y0:y1 - Y0, x0 - X0:x1 - X0]
 
+def crop_only(sp):
+    """a plain rectangle (portraits inside their frames): no background to remove"""
+    a = sheet(sp['sheet'])
+    x, y, w, h = sp['box']
+    img = Image.fromarray(a[y:y + h, x:x + w].astype(np.uint8), 'RGB').convert('RGBA')
+    scale = sp.get('scale', 1)
+    if scale != 1:
+        img = img.resize((round(w * scale), round(h * scale)), Image.LANCZOS)
+    path = os.path.join(OUT, sp['name'] + '.webp')
+    img.save(path, 'WEBP', quality=sp.get('q', 88), method=6)
+    return {'w': img.width, 'h': img.height, 'fx': img.width / 2, 'fy': img.height - 1, 'bytes': os.path.getsize(path)}
+
 def cut(sp):
+    if sp.get('crop'):
+        return crop_only(sp)
     a = sheet(sp['sheet'])
     x, y, w, h = sp['box']
     pad = sp.get('pad', 6)
@@ -96,6 +110,13 @@ def cut(sp):
     c = a[y0:y1, x0:x1].copy()
     H, W = c.shape[:2]
     thr = sp.get('thr', 30)
+    # thin frame lines drawn across the sheet: rebuilt from the rows above and below
+    for ra, rb in sp.get('inpaint_rows', []):
+        ia, ib = ra - y0, rb - y0
+        if ia - 1 >= 0 and ib + 1 < H:
+            for k in range(ia, ib + 1):
+                t = (k - ia + 1) / (ib - ia + 2)
+                c[k] = c[ia - 1] * (1 - t) + c[ib + 1] * t
     # stray bits of sheet text next to an object: painted over with the sheet's background colour first
     for ex, ey, ew, eh in sp.get('erase', []):
         c[max(0, ey - y0):max(0, ey - y0 + eh), max(0, ex - x0):max(0, ex - x0 + ew)] = (31, 31, 37)
@@ -106,8 +127,24 @@ def cut(sp):
         bg = np.median(edge, axis=0) if 'bg' not in sp else np.array(sp['bg'], np.float32)
     d = np.sqrt(((c - bg) ** 2).sum(-1))
     near = d < thr
+    if 'glow' in sp:
+        # a soft glow behind the object: smooth pixels on the colour line from the background to the glow colour
+        G = np.array(sp['glow'], np.float32)
+        span = float(np.sqrt(((G - bg) ** 2).sum()))
+        u = (G - bg) / span
+        delta = c - bg
+        along = (delta * u).sum(-1)
+        resid = np.sqrt(np.maximum(0, (delta ** 2).sum(-1) - along ** 2))
+        lum = c.mean(-1)
+        std = np.sqrt(np.maximum(0, box_blur(lum ** 2, 2) - box_blur(lum, 2) ** 2))
+        near |= (resid < sp.get('glowres', 10)) & (along > -4) & (along < span) & (std < sp.get('glowstd', 7))
+    # rectangles that are never part of the object (a neighbouring picture inside the box): background from the start
+    for ex, ey, ew, eh in sp.get('clear', []):
+        near[max(0, ey - y0):max(0, ey - y0 + eh), max(0, ex - x0):max(0, ex - x0 + ew)] = True
     seed = np.zeros((H, W), bool)
     seed[0] = seed[-1] = True; seed[:, 0] = seed[:, -1] = True
+    for ex, ey, ew, eh in sp.get('clear', []):
+        seed[max(0, ey - y0):max(0, ey - y0 + eh), max(0, ex - x0):max(0, ex - x0 + ew)] = True
     bgm = flood(seed, near)
     fg = ~bgm
     # cut thin attachments (frame lines, runes, sparks) and keep the object's pieces
@@ -210,7 +247,7 @@ for i, n in enumerate(names):
         for xx in range(0, cell, 20):
             if (xx + yy) // 20 % 2:
                 dr.rectangle([cx + xx, cy + yy, cx + xx + 19, cy + yy + 19], fill=(96, 110, 96))
-    im = Image.open(os.path.join(OUT, n + '.webp'))
+    im = Image.open(os.path.join(OUT, n + '.webp')).convert('RGBA')
     k = min(1, (cell - 10) / max(im.width, im.height))
     im2 = im.resize((max(1, int(im.width * k)), max(1, int(im.height * k))))
     ox, oy = cx + (cell - im2.width) // 2, cy + (cell - im2.height) // 2

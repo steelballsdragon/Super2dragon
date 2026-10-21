@@ -894,5 +894,215 @@
   "fx": 96.5,
   "fy": 87,
   "bytes": 8696
+ },
+ "face-suntzu": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 2072
+ },
+ "hero-suntzu": {
+  "w": 87,
+  "h": 134,
+  "fx": 37.5,
+  "fy": 133,
+  "bytes": 6894
+ },
+ "face-genghis": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1942
+ },
+ "hero-genghis": {
+  "w": 110,
+  "h": 134,
+  "fx": 27.5,
+  "fy": 133,
+  "bytes": 8204
+ },
+ "face-nobunaga": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 2254
+ },
+ "hero-nobunaga": {
+  "w": 120,
+  "h": 128,
+  "fx": 44.5,
+  "fy": 124,
+  "bytes": 6820
+ },
+ "face-musashi": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1566
+ },
+ "hero-musashi": {
+  "w": 129,
+  "h": 128,
+  "fx": 81.5,
+  "fy": 124,
+  "bytes": 7366
+ },
+ "face-caocao": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1718
+ },
+ "hero-caocao": {
+  "w": 124,
+  "h": 120,
+  "fx": 61.5,
+  "fy": 117,
+  "bytes": 6430
+ },
+ "face-alexander": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1956
+ },
+ "hero-alexander": {
+  "w": 106,
+  "h": 143,
+  "fx": 49.5,
+  "fy": 142,
+  "bytes": 9174
+ },
+ "face-caesar": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1726
+ },
+ "hero-caesar": {
+  "w": 106,
+  "h": 143,
+  "fx": 42.5,
+  "fy": 142,
+  "bytes": 7318
+ },
+ "face-leonidas": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1626
+ },
+ "hero-leonidas": {
+  "w": 106,
+  "h": 143,
+  "fx": 55.5,
+  "fy": 142,
+  "bytes": 8452
+ },
+ "face-cleopatra": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 2012
+ },
+ "hero-cleopatra": {
+  "w": 89,
+  "h": 143,
+  "fx": 49.5,
+  "fy": 142,
+  "bytes": 7650
+ },
+ "face-hannibal": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1722
+ },
+ "hero-hannibal": {
+  "w": 155,
+  "h": 143,
+  "fx": 85.5,
+  "fy": 142,
+  "bytes": 9780
+ },
+ "face-joan": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1924
+ },
+ "hero-joan": {
+  "w": 95,
+  "h": 167,
+  "fx": 48.5,
+  "fy": 166,
+  "bytes": 9154
+ },
+ "face-richard": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1846
+ },
+ "hero-richard": {
+  "w": 88,
+  "h": 148,
+  "fx": 24.5,
+  "fy": 147,
+  "bytes": 6258
+ },
+ "face-saladin": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1868
+ },
+ "hero-saladin": {
+  "w": 95,
+  "h": 143,
+  "fx": 43.5,
+  "fy": 142,
+  "bytes": 7352
+ },
+ "face-ragnar": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1682
+ },
+ "hero-ragnar": {
+  "w": 117,
+  "h": 139,
+  "fx": 46.0,
+  "fy": 136,
+  "bytes": 7240
+ },
+ "face-boudica": {
+  "w": 80,
+  "h": 86,
+  "fx": 40.0,
+  "fy": 85,
+  "bytes": 1988
+ },
+ "hero-boudica": {
+  "w": 108,
+  "h": 145,
+  "fx": 47.5,
+  "fy": 141,
+  "bytes": 8524
  }
 }

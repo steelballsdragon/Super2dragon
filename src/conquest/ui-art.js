@@ -89,14 +89,16 @@ ART.paintH = (name, w) => { const m = PAINT[name]; return m ? m.h * w / m.w : 0;
 }
 // the commanders with paintings: a CSS class each for portraits in lists and sheets
 {
-  const heroes = Object.keys(PAINT).filter(n => n.startsWith('hero-'));
-  if (heroes.length) {
+  // a framed portrait painting (face-<id>) when there is one, else the top of the full figure (hero-<id>)
+  const ids = [...new Set(Object.keys(PAINT).filter(n => n.startsWith('hero-') || n.startsWith('face-')).map(n => n.slice(5)))];
+  if (ids.length) {
     const st = document.createElement('style');
-    st.textContent = heroes.map(n => `.aoc-por-${n.slice(5)}{background-image:url(${PAINT[n].src})}`).join('');
+    st.textContent = ids.map(id => `.aoc-por-${id}{background-image:url(${(PAINT['face-' + id] || PAINT['hero-' + id]).src})}`).join('');
     document.head.appendChild(st);
   }
-  // a portrait cut from the top of the painting, s pixels square; null when the commander has no painting
+  // a portrait s pixels square; null when the commander has no painting
   ART.heroPortrait = (cmdId, s, frame) => {
+    if (PAINT['face-' + cmdId]) return `<span class="aoc-por aoc-por-p aoc-por-${cmdId}" style="width:${s}px;height:${s}px;background-size:cover;background-position:center 20%;border-color:${frame}" aria-hidden="true"></span>`;
     const m = PAINT['hero-' + cmdId];
     if (!m) return null;
     const side = Math.min(m.w, m.h * 0.62), k = s / side;
@@ -688,6 +690,16 @@ ART.clash = (g, x, y, r, t) => {
 };
 // a commander portrait as a canvas (for the battle scene): the painting's upper part when the commander has one
 ART.portrait = (cmdId, size) => {
+  const face = pimage('face-' + cmdId);
+  if (face) {
+    const m = PAINT['face-' + cmdId];
+    return sprite(`porf:${cmdId}:${size}`, size, size, g => {
+      const c = A.CMD[cmdId];
+      const side = Math.min(m.w, m.h), sy = (m.h - side) * 0.2;
+      g.drawImage(face, (m.w - side) / 2, sy, side, side, 0, 0, size, size);
+      g.strokeStyle = c?.rarity === 'legendary' ? '#e2b04a' : '#a07ad0'; g.lineWidth = Math.max(1.5, size / 16); g.strokeRect(0.75, 0.75, size - 1.5, size - 1.5);
+    });
+  }
   const name = 'hero-' + cmdId, im = pimage(name);
   if (im) {
     const m = PAINT[name];

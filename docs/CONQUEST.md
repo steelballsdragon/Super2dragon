@@ -22,14 +22,14 @@ This document covers what is built, how it works, how to run and test it, what i
 
 ### What you see
 
-**Painted art.** The pictures come from art sheets supplied for the game (in `art/sheets/`). A cutting tool (`tools/art/`) finds each object on a sheet, removes the sheet's background (a plain colour, or for the busy sheets a model of the glowing background around each object), softens the outline, and writes 128 transparent WebP sprites (`art/sprites/`, 1.6 MB), each with the foot point it stands on. The build inlines them, so the game is still one file. The pictures that were drawn in code stay as the fallback for anything without a painting and for the moment before the paintings have decoded:
+**Painted art.** The pictures come from art sheets supplied for the game (in `art/sheets/`). A cutting tool (`tools/art/`) finds each object on a sheet, removes the sheet's background (a plain colour, or for the busy sheets a model of the glowing background around each object), softens the outline, and writes 158 transparent WebP sprites (`art/sprites/`, 1.7 MB), each with the foot point it stands on. The build inlines them, so the game is still one file. The pictures that were drawn in code stay as the fallback for anything without a painting and for the moment before the paintings have decoded:
 - **City:** the Town Hall in eight stages (from a watchtower to a golden palace), the Farm and the Barracks in four stages each, the Watchtower in three, and one painting each for the Lumber Mill, Quarry, Iron Mine, Market, Warehouse, Stables, Archery Range, Siege Workshop, Academy and Hospital. The City Wall is still drawn in code. A painted LEVEL UP! accent pops over a building that finishes a level.
 - **World map:** cities as castles of four sizes with a ring and a banner in their guild's colour, the Capital, passes (gatehouses with gold level pips), sanctums, altars and shrines, three kinds of ruins, bandit camps in three sizes, and the five resource fields (food and iron in two styles).
 - **Soldiers:** infantry, cavalry, archers and siege engines walk across the map and fight in the battle scenes with walking, attacking and falling frames.
-- **Commanders:** Kael, Amara, Temur, Veyra and Orun have painted portraits. The other seven still use drawn ones.
+- **Commanders:** 20 of the 27 have paintings: Kael, Amara, Temur, Veyra and Orun (full figures), and the 15 commanders of history (a framed portrait and a full figure each, shown at the top of their sheet). Seris, Darius Vale, Nyra, Ilyan, Rokan, Maelis and Thane still use drawn portraits.
 - **Interface:** painted icons for Food, Wood, Stone, Iron and Gold everywhere they appear, VICTORY and DEFEAT banners in battles, a treasure chest on reward pop-ups.
 
-What is still drawn in code: the terrain, trees, walls, villagers, smoke, the empty plots and the seven other commanders, in each civilization's colors and roof style:
+What is still drawn in code: the terrain, trees, walls, villagers, smoke, the empty plots and seven of the commanders, in each civilization's colors and roof style:
 - **Your city** is the home screen: an isometric town where every building stands on its own plot at its real level, from an empty plot with a sign to a towered keep. Walls go from a wooden palisade to stone with towers and a gatehouse. The building under construction wears scaffolding with a swinging hammer and a timer; soldiers drill in the yard in proportion to the troops you have at home; villagers walk the roads; smoke rises from chimneys; green arrows mark what you can upgrade right now; a shield is a dome of light over the town; the light follows the game clock. Every building has a plate with its level (a lock and the Town Hall level it needs when it cannot be built yet). Tap a building for its sheet: a picture, *Lv n > Lv n+1*, the effects of the next level, requirements with checks, the cost, and its own buttons (Train, Research, Trade, Heal, Shield and so on). A builder chip shows Idle, the time left, or Free; side buttons with red dots open Mail, Goals, the Guild, the commanders and, in developer mode, the Developer panel.
 - **Free finish and crates** are rules of the simulation, the same for everyone: a build, research, training or healing with 10 game minutes or less left can be finished at once, and each producing building fills a crate every 4 game hours with an hour of its output. The AI governors collect their crates and finish nearly done queues free too.
 - **The world map** is the whole kingdom (see below), painted terrain with shores, forests of small trees, mountain peaks with snow, hills, tundra, fords and the paved roads of the passes. Zoomed in, cities are castles that grow with their Town Hall in their guild's color, passes are gatehouses with gold pips for their level, holy sites are sanctums, altars and shrines, the Capital is a gilded keep, and bandit camps, resource fields and ruins have their own pictures. Unexplored land lies under clouds; explored land out of sight is dimmed. Zoomed out, the mountain ranges stand above the clouds and each region is named with its zone, so the shape of the kingdom is always readable. A readout shows the region, zone and coordinates of the middle of the screen; the globe button shows the whole kingdom; the search button lists every pass and holy site with who holds it. Armies march as small banners of soldiers of their main troop type along dashed routes, and battles you can see flash where they happen.
@@ -107,7 +107,7 @@ Why this design:
 
 ```
 src/conquest/
-  data.js        tables: units, terrain, buildings, research, 12 civilizations, 12 commanders, archetypes, the server
+  data.js        tables: units, terrain, buildings, research, 12 civilizations, 27 commanders, archetypes, the server
                  identity, the kingdom's regions, pass levels, holy sites and their blessings
   world.js       random numbers, the kingdom layout (zones, regions, ranges, passes), terrain generation,
                  pass-aware pathfinding, occupancy and spatial buckets, vision
@@ -226,7 +226,7 @@ Legend: **Done** = implemented and tested; **Partial** = a working subset; **Pla
 | Resources | Partial | food, wood, stone, iron, gold. Influence, rare materials and taxation are planned |
 | Research | Done | 16 technologies in three branches (economy, military doctrine, intelligence), capped by the Academy, with prerequisites |
 | Troops | Done | infantry, cavalry, archers, siege; training in any number the stock pays for (the time grows with the number), upkeep, wounded, healing, a hospital limit, morale. Experience is held by commanders, not troops |
-| Commanders | Partial | 12 fully implemented: rarity, story, civilization, specialty, active skill, two passives, ultimate (level 30), 3-branch talents, skill levels, pairings and synergies, rivals, recruitment goals for player and AI alike, City Steward and Defender roles. Equipment and the other 28 commanders are planned |
+| Commanders | Partial | 27 fully implemented, 12 of the world's own and 15 from history (Sun Tzu, Genghis Khan, Oda Nobunaga, Miyamoto Musashi, Cao Cao, Alexander the Great, Julius Caesar, Leonidas, Cleopatra, Hannibal Barca, Joan of Arc, Richard I, Saladin, Ragnar Lothbrok and Boudica), each recruited by a deed such as 40 camps or a level 20 Town Hall: rarity, story, civilization, specialty, active skill, two passives, ultimate (level 30), 3-branch talents, skill levels, pairings and synergies, rivals, recruitment goals for player and AI alike, City Steward and Defender roles. Equipment and more commanders are planned |
 | Civilizations | Partial | 12, each with bonuses, real costs, a troop variant, a starting commander, preferred terrain, colors and city style, and lore. Culture, stability, reforms and cultural exchange are planned |
 | Combat | Done | rounds, counters, terrain, walls, towers, durability, morale, routs, pursuit, ambushes in forests, commander skills; deterministic, replayable, explained |
 | Sieges, rallies, garrisons, reinforcement | Done | rallies on passes, holy sites, the Capital and cities; joiners; garrisons hold landmarks; unguarded landmarks are lost; landmarks open on set days; sacked cities move behind a shield |
@@ -258,11 +258,11 @@ Run on 2026-10-21 in this repository (`node tests/all.mjs`):
 
 | Suite | Result |
 |---|---|
-| conquest-engine | 51 of 51 passed |
+| conquest-engine | 52 of 52 passed |
 | conquest-demo | 5 of 5 passed |
 | conquest-ui | 17 of 17 passed |
 | conquest-dev | 10 of 10 passed |
-| conquest-robust | 6 of 6 passed (two game days at 64x: at most 751 DOM nodes, a 26 MB page heap with the paintings loaded, the town still drawing in under 4 ms a frame) |
+| conquest-robust | 6 of 6 passed (two game days at 64x: at most 751 DOM nodes, a 28 MB page heap with the paintings loaded, the town still drawing in under 4 ms a frame) |
 
 All five suites together take about 4 minutes.
 
@@ -291,7 +291,7 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 
 | Measure | Result |
 |---|---|
-| Size of the game | 2.9 MB in one file (the 128 paintings are 1.6 MB of WebP, inlined as text); the drawn-only version was 0.8 MB |
+| Size of the game | 3.1 MB in one file (the 158 paintings are 1.7 MB of WebP, inlined as text); the drawn-only version was 0.8 MB |
 | Generate the kingdom's terrain | 157 ms in Node (the interface does it once per world, on the loading screen) |
 | Create a world (600 governors, map, history) | 144 ms in Node including the terrain, 372 ms to the first frame in Chromium |
 | Simulation cost per game minute, full server | 1.8 ms on day 1, 2.1 ms on day 3, 2.8 ms on day 7 (about 870 armies in the field) |
@@ -313,7 +313,7 @@ Measured with `tests/conquest-bench.mjs` on the build machine. Raw numbers are i
 - The kingdom copies the shape of a Rise of Kingdoms kingdom (zones, regions, passes, holy sites), not all of its systems: there are no alliance flags or player-built fortresses (territory comes from cities and landmarks), no teleport items, and no Lost Kingdom. An army already marching keeps going through a pass that changes hands on the way; new marches respect the new owner.
 - Rally battles use the rally leader's bonuses (civilization, research, commanders) for the whole army; joiners contribute troops, not bonuses.
 - Battles are fought by army totals over rounds, not by units on a battlefield. The battle scene animates those rounds with representative soldiers (up to 34 a side), so a figure is a share of the army, not one unit.
-- The paintings were cut from flat art sheets, so they have no separate animation layers (soldiers have 3 to 6 frames per action; buildings do not move). The terrain, trees, walls and seven commanders are still drawn in code. The city's buildings are paintings of different sizes placed on square plots, so large Town Hall stages overlap the plots behind them. There is no sound.
+- The paintings were cut from flat art sheets, so they have no separate animation layers (soldiers have 3 to 6 frames per action; buildings do not move). The terrain, trees, walls and seven commanders are still drawn in code. The commanders sheet came at 1206 by 663 pixels, so those portraits and figures are small (portraits 50 pixels across before scaling). The city's buildings are paintings of different sizes placed on square plots, so large Town Hall stages overlap the plots behind them. There is no sound.
 - There is no shop, no gems and no speed-up items: Free finish (10 game minutes) is the only way to hurry, and it is the same for the AI. The Last Furnace city game's heroes, stages, shop and events went with it.
 - No supply lines, fatigue or combat weather; no equipment; no caravans, loans, tribute or sanctions; no spies or sabotage beyond false reports and discovering secret pacts.
 - Culture, stability, public order and civilization reforms are not modeled.

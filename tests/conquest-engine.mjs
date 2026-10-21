@@ -54,6 +54,22 @@ await test('exactly ten guilds, each with a leader, officers and at most 60 memb
     check(gd.rel.length === 10 && gd.policy && gd.home, `${gd.name} relations and objectives`);
   }
 });
+await test('commanders of history join through deeds, for the player and the AI alike, and fight with their skills', () => {
+  const w = fresh();
+  const g = w.govs[P];
+  check(!g.cmds.genghis && !g.cmds.leonidas, 'started with a commander of history');
+  g.stats.camps = 39; A.checkRecruits(w, g);
+  check(!g.cmds.genghis, 'Genghis Khan joined before 40 camps');
+  g.stats.camps = 40; g.stats.defWins = 20; A.checkRecruits(w, g);
+  check(g.cmds.genghis && g.cmds.leonidas, 'Genghis Khan and Leonidas should join');
+  const ai = w.govs.find(x => !x.human && !x.cmds.musashi);
+  ai.stats.wins = 60; A.checkRecruits(w, ai);
+  check(ai.cmds.musashi, 'an AI governor did not recruit Musashi by the same rule');
+  // Leonidas's Spartan Shield adds defense only when defending
+  const lead = A.armySide(w, g, { inf: 1000 }, 'leonidas', null, { attack: true }, 'x').mul.def.inf;
+  const hold = A.armySide(w, g, { inf: 1000 }, 'leonidas', null, { defend: true }, 'x').mul.def.inf;
+  check(Math.abs(hold - lead - 0.15) < 1e-9, `Spartan Shield: ${lead} attacking, ${hold} defending`);
+});
 await test('every governor has a full identity and persistent state', () => {
   const w = fresh();
   const archs = new Set();
@@ -66,8 +82,16 @@ await test('every governor has a full identity and persistent state', () => {
   check(new Set(w.govs.map(g => g.civ)).size === 12, 'all 12 civilizations appear');
   check(new Set(w.govs.map(g => g.name)).size > 450, 'names are mostly unique');
 });
-await test('12 civilizations each have bonuses and real costs, and 12 commanders are complete', () => {
-  check(A.CIVS.length === 12 && A.COMMANDERS.length === 12, 'counts');
+await test('12 civilizations each have bonuses and real costs, and 27 commanders are complete', () => {
+  check(A.CIVS.length === 12 && A.COMMANDERS.length === 27, 'counts');
+  // every commander has a full kit, a valid rival and talent tree, and a way to be recruited (a civilization's
+  // starting commander or a deed in RECRUIT)
+  for (const c of A.COMMANDERS) {
+    check(A.CIV[c.civ] && A.CMD[c.rival] && c.passives.length === 2 && c.active.effects.length && c.ultimate && c.story, `${c.id} is incomplete`);
+    check(c.talents.length === 3 && c.talents.every(t => A.TALENT_STATS[t]), `${c.id} has an unknown talent`);
+    check(A.RECRUIT[c.id] || A.CIVS.some(v => v.commander === c.id), `${c.id} cannot be recruited`);
+  }
+  for (const s of A.SYNERGY) check(A.CMD[s.a] && A.CMD[s.b], `pairing ${s.name} names an unknown commander`);
   for (const c of A.CIVS) {
     check(Object.values(c.mods).some(v => v > 0) && Object.values(c.mods).some(v => v < 0), `${c.name} must have a trade-off`);
     check(c.cons.length >= 1 && c.variant && A.CMD[c.commander], `${c.name} variant and commander`);
