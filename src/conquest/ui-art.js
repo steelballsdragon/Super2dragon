@@ -428,6 +428,76 @@ ART.mapFort = (ownerColor, capital) => sprite(`mf:${ownerColor || '-'}:${capital
   flag(g, p[0], p[1] + 2, col, 24);
   if (capital) { g.fillStyle = '#ffd36b'; g.beginPath(); g.moveTo(p[0] - 10, p[1] - 20); g.lineTo(p[0] - 10, p[1] - 30); g.lineTo(p[0] - 5, p[1] - 24); g.lineTo(p[0], p[1] - 34); g.lineTo(p[0] + 5, p[1] - 24); g.lineTo(p[0] + 10, p[1] - 30); g.lineTo(p[0] + 10, p[1] - 20); g.closePath(); g.fill(); }
 });
+// a pass: a gatehouse across the mountain road, with the holder's banners; gold pips show its level (1-3)
+ART.mapPass = (ownerColor, tier) => sprite(`mp:${ownerColor || '-'}:${tier}`, 96, 84, g => {
+  g.translate(48, 62);
+  g.scale(0.5, 0.5);
+  const stone = '#7a7068', col = ownerColor || '#8c847a';
+  poly(g, [iso(-2.2, -0.9), iso(2.2, -0.9), iso(2.2, 0.9), iso(-2.2, 0.9)], 'rgba(30,20,12,.4)');
+  const wall = box(g, -1.4, -0.35, 2.8, 0.7, 44, stone);
+  // the arch and its gate
+  const [ax, ay] = onFace(wall, 'L', 0.5, 0);
+  g.fillStyle = '#21160f'; g.beginPath(); g.moveTo(ax - 13, ay + 6); g.lineTo(ax - 13, ay - 22); g.quadraticCurveTo(ax, ay - 40, ax + 13, ay - 28); g.lineTo(ax + 13, ay); g.closePath(); g.fill();
+  g.strokeStyle = '#5a3a20'; g.lineWidth = 2; for (let k = -1; k <= 1; k++) { g.beginPath(); g.moveTo(ax + k * 7, ay + 4 - k * 2); g.lineTo(ax + k * 7, ay - 24 - k * 3); g.stroke(); }
+  crenels(g, wall, stone);
+  for (const x of [-2.1, 1.3]) {
+    const t = box(g, x, -0.5, 0.9, 0.9, 70, shade(stone, 1.05));
+    windows(g, t, 'L', 1, 2, false); crenels(g, t, stone);
+    const top = [(t.A[0] + t.C[0]) / 2, (t.A[1] + t.C[1]) / 2];
+    flag(g, top[0], top[1], col, 30);
+  }
+  // level pips over the arch
+  for (let k = 0; k < tier; k++) { const px = ax - (tier - 1) * 9 + k * 18, py = ay - 58; g.fillStyle = '#ffd862'; g.beginPath(); g.moveTo(px, py - 8); g.lineTo(px + 7, py); g.lineTo(px, py + 8); g.lineTo(px - 7, py); g.closePath(); g.fill(); g.strokeStyle = '#7a4a10'; g.lineWidth = 2; g.stroke(); }
+});
+// holy sites: a sanctum (round temple with a blue light), an altar (stones and a fire) or a shrine (columned
+// temple; the heartland's are gilded). The roof or the cloth takes the holder's colour.
+ART.mapSite = (site, ownerColor) => sprite(`ms:${site}:${ownerColor || '-'}`, 96, 96, g => {
+  g.translate(48, 70);
+  const col = ownerColor || '#9a9184';
+  if (site === 'sanctum') {
+    g.scale(0.5, 0.5);
+    poly(g, [iso(-1.6, -1.6), iso(1.6, -1.6), iso(1.6, 1.6), iso(-1.6, 1.6)], 'rgba(30,20,12,.4)');
+    const base = box(g, -1.2, -1.2, 2.4, 2.4, 10, '#b9ae9b');
+    for (let k = 0; k < 6; k++) {
+      const a = k / 6 * Math.PI * 2, [px, py] = [Math.cos(a) * 34, Math.sin(a) * 17 - 10];
+      if (Math.sin(a) < 0) { g.fillStyle = '#d8cfbd'; g.fillRect(px - 3, py - 40, 6, 40); }
+    }
+    g.fillStyle = 'rgba(120,200,255,.5)'; g.beginPath(); g.ellipse(0, -30, 18, 22, 0, 0, 7); g.fill();
+    for (let k = 0; k < 6; k++) {
+      const a = k / 6 * Math.PI * 2, [px, py] = [Math.cos(a) * 34, Math.sin(a) * 17 - 10];
+      if (Math.sin(a) >= 0) { g.fillStyle = '#e8e0cf'; g.fillRect(px - 3, py - 40, 6, 40); g.fillStyle = '#a99f8c'; g.fillRect(px + 1, py - 40, 2, 40); }
+    }
+    g.beginPath(); g.ellipse(0, -52, 42, 14, 0, 0, 7); g.fillStyle = shade(col, 0.8); g.fill();
+    g.beginPath(); g.ellipse(0, -54, 40, 30, 0, Math.PI, 0); g.closePath(); g.fillStyle = col; g.fill(); g.strokeStyle = EDGE; g.stroke();
+    g.fillStyle = '#9fe0ff'; g.beginPath(); g.arc(0, -92, 7, 0, 7); g.fill();
+    g.fillStyle = 'rgba(160,225,255,.35)'; g.beginPath(); g.arc(0, -92, 14, 0, 7); g.fill();
+    void base;
+  } else if (site === 'altar') {
+    g.scale(0.5, 0.5);
+    poly(g, [iso(-1.7, -1.7), iso(1.7, -1.7), iso(1.7, 1.7), iso(-1.7, 1.7)], 'rgba(30,20,12,.4)');
+    box(g, -1.4, -1.4, 2.8, 2.8, 8, '#8f8578');
+    box(g, -0.9, -0.9, 1.8, 1.8, 8, '#a39888');
+    for (const [x, y, h] of [[-1.3, -1.3, 54], [0.9, -1.3, 46], [-1.3, 0.9, 40]]) box(g, x, y, 0.4, 0.4, h, '#6f6860');
+    const top = box(g, -0.4, -0.4, 0.8, 0.8, 30, '#5f564c');
+    const cx = (top.A[0] + top.C[0]) / 2, cy = (top.A[1] + top.C[1]) / 2;
+    g.fillStyle = col; poly(g, [onFace(top, 'L', 0, 0.9), onFace(top, 'L', 1, 0.9), onFace(top, 'L', 1, 0.2), onFace(top, 'L', 0, 0.2)], col);
+    g.fillStyle = '#ff8a2a'; g.beginPath(); g.moveTo(cx - 14, cy); g.quadraticCurveTo(cx - 10, cy - 30, cx, cy - 44); g.quadraticCurveTo(cx + 10, cy - 30, cx + 14, cy); g.closePath(); g.fill();
+    g.fillStyle = '#ffd862'; g.beginPath(); g.moveTo(cx - 7, cy); g.quadraticCurveTo(cx - 4, cy - 18, cx, cy - 26); g.quadraticCurveTo(cx + 4, cy - 18, cx + 7, cy); g.closePath(); g.fill();
+  } else {
+    const gilded = site === 'temple';
+    g.scale(gilded ? 0.6 : 0.52, gilded ? 0.6 : 0.52);
+    const stone = gilded ? '#d8c9a2' : '#c2b8a6';
+    poly(g, [iso(-1.9, -1.9), iso(1.9, -1.9), iso(1.9, 1.9), iso(-1.9, 1.9)], 'rgba(30,20,12,.4)');
+    box(g, -1.6, -1.6, 3.2, 3.2, 8, shade(stone, 0.8));
+    box(g, -1.3, -1.3, 2.6, 2.6, 8, shade(stone, 0.9));
+    const hall = box(g, -1, -1, 2, 2, 42, stone, { left: shade(stone, 0.55), right: shade(stone, 0.75) });
+    for (let k = 0; k <= 4; k++) { facePoly(g, hall, 'L', k / 4 - 0.04, k / 4 + 0.04, 0, 1, '#f4ecd8'); facePoly(g, hall, 'R', k / 4 - 0.04, k / 4 + 0.04, 0, 1, '#e4dac4'); }
+    door(g, hall, 'L', '#2b1a10');
+    const p = roofGable(g, hall, 26, gilded ? '#e9b45e' : col);
+    if (gilded) flag(g, p[0], p[1], col, 26);
+    g.fillStyle = gilded ? '#ffd862' : '#9fe0ff'; g.beginPath(); g.arc(p[0], p[1] - (gilded ? 36 : 8), 6, 0, 7); g.fill();
+  }
+});
 ART.mapRuin = () => sprite('mr', 48, 48, g => {
   g.translate(24, 36);
   g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(2, 2, 18, 6, 0, 0, 7); g.fill();

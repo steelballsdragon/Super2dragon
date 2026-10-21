@@ -1,49 +1,85 @@
-/* Age of Conquest map: a canvas world map with pan and pinch zoom. Layers: terrain (drawn once per seed),
-   guild territory (redrawn when it changes), objects, armies on the move, and fog of war (unexplored land is
-   black, explored land out of sight is dimmed). Tapping a tile opens what you know about it and what you can do. */
+/* Age of Conquest map: a canvas world map of the whole kingdom with pan and pinch zoom. The terrain is painted
+   in chunks of 32 by 32 tiles as they come into view (a lighter painting of the whole kingdom stands in when
+   zoomed out); guild territory is a tinted layer with drawn borders; unexplored land lies under clouds and
+   explored land out of sight is dimmed. Tapping a tile opens what you know about it and what you can do. */
 
 const A = window.AOC;
 const U = window.AOCUI;
 const { esc, el, fmt, full, dur, setText } = U;
 const N = A.MAP_N;
-const TILE = 16;  // pixels per tile in the painted terrain layer
-const TT = 8;     // pixels per tile in the territory layer
-const SPRITE_Z = 7; // from this zoom, castles, camps, fields and armies are drawn as pictures
+const TILE = 16;      // pixels per tile in a painted chunk
+const CH = 32;        // tiles per side of a chunk
+const OV = 4;         // pixels per tile in the painting of the whole kingdom
+const CHUNK_Z = 5.5;  // from this zoom the chunks are drawn
+const SPRITE_Z = 7;   // from this zoom, castles, camps, fields and armies are drawn as pictures
+const MAX_CHUNKS = 48;
 
 const M = {
-  cv: null, ctx: null, w: 0, h: 0, dpr: 1, view: { cx: N / 2, cy: N / 2, z: 6 }, terrLayer: null, terrSeed: -1, territory: null, terrVer: -1,
-  fogLayer: null, fogVer: -1, showTerritory: true, dirty: true, raf: 0, pointers: new Map(), drag: null, sel: null, homed: false, lastDraw: 0,
+  cv: null, ctx: null, w: 0, h: 0, dpr: 1, view: { cx: N / 2, cy: N / 2, z: 6 }, seed: -1, base: null, overview: null, chunks: new Map(),
+  terrFill: null, terrPaths: null, terrVer: -1, fogLayer: null, fogVer: -1, cloud: null, showTerritory: true, dirty: true, raf: 0,
+  pointers: new Map(), drag: null, sel: null, homed: false, lastDraw: 0, where: '',
 };
-const ZMIN = 2.5, ZMAX = 40;
+const ZMIN = 0.9, ZMAX = 40;
 
 // ================================================================ layers
 function hashTile(i) { let h = (i * 2654435761) >>> 0; h ^= h >>> 15; return (h & 1023) / 1023; }
-function buildTerrain() {
-  const ter = U.S.ter;
+const TID = A.TERRAIN.map(t => t.id);
+const ter = () => U.S.ter;
+const at = (x, y) => (x < 0 || y < 0 || x >= N || y >= N ? -1 : ter()[y * N + x]);
+const wet = t => TID[t] === 'water' || TID[t] === 'river';
+// one pixel per tile: the ground colour, varied a little from tile to tile
+function buildBase() {
+  const T0 = ter();
   const c = document.createElement('canvas');
-  c.width = c.height = N * TILE;
+  c.width = c.height = N;
   const g = c.getContext('2d');
-  const T = A.TERRAIN.map(t => t.id);
-  const at = (x, y) => (x < 0 || y < 0 || x >= N || y >= N ? -1 : ter[y * N + x]);
-  const wet = t => T[t] === 'water' || T[t] === 'river';
-  // ground colour per tile, then a softened copy on top so regions blend
-  const small = document.createElement('canvas');
-  small.width = small.height = N;
-  const sg = small.getContext('2d');
-  const img = sg.createImageData(N, N);
+  const img = g.createImageData(N, N);
+  const col = A.TERRAIN.map(t => { const n = parseInt(t.color.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
   for (let i = 0; i < N * N; i++) {
-    const t = ter[i], r = hashTile(i), n = parseInt(A.TERRAIN[t].color.slice(1), 16), k = 0.9 + r * 0.18;
-    img.data[i * 4] = Math.min(255, (n >> 16) * k); img.data[i * 4 + 1] = Math.min(255, ((n >> 8) & 255) * k); img.data[i * 4 + 2] = Math.min(255, (n & 255) * k); img.data[i * 4 + 3] = 255;
+    const [r, gg, b] = col[T0[i]], k = 0.9 + hashTile(i) * 0.18;
+    img.data[i * 4] = Math.min(255, r * k); img.data[i * 4 + 1] = Math.min(255, gg * k); img.data[i * 4 + 2] = Math.min(255, b * k); img.data[i * 4 + 3] = 255;
   }
-  sg.putImageData(img, 0, 0);
-  g.imageSmoothingEnabled = false;
-  g.drawImage(small, 0, 0, N * TILE, N * TILE);
-  g.globalAlpha = 0.55; g.imageSmoothingEnabled = true;
-  g.drawImage(small, 0, 0, N * TILE, N * TILE);
-  g.globalAlpha = 1;
-  // shores, ripples, grass, hills and snow
+  g.putImageData(img, 0, 0);
+  M.base = c;
+}
+// the whole kingdom at OV pixels per tile, for the zoomed-out views
+function buildOverview() {
+  const T0 = ter();
+  const c = document.createElement('canvas');
+  c.width = c.height = N * OV;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = true;
+  g.drawImage(M.base, 0, 0, N * OV, N * OV);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x, t = ter[i], id = T[t], r = hashTile(i), r2 = hashTile(i + 7777);
+    const i = y * N + x, id = TID[T0[i]], r = hashTile(i);
+    const px = x * OV, py = y * OV;
+    if (id === 'forest' && r > 0.35) { g.fillStyle = r > 0.7 ? '#1f3a1f' : '#284826'; g.beginPath(); g.arc(px + OV / 2, py + OV / 2, OV * 0.42, 0, 7); g.fill(); }
+    else if (id === 'mountain') {
+      g.fillStyle = '#3e3834'; g.beginPath(); g.moveTo(px - 1, py + OV); g.lineTo(px + OV / 2, py - OV * 0.7); g.lineTo(px + OV + 1, py + OV); g.closePath(); g.fill();
+      g.fillStyle = '#6d645d'; g.beginPath(); g.moveTo(px - 1, py + OV); g.lineTo(px + OV / 2, py - OV * 0.7); g.lineTo(px + OV * 0.45, py + OV); g.closePath(); g.fill();
+      if (r > 0.4) { g.fillStyle = '#e4e8ec'; g.beginPath(); g.moveTo(px + OV * 0.3, py); g.lineTo(px + OV / 2, py - OV * 0.7); g.lineTo(px + OV * 0.7, py); g.closePath(); g.fill(); }
+    } else if (id === 'gate') { g.fillStyle = '#c8b48a'; g.fillRect(px + 1, py + 1, OV - 2, OV - 2); }
+    else if (id === 'hills' && r > 0.5) { g.fillStyle = 'rgba(60,44,26,.35)'; g.beginPath(); g.arc(px + OV / 2, py + OV * 0.7, OV * 0.45, Math.PI, 0); g.fill(); }
+  }
+  M.overview = c;
+}
+// one chunk of painted terrain: shores, ripples, grass, hills, snow, roads, then trees and peaks back to front
+function paintChunk(cx, cy) {
+  const T0 = ter();
+  const c = document.createElement('canvas');
+  c.width = c.height = CH * TILE;
+  const g = c.getContext('2d');
+  const X0 = cx * CH, Y0 = cy * CH;
+  g.translate(-X0 * TILE, -Y0 * TILE);
+  const sx0 = Math.max(0, X0 - 1), sy0 = Math.max(0, Y0 - 1), sx1 = Math.min(N, X0 + CH + 1), sy1 = Math.min(N, Y0 + CH + 1);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(M.base, sx0, sy0, sx1 - sx0, sy1 - sy0, sx0 * TILE, sy0 * TILE, (sx1 - sx0) * TILE, (sy1 - sy0) * TILE);
+  g.globalAlpha = 0.55; g.imageSmoothingEnabled = true;
+  g.drawImage(M.base, sx0, sy0, sx1 - sx0, sy1 - sy0, sx0 * TILE, sy0 * TILE, (sx1 - sx0) * TILE, (sy1 - sy0) * TILE);
+  g.globalAlpha = 1;
+  const xa = Math.max(0, X0 - 1), xb = Math.min(N - 1, X0 + CH), ya = Math.max(0, Y0 - 1), yb = Math.min(N - 1, Y0 + CH + 1);
+  for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) {
+    const i = y * N + x, t = T0[i], id = TID[t], r = hashTile(i), r2 = hashTile(i + 7777);
     const px = x * TILE, py = y * TILE;
     if (wet(t)) {
       g.fillStyle = 'rgba(214,196,150,.55)';
@@ -65,19 +101,20 @@ function buildTerrain() {
       g.fillStyle = '#b8b2a2'; for (const [a1, b1] of [[3, 5], [8, 8], [12, 11]]) { g.beginPath(); g.ellipse(px + a1, py + b1, 2.4, 1.6, 0, 0, 7); g.fill(); }
     } else if (id === 'pass') {
       g.fillStyle = 'rgba(200,180,140,.7)'; for (let k = 0; k < 4; k++) g.fillRect(px + 2 + k * 4, py + 7 + Math.sin(k + r * 6) * 2, 2, 2);
+    } else if (id === 'gate') {
+      // the paved road through a pass
+      g.fillStyle = '#a8946e'; g.fillRect(px, py, TILE, TILE);
+      g.fillStyle = 'rgba(70,52,30,.35)'; for (let k = 0; k < 4; k++) for (let q = 0; q < 4; q++) if ((k + q + (r > 0.5 ? 1 : 0)) % 2) g.fillRect(px + k * 4, py + q * 4, 3, 3);
     }
   }
-  // trees and peaks, back rows first so the front ones overlap them
-  const pine = (x, y, s) => U.art ? U.art.pine(g, x, y, s) : null;
-  const oak = (x, y, s) => U.art ? U.art.oak(g, x, y, s) : null;
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const i = y * N + x, id = T[ter[i]], r = hashTile(i), r2 = hashTile(i + 991);
+  for (let y = ya; y <= yb; y++) for (let x = xa; x <= xb; x++) {
+    const i = y * N + x, id = TID[T0[i]], r = hashTile(i), r2 = hashTile(i + 991);
     const px = x * TILE, py = y * TILE;
     if (id === 'forest') {
       const n = r > 0.5 ? 3 : 2;
       for (let k = 0; k < n; k++) {
         const fx = px + 3 + ((r * 7 + k * 5.3) % 10), fy = py + 6 + ((r2 * 5 + k * 3.7) % 9);
-        (r2 > 0.8 && k === 1 ? oak : pine)(fx, fy, 0.42 + r * 0.12);
+        if (U.art) (r2 > 0.8 && k === 1 ? U.art.oak : U.art.pine)(g, fx, fy, 0.42 + r * 0.12);
       }
     } else if (id === 'mountain') {
       const w = TILE * (1.1 + r * 0.4), h = TILE * (1.1 + r2 * 0.5), bx = px + TILE / 2 + (r - 0.5) * 4, by = py + TILE - 1;
@@ -86,47 +123,139 @@ function buildTerrain() {
       if (r2 > 0.35) { g.fillStyle = '#e4e8ec'; g.beginPath(); g.moveTo(bx - w * 0.2, by - h * 0.62); g.lineTo(bx - w * 0.05, by - h); g.lineTo(bx + w * 0.14, by - h * 0.6); g.lineTo(bx, by - h * 0.68); g.closePath(); g.fill(); }
     }
   }
-  M.terrLayer = c;
-  M.terrSeed = U.S.seed;
+  return c;
 }
+// a chunk from the cache (most recently used kept), painting at most `budget.n` new ones per frame
+function chunkAt(cx, cy, budget) {
+  const key = cy * 64 + cx;
+  let c = M.chunks.get(key);
+  if (c) { M.chunks.delete(key); M.chunks.set(key, c); return c; }
+  if (budget.n <= 0) { budget.missing = true; return null; }
+  budget.n--;
+  c = paintChunk(cx, cy);
+  M.chunks.set(key, c);
+  while (M.chunks.size > MAX_CHUNKS) M.chunks.delete(M.chunks.keys().next().value);
+  return c;
+}
+function newSeed() {
+  M.seed = U.S.seed; M.chunks.clear();
+  buildBase(); buildOverview(); buildRanges();
+  // soft value noise for the clouds over unexplored land (two octaves, FR pixels per tile)
+  const W = N * FR;
+  M.cloud = new Float32Array(W * W);
+  let h = (U.S.seed * 2654435761) >>> 0;
+  for (const [cells, amp] of [[24, 0.7], [96, 0.3]]) {
+    const gsz = cells + 1, grid = new Float32Array(gsz * gsz);
+    for (let i = 0; i < grid.length; i++) { h = (h * 1664525 + 1013904223) >>> 0; grid[i] = h / 4294967296; }
+    for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
+      const fx = x / W * cells, fy = y / W * cells, x0 = fx | 0, y0 = fy | 0, kx = fx - x0, ky = fy - y0;
+      const a = grid[y0 * gsz + x0], b = grid[y0 * gsz + x0 + 1], c = grid[(y0 + 1) * gsz + x0], d = grid[(y0 + 1) * gsz + x0 + 1];
+      const sx = kx * kx * (3 - 2 * kx), sy = ky * ky * (3 - 2 * ky);
+      M.cloud[y * W + x] += ((a + (b - a) * sx) * (1 - sy) + (c + (d - c) * sx) * sy) * amp;
+    }
+  }
+  M.fogVer = -1;
+}
+// guild territory: a tint per tile, and the borders as one path per guild (drawn as lines at any zoom)
 function buildTerritory() {
   const terr = U.S.terr;
   if (!terr || !U.F) return;
-  const c = M.territory || document.createElement('canvas');
-  c.width = c.height = N * TT;
-  const g = c.getContext('2d');
-  g.clearRect(0, 0, c.width, c.height);
-  const colors = U.F.guilds.map(gd => gd.color);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const v = terr[y * N + x];
-    if (!v) continue;
-    g.fillStyle = colors[v - 1] + '3d';
-    g.fillRect(x * TT, y * TT, TT, TT);
-    // borders where the owner changes
-    g.fillStyle = colors[v - 1] + 'cc';
-    if (x === 0 || terr[y * N + x - 1] !== v) g.fillRect(x * TT, y * TT, 1, TT);
-    if (x === N - 1 || terr[y * N + x + 1] !== v) g.fillRect(x * TT + TT - 1, y * TT, 1, TT);
-    if (y === 0 || terr[(y - 1) * N + x] !== v) g.fillRect(x * TT, y * TT, TT, 1);
-    if (y === N - 1 || terr[(y + 1) * N + x] !== v) g.fillRect(x * TT, y * TT + TT - 1, TT, 1);
-  }
-  M.territory = c;
-  M.terrVer = U.S.terrVer;
-}
-function buildFog() {
-  const fog = U.S.fog;
-  if (!fog) return;
-  const c = M.fogLayer || document.createElement('canvas');
+  const c = M.terrFill || document.createElement('canvas');
   c.width = c.height = N;
   const g = c.getContext('2d');
   const img = g.createImageData(N, N);
-  for (let i = 0; i < N * N; i++) {
-    const v = fog[i];
-    img.data[i * 4] = 9; img.data[i * 4 + 1] = 8; img.data[i * 4 + 2] = 10;
-    img.data[i * 4 + 3] = v === 0 ? 255 : v === 1 ? 105 : 0;
+  const cols = U.F.guilds.map(gd => { const n = parseInt(gd.color.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; });
+  const paths = U.F.guilds.map(() => new Path2D());
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const i = y * N + x, v = terr[i];
+      if (v) { const [r, gg, b] = cols[v - 1]; img.data[i * 4] = r; img.data[i * 4 + 1] = gg; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = 62; }
+    }
+  }
+  g.putImageData(img, 0, 0);
+  // borders: runs of tile edges where the owner changes, merged along each row and column
+  for (let y = 0; y <= N; y++) {
+    let run = -1, owner = 0;
+    for (let x = 0; x <= N; x++) {
+      const a = y > 0 && x < N ? terr[(y - 1) * N + x] : 0, b = y < N && x < N ? terr[y * N + x] : 0;
+      const o = a !== b ? (b || a) : 0;
+      if (o !== owner) { if (owner) { paths[owner - 1].moveTo(run, y); paths[owner - 1].lineTo(x, y); } owner = o; run = x; }
+    }
+  }
+  for (let x = 0; x <= N; x++) {
+    let run = -1, owner = 0;
+    for (let y = 0; y <= N; y++) {
+      const a = x > 0 && y < N ? terr[y * N + x - 1] : 0, b = x < N && y < N ? terr[y * N + x] : 0;
+      const o = a !== b ? (b || a) : 0;
+      if (o !== owner) { if (owner) { paths[owner - 1].moveTo(x, run); paths[owner - 1].lineTo(x, y); } owner = o; run = y; }
+    }
+  }
+  M.terrFill = c;
+  M.terrPaths = paths;
+  M.terrVer = U.S.terrVer;
+}
+// fog of war: clouds over unexplored land, a dark veil over explored land out of sight. Both masks are blurred
+// so the edges are soft, and the clouds' edges are frayed by noise.
+function blur3(a) {
+  const t = new Float32Array(N * N);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const i = y * N + x; t[i] = (a[i - (x > 0 ? 1 : 0)] + a[i] + a[i + (x < N - 1 ? 1 : 0)]) / 3; }
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const i = y * N + x; a[i] = (t[i - (y > 0 ? N : 0)] + t[i] + t[i + (y < N - 1 ? N : 0)]) / 3; }
+  return a;
+}
+const FR = 2;   // fog pixels per tile
+function buildFog() {
+  const fog = U.S.fog;
+  if (!fog || !M.cloud) return;
+  const c = M.fogLayer || document.createElement('canvas');
+  const W = N * FR;
+  c.width = c.height = W;
+  const g = c.getContext('2d');
+  const img = g.createImageData(W, W);
+  const cl = new Float32Array(N * N), veil = new Float32Array(N * N);
+  for (let i = 0; i < N * N; i++) { cl[i] = fog[i] === 0 ? 1 : 0; veil[i] = fog[i] === 1 ? 1 : 0; }
+  blur3(blur3(cl)); blur3(veil);
+  // bilinear samples of the tile masks at FR pixels per tile, frayed by the cloud noise
+  const lerp2 = (a, u, v) => {
+    const x0 = Math.max(0, Math.min(N - 2, Math.floor(u))), y0 = Math.max(0, Math.min(N - 2, Math.floor(v))), kx = Math.max(0, Math.min(1, u - x0)), ky = Math.max(0, Math.min(1, v - y0));
+    const i = y0 * N + x0;
+    return (a[i] * (1 - kx) + a[i + 1] * kx) * (1 - ky) + (a[i + N] * (1 - kx) + a[i + N + 1] * kx) * ky;
+  };
+  const d = img.data;
+  for (let Y = 0; Y < W; Y++) {
+    const v = (Y + 0.5) / FR - 0.5;
+    for (let X = 0; X < W; X++) {
+      const u = (X + 0.5) / FR - 0.5, p = (Y * W + X) * 4;
+      const ci = lerp2(cl, u, v);
+      if (ci < 0.005 && veil[((v + 0.5) | 0) * N + ((u + 0.5) | 0)] < 0.005) continue;
+      const k = M.cloud[Y * W + X];
+      const a = Math.min(1, Math.max(0, ci * 1.5 - (1 - k) * 0.5));
+      const ve = lerp2(veil, u, v);
+      if (a > 0.01) {
+        d[p] = 150 + k * 82; d[p + 1] = 166 + k * 74; d[p + 2] = 186 + k * 62;
+        d[p + 3] = Math.round(255 * Math.max(a * 0.92, ve * 0.38));
+      } else if (ve > 0.01) { d[p] = 8; d[p + 1] = 14; d[p + 2] = 26; d[p + 3] = Math.round(97 * ve); }
+    }
   }
   g.putImageData(img, 0, 0);
   M.fogLayer = c;
   M.fogVer = U.S.visVer;
+}
+// the mountain ranges and pass roads, drawn over the clouds when zoomed out: everyone knows the lie of the kingdom
+function buildRanges() {
+  const k = U.S.kingdom;
+  const c = document.createElement('canvas');
+  c.width = c.height = N * OV;
+  const g = c.getContext('2d');
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, v = k.wall[i];
+    if (!v) continue;
+    const px = x * OV, py = y * OV, r = hashTile(i);
+    if (v === 2) { g.fillStyle = '#e9d29a'; g.fillRect(px, py, OV, OV); continue; }
+    g.fillStyle = '#3e3834'; g.beginPath(); g.moveTo(px - 2, py + OV); g.lineTo(px + OV / 2, py - OV); g.lineTo(px + OV + 2, py + OV); g.closePath(); g.fill();
+    g.fillStyle = '#7a716a'; g.beginPath(); g.moveTo(px - 2, py + OV); g.lineTo(px + OV / 2, py - OV); g.lineTo(px + OV * 0.45, py + OV); g.closePath(); g.fill();
+    if (r > 0.3) { g.fillStyle = '#eef2f5'; g.beginPath(); g.moveTo(px + OV * 0.25, py - OV * 0.15); g.lineTo(px + OV / 2, py - OV); g.lineTo(px + OV * 0.75, py - OV * 0.15); g.closePath(); g.fill(); }
+  }
+  M.ranges = c;
 }
 
 // ================================================================ drawing
@@ -153,17 +282,43 @@ function draw() {
   M.raf = 0;
   const f = U.F;
   if (!M.ctx || !f || !U.S.ter) return;
-  if (M.terrSeed !== U.S.seed) buildTerrain();
+  const t0 = performance.now();
+  if (M.seed !== U.S.seed) newSeed();
   if (M.terrVer !== U.S.terrVer) buildTerritory();
   if (M.fogVer !== U.S.visVer) buildFog();
   const g = M.ctx, z = M.view.z;
+  M.placed = [];
   g.setTransform(M.dpr, 0, 0, M.dpr, 0, 0);
-  g.fillStyle = '#0a0807';
+  g.fillStyle = '#0b1626';
   g.fillRect(0, 0, M.w, M.h);
   const [ox, oy] = toScreen(0, 0);
-  g.imageSmoothingEnabled = z < TILE;
-  g.drawImage(M.terrLayer, ox, oy, N * z, N * z);
-  if (M.showTerritory && M.territory) g.drawImage(M.territory, ox, oy, N * z, N * z);
+  // terrain: the kingdom painting when zoomed out, the detailed chunks in view when zoomed in
+  const budget = { n: 4, missing: false };
+  if (z < CHUNK_Z) { g.imageSmoothingEnabled = true; g.drawImage(M.overview, ox, oy, N * z, N * z); }
+  else {
+    const [tx0, ty0] = toTile(0, 0), [tx1, ty1] = toTile(M.w, M.h);
+    const c0 = Math.max(0, Math.floor(tx0 / CH)), c1 = Math.min(N / CH - 1, Math.floor(tx1 / CH)), r0 = Math.max(0, Math.floor(ty0 / CH)), r1 = Math.min(N / CH - 1, Math.floor(ty1 / CH));
+    g.imageSmoothingEnabled = z < TILE;
+    // nearest chunks first, so the middle of the screen fills in before the edges
+    const order = [];
+    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) order.push([cx, cy, Math.hypot(cx * CH + CH / 2 - M.view.cx, cy * CH + CH / 2 - M.view.cy)]);
+    order.sort((a, b) => a[2] - b[2]);
+    for (const [cx, cy] of order) {
+      const c = chunkAt(cx, cy, budget);
+      const sx = Math.floor(ox + cx * CH * z), sy = Math.floor(oy + cy * CH * z), ex = Math.ceil(ox + (cx + 1) * CH * z), ey = Math.ceil(oy + (cy + 1) * CH * z);
+      if (c) g.drawImage(c, sx, sy, ex - sx, ey - sy);
+      else { g.imageSmoothingEnabled = true; g.drawImage(M.overview, cx * CH * OV, cy * CH * OV, CH * OV, CH * OV, sx, sy, ex - sx, ey - sy); g.imageSmoothingEnabled = z < TILE; }
+    }
+  }
+  if (M.showTerritory && M.terrFill) {
+    g.imageSmoothingEnabled = false;
+    g.drawImage(M.terrFill, ox, oy, N * z, N * z);
+    g.save();
+    g.setTransform(M.dpr * z, 0, 0, M.dpr * z, M.dpr * ox, M.dpr * oy);
+    g.lineWidth = Math.max(1, Math.min(2.4, z * 0.16)) / z;
+    f.guilds.forEach((gd, k) => { if (M.terrPaths[k]) { g.strokeStyle = gd.color + 'd8'; g.stroke(M.terrPaths[k]); } });
+    g.restore();
+  }
   const [x0, y0] = toTile(0, 0), [x1, y1] = toTile(M.w, M.h);
   const inView = (x, y, pad = 2) => x >= x0 - pad && x <= x1 + pad && y >= y0 - pad && y <= y1 + pad;
   const gcol = gi => (gi >= 0 ? f.guilds[gi].color : '#b8ada0');
@@ -171,8 +326,8 @@ function draw() {
   const sprites = z >= SPRITE_Z && !!U.art;
   if (sprites) drawSprites(g, f, z, inView, gcol, P);
   else {
-    // resource fields and camps
-    for (const n of f.nodes) {
+    // resource fields and camps (left out when the whole kingdom is in view)
+    for (const n of z < 2.5 ? [] : f.nodes) {
       if (!inView(n.x, n.y)) continue;
       const [sx, sy] = toScreen(n.x + 0.5, n.y + 0.5);
       const r = Math.max(2, z * 0.28);
@@ -180,7 +335,7 @@ function draw() {
       g.beginPath(); g.moveTo(sx, sy - r); g.lineTo(sx + r, sy); g.lineTo(sx, sy + r); g.lineTo(sx - r, sy); g.closePath(); g.fill();
       if (n.busy) { g.strokeStyle = '#fff'; g.lineWidth = 1; g.stroke(); }
     }
-    for (const c of f.camps) {
+    for (const c of z < 2.5 ? [] : f.camps) {
       if (!inView(c.x, c.y)) continue;
       const [sx, sy] = toScreen(c.x + 0.5, c.y + 0.5);
       const r = Math.max(2.5, z * 0.36);
@@ -194,7 +349,7 @@ function draw() {
       const [sx, sy] = toScreen(c.x + 0.5, c.y + 0.5);
       const mine = c.id === P.id;
       const col = mine ? '#f2c14e' : gcol(c.guild);
-      const s = Math.max(2.5, z * (0.32 + Math.min(0.28, c.hall / 70)));
+      const s = Math.max(z < 2 ? 1.8 : 2.5, z * (0.32 + Math.min(0.28, c.hall / 70)));
       if (z < 5) {
         g.fillStyle = col;
         g.fillRect(sx - s / 2, sy - s / 2, s, s);
@@ -223,38 +378,14 @@ function draw() {
         g.fillText(label, sx, sy + s + Math.max(11, z * 0.38));
       }
     }
-    // landmarks
-    for (const mk of f.marks) {
-      if (!mk.known || !inView(mk.x, mk.y, 4)) continue;
-      const [sx, sy] = toScreen(mk.x + 0.5, mk.y + 0.5);
-      const s = Math.max(5, z * (mk.kind === 'capital' ? 1.4 : mk.kind === 'fortress' ? 0.95 : 0.7));
-      const col = mk.owner >= 0 ? f.guilds[mk.owner].color : '#8c847a';
-      if (mk.kind === 'ruin') {
-        g.fillStyle = '#8c847a';
-        for (let k = -1; k <= 1; k++) g.fillRect(sx + k * s * 0.45 - s * 0.12, sy - s * (0.3 + 0.2 * (k & 1)), s * 0.24, s * (0.8 + 0.2 * (k & 1)));
-      } else {
-        g.fillStyle = '#2a2420';
-        g.fillRect(sx - s, sy - s * 0.6, s * 2, s * 1.4);
-        g.fillStyle = col;
-        for (let k = -1; k <= 1; k++) g.fillRect(sx + k * s * 0.7 - s * 0.25, sy - s * 1.05, s * 0.5, s * 0.55);
-        g.fillRect(sx - s * 0.85, sy - s * 0.55, s * 1.7, s * 1.15);
-        g.fillStyle = '#1c1712';
-        g.fillRect(sx - s * 0.22, sy + s * 0.1, s * 0.44, s * 0.5);
-        if (mk.kind === 'capital') { g.fillStyle = '#f2c14e'; g.beginPath(); g.moveTo(sx - s * 0.6, sy - s * 1.2); g.lineTo(sx - s * 0.6, sy - s * 1.7); g.lineTo(sx - s * 0.3, sy - s * 1.45); g.lineTo(sx, sy - s * 1.8); g.lineTo(sx + s * 0.3, sy - s * 1.45); g.lineTo(sx + s * 0.6, sy - s * 1.7); g.lineTo(sx + s * 0.6, sy - s * 1.2); g.closePath(); g.fill(); }
-      }
-      if (z >= 4.5) {
-        g.font = `700 ${Math.max(10, Math.round(Math.min(15, z * 0.42)))}px "Lilita One", "Arial Black", sans-serif`;
-        g.textAlign = 'center';
-        const label = mk.name + (mk.owner >= 0 ? ` [${f.guilds[mk.owner].tag}]` : '');
-        g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.75)'; g.strokeText(label, sx, sy + s * 1.1 + 12);
-        g.fillStyle = mk.owner >= 0 ? col : '#e7dccd';
-        g.fillText(label, sx, sy + s * 1.1 + 12);
-      }
-    }
   }
   // fog of war over everything static, and the edge of the world
   if (M.fogLayer) { g.imageSmoothingEnabled = true; g.drawImage(M.fogLayer, ox, oy, N * z, N * z); }
-  g.strokeStyle = 'rgba(226,176,74,.35)'; g.lineWidth = 2; g.strokeRect(ox - 1, oy - 1, N * z + 2, N * z + 2);
+  g.strokeStyle = 'rgba(143,216,255,.35)'; g.lineWidth = 2; g.strokeRect(ox - 1, oy - 1, N * z + 2, N * z + 2);
+  if (z < CHUNK_Z && M.ranges) { g.globalAlpha = z < 3 ? 0.9 : 0.7; g.imageSmoothingEnabled = true; g.drawImage(M.ranges, ox, oy, N * z, N * z); g.globalAlpha = 1; }
+  // passes, holy sites, the Capital and ruins stand above the clouds once they are known
+  drawMarks(g, f, z, inView, sprites);
+  if (z < CHUNK_Z) drawRegionNames(g, z);
   if (sprites) drawArmies(g, f, z, inView, gcol, P);
   else {
     // armies on the move (only those you can see)
@@ -294,10 +425,73 @@ function draw() {
     const [sx, sy] = toScreen(M.sel % N, Math.floor(M.sel / N));
     g.strokeStyle = '#f2c14e'; g.lineWidth = 2; g.strokeRect(sx, sy, z, z);
   }
+  // where the middle of the screen is
+  const cxi = Math.floor(M.view.cx), cyi = Math.floor(M.view.cy);
+  if (cxi >= 0 && cyi >= 0 && cxi < N && cyi < N && M.whereEl) {
+    const rg = regionOfTile(cxi, cyi);
+    const where = rg >= 0 ? `${A.REGIONS[rg].name} · Zone ${A.REGIONS[rg].zone} · ${cxi}, ${cyi}` : `${cxi}, ${cyi}`;
+    if (where !== M.where) { M.where = where; setText(M.whereEl, where); }
+  }
   M.dirty = false;
   M.lastDraw = performance.now();
+  M.ms = M.lastDraw - t0;
+  if (budget.missing) schedule(16);
   // keep animating while armies move on screen
   if ((f.marches.length || (f.fights || []).length) && !document.hidden && U.current === 'map') schedule(sprites ? 90 : 120);
+}
+// the region of a tile from the kingdom map (the interface regenerates it from the seed); -1 on a range
+function regionOfTile(x, y) {
+  const r = U.S.kingdom?.reg[y * N + x];
+  if (r == null || r === 255) return -1;
+  return r < 100 ? r : U.S.kingdom.gates[r - 100].links[0];
+}
+// zoomed out: the names of the ten regions over their lands
+function drawRegionNames(g, z) {
+  const big = z < 2.6;
+  g.textAlign = 'center';
+  g.lineJoin = 'round';
+  A.REGIONS.forEach((r, k) => {
+    const [x, y] = A.regionCenter(k);
+    const [sx, sy] = toScreen(x, k === 9 ? y - 6 : y);
+    if (sx < -120 || sy < -40 || sx > M.w + 120 || sy > M.h + 40) return;
+    const fs = big ? Math.round(Math.max(13, Math.min(22, z * 13))) : 15;
+    g.font = `400 ${fs}px "Lilita One", "Arial Black", sans-serif`;
+    g.lineWidth = 4; g.strokeStyle = 'rgba(8,14,26,.8)'; g.strokeText(r.name, sx, sy);
+    g.fillStyle = r.zone === 3 ? '#ffd862' : r.zone === 2 ? '#d6ecff' : '#f4efe4'; g.fillText(r.name, sx, sy);
+    g.font = `700 ${Math.round(fs * 0.62)}px Barlow, sans-serif`;
+    const sub = `Zone ${r.zone}`;
+    g.lineWidth = 3; g.strokeText(sub, sx, sy + fs * 0.85);
+    g.fillStyle = 'rgba(214,236,255,.9)'; g.fillText(sub, sx, sy + fs * 0.85);
+  });
+}
+// passes, holy sites, the Capital and ruins below sprite zoom: their pictures shrunk, never smaller than an icon
+function drawMarks(g, f, z, inView, near) {
+  const ART = U.art;
+  const labels = [];
+  const list = f.marks.filter(mk => mk.known && inView(mk.x, mk.y, 6) && !(mk.kind === 'ruin' && z < 2.5)).sort((a, b) => a.y - b.y);
+  for (const mk of list) {
+    const [sx, sy] = toScreen(mk.x + 0.5, mk.y + 0.5);
+    const col = mk.owner >= 0 ? f.guilds[mk.owner].color : null;
+    if (ART) {
+      if (mk.kind === 'capital') ART.put(g, ART.mapFort(col, true), sx, sy + Math.max(6, z * 0.5), 48, 66, Math.max(0.42, z * 3.6 / 60));
+      else if (mk.kind === 'pass') ART.put(g, ART.mapPass(col, mk.tier), sx, sy + Math.max(4, z * 0.5), 48, 62, Math.max(0.3, z * (near ? 2.8 : 2.4) / 60));
+      else if (mk.kind === 'site') ART.put(g, ART.mapSite(mk.site, col), sx, sy + Math.max(4, z * 0.5), 48, 70, Math.max(0.3, z * (near ? (mk.site === 'temple' ? 3 : 2.6) : 2.4) / 60));
+      else ART.put(g, ART.mapRuin(), sx, sy + z * 0.3, 24, 36, Math.max(0.35, z * 1.6 / 36));
+    }
+    if (z >= 2.2 && (mk.kind !== 'ruin' || near)) labels.push({ pri: mk.kind === 'capital' ? 1e9 : mk.kind === 'pass' ? 1e8 + mk.tier : 1e7 + mk.level, x: sx, y: sy + Math.max(8, z * (mk.kind === 'capital' ? 1.5 : mk.kind === 'ruin' ? 0.8 : 1.1)), text: mk.name + (mk.owner >= 0 ? ` [${f.guilds[mk.owner].tag}]` : ''), col: col || (mk.kind === 'pass' ? '#d6ecff' : '#f4efe4') });
+  }
+  g.textAlign = 'center';
+  g.font = `400 ${Math.round(Math.max(11, Math.min(15, z * 2.2)))}px "Lilita One", "Arial Black", sans-serif`;
+  const placed = M.placed;
+  labels.sort((a, b) => b.pri - a.pri);
+  for (const l of labels) {
+    const tw = g.measureText(l.text).width;
+    const r = [l.x - tw / 2 - 4, l.y, l.x + tw / 2 + 4, l.y + 16];
+    if (placed.some(q => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1])) continue;
+    placed.push(r);
+    g.lineWidth = 3; g.strokeStyle = 'rgba(8,14,26,.85)'; g.strokeText(l.text, l.x, l.y + 12);
+    g.fillStyle = l.col; g.fillText(l.text, l.x, l.y + 12);
+  }
 }
 // ---------------------------------------------------------------- pictures (zoomed in)
 function drawSprites(g, f, z, inView, gcol, P) {
@@ -331,19 +525,11 @@ function drawSprites(g, f, z, inView, gcol, P) {
     } });
     if (z >= 12 || mine) labels.push({ pri: mine ? 1e9 : c.hall, x: sx, y: sy + z * 0.55, text: (c.guild >= 0 ? `[${f.guilds[c.guild].tag}] ` : '') + c.name, col: mine ? '#f2c14e' : '#efe6da', font: `700 ${Math.max(10, Math.round(Math.min(14, z * 0.34)))}px Barlow, sans-serif` });
   }
-  for (const mk of f.marks) {
-    if (!mk.known || !inView(mk.x, mk.y, 4)) continue;
-    const [sx, sy] = at(mk.x, mk.y);
-    const col = mk.owner >= 0 ? f.guilds[mk.owner].color : null;
-    if (mk.kind === 'ruin') { const s = ART.mapRuin(), k = z * 1.6 / 36; objs.push({ y: mk.y, f: () => ART.put(g, s, sx, sy + z * 0.3, 24, 36, k) }); }
-    else { const cap = mk.kind === 'capital', s = ART.mapFort(col, cap), k = z * (cap ? 3.6 : 2.7) / 60; objs.push({ y: mk.y + 0.5, f: () => ART.put(g, s, sx, sy + z * 0.5, 48, 66, k) }); }
-    labels.push({ pri: 1e8 + mk.level, x: sx, y: sy + z * (mk.kind === 'capital' ? 1.5 : mk.kind === 'fortress' ? 1.2 : 0.8), text: mk.name + (mk.owner >= 0 ? ` [${f.guilds[mk.owner].tag}]` : ''), col: col || '#e7dccd', font: `700 ${Math.max(10, Math.round(Math.min(15, z * 0.42)))}px "Lilita One", "Arial Black", sans-serif` });
-  }
   objs.sort((a, b) => a.y - b.y);
   for (const o of objs) o.f();
   // name plates, most important first; one that would cover another is left out
   g.textAlign = 'center';
-  const placed = [];
+  const placed = M.placed;
   labels.sort((a, b) => b.pri - a.pri);
   for (const l of labels) {
     g.font = l.font;
@@ -408,14 +594,18 @@ function mountMap(root) {
   root.innerHTML = `<div class="aoc-map">
     <canvas class="aoc-map-cv" aria-label="World map. Drag to move, pinch or use the buttons to zoom, tap a place to see it."></canvas>
     <div class="aoc-map-bottom"><div class="aoc-quest" hidden></div></div>
+    <div class="aoc-map-where" aria-live="off"></div>
     <div class="aoc-map-tools">
       <button type="button" class="aoc-iconbtn" data-act="home" aria-label="Center on your city">${U.icon('home', 20)}</button>
+      <button type="button" class="aoc-iconbtn" data-act="find" aria-label="Find passes, holy sites and the Capital">${U.icon('search', 20)}</button>
+      <button type="button" class="aoc-iconbtn" data-act="kingdom" aria-label="See the whole kingdom">${U.icon('globe', 20)}</button>
       <button type="button" class="aoc-iconbtn" data-act="in" aria-label="Zoom in">${U.icon('plus', 20)}</button>
       <button type="button" class="aoc-iconbtn" data-act="out" aria-label="Zoom out">${U.icon('minus', 20)}</button>
       <button type="button" class="aoc-iconbtn" data-act="layers" aria-label="Show or hide guild territory" aria-pressed="true">${U.icon('layers', 20)}</button>
     </div>
     <div class="aoc-map-info" aria-live="polite"></div>
   </div>`;
+  M.whereEl = root.querySelector('.aoc-map-where');
   M.cv = root.querySelector('canvas');
   M.ctx = M.cv.getContext('2d', { alpha: false });
   const ro = new ResizeObserver(() => { resize(); schedule(); });
@@ -425,6 +615,8 @@ function mountMap(root) {
     if (!b) return;
     const a = b.dataset.act;
     if (a === 'home') home(true);
+    if (a === 'find') findSheet();
+    if (a === 'kingdom') { M.view.cx = N / 2; M.view.cy = N / 2; M.view.z = Math.max(ZMIN, Math.min(M.w, M.h) / N * 0.98); }
     if (a === 'in') { M.view.z *= 1.5; clampView(); }
     if (a === 'out') { M.view.z /= 1.5; clampView(); }
     if (a === 'layers') { M.showTerritory = !M.showTerritory; b.setAttribute('aria-pressed', String(M.showTerritory)); }
@@ -499,6 +691,8 @@ U.mapPoint = (x, y) => {
   if (sx < 10 || sy < 10 || sx > M.w - 10 || sy > M.h - 10) return null;
   return { x: r.left + sx, y: r.top + sy };
 };
+// for the tests: how long the last frame took and how many painted chunks are kept
+U.map = { get ms() { return M.ms; }, get chunks() { return M.chunks.size; }, get z() { return M.view.z; } };
 U.mapFocus = (x, y, z) => { M.view.cx = x + 0.5; M.view.cy = y + 0.5; if (z) M.view.z = z; clampView(); U.go('map'); schedule(); };
 
 // ================================================================ claiming goals (from the banner over the city and the map)
@@ -527,7 +721,7 @@ async function openTile(i) {
   const f = U.F, P = f.player;
   const parts = [];
   const acts = [];
-  const terrInfo = `${esc(t.terrain)} · ${esc(t.region)}${t.territory >= 0 ? ` · <span style="color:${f.guilds[t.territory].color}">${esc(f.guilds[t.territory].name)} territory</span>` : ''}`;
+  const terrInfo = `${esc(t.terrain)} · ${esc(t.region)}, Zone ${t.zone}${t.territory >= 0 ? ` · <span style="color:${f.guilds[t.territory].color}">${esc(f.guilds[t.territory].name)} territory</span>` : ''}`;
   let title = t.terrain;
   if (!t.explored) {
     title = 'Unexplored land';
@@ -570,32 +764,69 @@ async function openTile(i) {
     const mk = t.mark;
     title = mk.name;
     const owner = mk.owner >= 0 ? f.guilds[mk.owner] : null;
-    const kindName = mk.kind === 'capital' ? 'The Capital' : mk.kind === 'fortress' ? 'Fortress' : 'Ancient ruins';
-    if (U.art) parts.push(pic(mk.kind === 'ruin' ? U.art.mapRuin() : U.art.mapFort(owner?.color || null, mk.kind === 'capital')));
-    parts.push(`<div class="aoc-who">${mk.kind === 'ruin' ? `<span class="aoc-big-ico">${U.icon('ruin', 34)}</span>` : U.banner(owner, 40)}<div><b>${esc(kindName)}</b> · level ${mk.level}
+    const kindName = mk.kind === 'capital' ? 'The Capital' : mk.kind === 'pass' ? `Pass, level ${mk.tier}` : mk.kind === 'site' ? `Holy site: ${A.SITES[mk.site].name}` : 'Ancient ruins';
+    if (U.art) parts.push(pic(mk.kind === 'ruin' ? U.art.mapRuin() : mk.kind === 'pass' ? U.art.mapPass(owner?.color || null, mk.tier) : mk.kind === 'site' ? U.art.mapSite(mk.site, owner?.color || null) : U.art.mapFort(owner?.color || null, true)));
+    parts.push(`<div class="aoc-who">${mk.kind === 'ruin' ? `<span class="aoc-big-ico">${U.icon('ruin', 34)}</span>` : U.banner(owner, 40)}<div><b>${esc(kindName)}</b> · garrison level ${mk.level}
       <div class="aoc-muted">${owner ? `Held by ${esc(owner.name)} [${esc(owner.tag)}] since ${A.clock(mk.since)}` : mk.kind === 'ruin' ? 'Guarded by old wardens' : 'Held by its neutral garrison'}</div></div></div>`);
-    if (mk.kind === 'capital') parts.push(`<p class="aoc-p">${f.t < f.throne.opens ? `The gates open on Day ${1 + f.throne.opens / A.DAY}.` : `A guild that holds the Throne for ${f.throne.hold / A.DAY} days wins the Age.`}${f.throne.owner >= 0 ? ` ${esc(f.guilds[f.throne.owner].name)} has held it for ${dur(f.t - f.throne.since)}.` : ''}</p>`);
-    if (mk.kind === 'fortress') parts.push('<p class="aoc-p">Fortresses extend their guild\'s territory and give members inside it +4% production. Take them with a rally; keep them with reinforcements.</p>');
+    const opensAt = !mk.open && mk.kind !== 'ruin' ? `<p class="aoc-p aoc-opens">${U.icon('lock', 16)} Opens on Day ${Math.floor(mk.opens / A.DAY) + 1}${mk.opens % A.DAY ? ` at ${A.clock(mk.opens).split(' ').pop()}` : ''}.</p>` : '';
+    if (mk.kind === 'capital') parts.push(`<p class="aoc-p">${!mk.open ? `The gates open on Day ${1 + f.throne.opens / A.DAY}.` : `A guild that holds the Throne for ${f.throne.hold / A.DAY} days wins the Age.`}${f.throne.owner >= 0 ? ` ${esc(f.guilds[f.throne.owner].name)} has held it for ${dur(f.t - f.throne.since)}.` : ''} It stands in the heartland: only a guild holding a level 3 pass can reach it.</p>`);
+    if (mk.kind === 'pass') parts.push(`<div class="aoc-intel"><span class="aoc-kicker">The road through the mountains</span><div><b>${esc(mk.links[0])}</b> ${U.icon('next', 14)} <b>${esc(mk.links[1])}</b></div></div><p class="aoc-p">${owner ? `Members of ${esc(owner.name)} and its allies march through it. Everyone else is stopped at the mountains.` : 'Nobody can march through until a guild takes it with a rally.'} Take it from either side.</p>${opensAt}`);
+    if (mk.kind === 'site') parts.push(`<div class="aoc-intel"><span class="aoc-kicker">${esc(mk.blessing.name)}</span><div>${esc(mk.blessing.text)} for every member of the guild that holds it, wherever they are. The same blessing from two sites counts once.</div></div>${opensAt}`);
     if (mk.kind === 'ruin') parts.push(`<p class="aoc-p">${mk.cleared ? 'You have explored these ruins.' : 'Defeat the wardens to recover the treasures inside and train your commander.'}</p>`);
     if (mk.intel) parts.push(`<div class="aoc-intel"><span class="aoc-kicker">Your intelligence · ${U.ago(mk.intel.at)} · ${mk.intel.acc}% accurate</span><div>${U.troopLine(mk.intel.troops)}</div></div>`);
     if (mk.garrisonMine) parts.push(`<div class="aoc-intel"><span class="aoc-kicker">Your guild's garrison</span><div>${U.troopLine(mk.garrisonMine)}</div>${mk.myTroops.length ? `<div class="aoc-muted">${mk.myTroops.length} of the armies are yours.</div>` : ''}</div>`);
-    acts.push({ label: 'Scout', kind: 'ghost', icon: 'eye', onClick: () => sendScout(i) });
-    if (mk.kind === 'ruin' && !mk.cleared) acts.push({ label: 'Explore', kind: 'red', icon: 'sword', onClick: () => U.marchSheet({ kind: 'attack', to: i, name: mk.name, intel: mk.intel }) });
-    if (mk.kind !== 'ruin') {
+    if (!t.reachable) parts.push(`<p class="aoc-muted">${P.guild < 0 ? 'Mountains stand between you and this place. Join a guild that holds a pass to march here.' : 'Mountains stand between you and this place. Your guild needs a pass into this region first.'}</p>`);
+    if (t.reachable) acts.push({ label: 'Scout', kind: 'ghost', icon: 'eye', onClick: () => sendScout(i) });
+    if (mk.kind === 'ruin' && !mk.cleared && t.reachable) acts.push({ label: 'Explore', kind: 'red', icon: 'sword', onClick: () => U.marchSheet({ kind: 'attack', to: i, name: mk.name, intel: mk.intel }) });
+    if (mk.kind !== 'ruin' && t.reachable) {
       if (P.guild >= 0 && mk.owner === P.guild) acts.push({ label: 'Reinforce', icon: 'shield', onClick: () => U.marchSheet({ kind: 'reinforce', to: i, name: mk.name }) });
+      else if (!mk.open) { /* the lock line above says when */ }
       else if (P.guild >= 0 && (P.role === 'leader' || P.role === 'officer' || P.b.hall >= 12)) acts.push({ label: 'Call a rally', kind: 'red', icon: 'flag', onClick: () => U.marchSheet({ kind: 'rally', to: i, name: mk.name, intel: mk.intel }) });
-      else if (P.guild < 0) parts.push('<p class="aoc-muted">Join a guild to fight for fortresses and the Throne.</p>');
+      else if (P.guild < 0) parts.push('<p class="aoc-muted">Join a guild to fight for passes, holy sites and the Throne.</p>');
       else parts.push('<p class="aoc-muted">Only leaders, officers and governors with a level 12 Town Hall can call rallies. Join one from the Guild tab when it is called.</p>');
     }
   } else {
     title = t.terrain;
-    const passable = A.TERRAIN[t.ter].cost !== Infinity && t.terrain !== 'Ford' && t.terrain !== 'Mountain pass';
-    parts.push(`<p class="aoc-p">${t.visible ? 'Open land.' : 'Explored, but out of sight right now.'}</p>`);
-    if (passable) acts.push({ label: `Move city here (${P.relocateCost ? fmt(P.relocateCost) + ' Gold' : 'free once'})`, kind: 'ghost', icon: 'home', onClick: () => relocate(t.x, t.y) });
-    acts.push({ label: 'Send a scout', kind: 'ghost', icon: 'eye', onClick: () => sendScout(i) });
+    const id = A.TERRAIN[t.ter].id;
+    const settle = A.TERRAIN[t.ter].cost !== Infinity && !['ford', 'pass', 'gate'].includes(id) && t.canSettle;
+    if (t.wall === 1) parts.push('<p class="aoc-p">The mountain range between two regions. Armies cross it only through a pass.</p>');
+    else if (t.wall === 2) parts.push('<p class="aoc-p">The road through a pass. Only the guild that holds the pass, and its allies, march here.</p>');
+    else parts.push(`<p class="aoc-p">${t.visible ? 'Open land.' : 'Explored, but out of sight right now.'}</p>`);
+    if (!t.reachable && !t.wall && A.TERRAIN[t.ter].cost !== Infinity) parts.push(`<p class="aoc-muted">Beyond the mountains from you: ${P.guild < 0 ? 'join a guild that holds a pass to march here.' : 'your guild needs a pass into this region.'}</p>`);
+    if (settle) acts.push({ label: `Move city here (${P.relocateCost ? fmt(P.relocateCost) + ' Gold' : 'free once'})`, kind: 'ghost', icon: 'home', onClick: () => relocate(t.x, t.y) });
+    if (t.reachable) acts.push({ label: 'Send a scout', kind: 'ghost', icon: 'eye', onClick: () => sendScout(i) });
   }
   const h = U.sheet({ title, body: `<p class="aoc-small aoc-muted">${terrInfo} · (${t.x}, ${t.y})</p>${parts.join('')}`, actions: acts.slice(0, 4), onClose: () => { M.sel = null; schedule(); } });
   return h;
+}
+// every pass, holy site and the Capital, grouped, with who holds them; tap one to go there
+function findSheet() {
+  const f = U.F, P = f.player;
+  const row = mk => {
+    const owner = mk.owner >= 0 ? f.guilds[mk.owner] : null;
+    const sub = mk.kind === 'pass' ? `Level ${mk.tier} · ${A.REGIONS[mk.links[0]].name} to ${A.REGIONS[mk.links[1]].name}` : mk.kind === 'site' ? `${A.BLESSINGS[mk.blessing].text} · ${A.REGIONS[mk.region].name}` : 'The Ember Throne';
+    const lock = f.t < mk.opens ? ` · opens Day ${Math.floor(mk.opens / A.DAY) + 1}` : '';
+    return `<button type="button" class="aoc-row aoc-find-row" data-goto="${mk.x},${mk.y}"><span class="aoc-row-ico">${U.icon(mk.kind === 'pass' ? 'gate' : mk.kind === 'site' ? 'temple' : 'crown', 22)}</span>
+      <span class="aoc-row-main"><b>${esc(mk.name)}</b><span class="aoc-muted aoc-small">${esc(sub)}${lock}</span></span>
+      <span class="aoc-row-act">${owner ? `<span class="aoc-tag" style="color:${owner.color}">[${esc(owner.tag)}]</span>` : '<span class="aoc-muted aoc-small">Neutral</span>'}</span></button>`;
+  };
+  const marks = f.marks.filter(m => m.kind !== 'ruin');
+  const mine = P.guild >= 0 ? marks.filter(m => m.owner === P.guild) : [];
+  const group = (title, list) => list.length ? `<h3 class="aoc-h3">${esc(title)}</h3><div class="aoc-find">${list.map(row).join('')}</div>` : '';
+  const body = `<p class="aoc-small aoc-muted">Mountains wall every region of the kingdom. Passes are the only ways through; holy sites bless the guild that holds them.</p>
+    <button type="button" class="aoc-row aoc-find-row" data-goto="${P.x},${P.y}"><span class="aoc-row-ico">${U.icon('home', 22)}</span><span class="aoc-row-main"><b>Your city</b><span class="aoc-muted aoc-small">${esc(A.REGIONS[P.region].name)}, Zone ${A.REGIONS[P.region].zone} · ${P.x}, ${P.y}</span></span></button>
+    ${group('Held by your guild', mine)}
+    ${group('The Capital', marks.filter(m => m.kind === 'capital'))}
+    ${group('Passes', marks.filter(m => m.kind === 'pass').sort((a, b) => a.tier - b.tier))}
+    ${group('Holy sites', marks.filter(m => m.kind === 'site').sort((a, b) => A.REGIONS[a.region].zone - A.REGIONS[b.region].zone || a.region - b.region))}`;
+  const h = U.sheet({ title: 'The kingdom', body });
+  h.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-goto]');
+    if (!b) return;
+    const [x, y] = b.dataset.goto.split(',').map(Number);
+    U.closeSheets();
+    U.mapFocus(x, y, Math.max(M.view.z, 12));
+  });
 }
 async function sendScout(i) {
   const r = await U.run({ type: 'march', kind: 'scout', to: i }, 'Scout sent.');

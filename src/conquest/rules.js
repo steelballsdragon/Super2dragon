@@ -46,15 +46,32 @@ function stewardMods(g) {
   if (r.lv >= ULTIMATE_LEVEL && d.ultimate.steward) addMods(m, d.ultimate.mods);
   return m;
 }
-// guild bonus for cities inside their own guild's territory: +4% production per fortress held (max 3), +8% for the Capital
+// guild bonus for cities inside their own guild's territory: +8% production while it holds the Capital, plus the
+// guild's Shared Granaries
 function guildProdBonus(w, g) {
   if (g.guild < 0) return 0;
   const gd = w.guilds[g.guild];
   const own = w.map.terr ? w.map.terr[idx(g.x, g.y)] === g.guild + 1 : false;
   if (!own) return 0;
-  const forts = w.marks.filter(m => m.kind === 'fortress' && m.owner === g.guild).length;
   const cap = w.marks.some(m => m.kind === 'capital' && m.owner === g.guild) ? 0.08 : 0;
-  return Math.min(3, forts) * 0.04 + cap + (gd.tech.granary || 0) * 0.02;
+  return cap + (gd.tech.granary || 0) * 0.02;
+}
+// the blessings of the holy sites a guild holds, for every member wherever they are; the same blessing twice
+// counts once. Cached until a landmark changes hands (recomputeTerritory bumps w._me).
+function blessingMods(w, gi) {
+  if (gi < 0) return null;
+  const c = w._bless || (w._bless = { me: -1, by: [] });
+  if (c.me !== w._me) {
+    c.me = w._me;
+    c.by = w.guilds.map(() => null);
+    const seen = w.guilds.map(() => new Set());
+    for (const mk of w.marks) {
+      if (!mk.blessing || mk.owner < 0 || seen[mk.owner].has(mk.blessing)) continue;
+      seen[mk.owner].add(mk.blessing);
+      addMods(c.by[mk.owner] || (c.by[mk.owner] = {}), BLESSINGS[mk.blessing].mods);
+    }
+  }
+  return c.by[gi];
 }
 // cached for the current game minute; anything that changes a bonus mid-minute calls modsChanged(g)
 function cityMods(w, g) {
@@ -72,6 +89,8 @@ function computeCityMods(w, g) {
   addMods(m, stewardMods(g));
   const gb = guildProdBonus(w, g);
   if (gb) for (const r of RES) m[r] = (m[r] || 0) + gb;
+  const bl = blessingMods(w, g.guild);
+  if (bl) addMods(m, bl);
   return m;
 }
 
@@ -101,7 +120,7 @@ function eventMult(w, g, r, m) {
   let k = 1;
   for (const e of w.events) {
     if (e.res && e.res !== r && e.res !== 'all') continue;
-    if (e.region != null && e.region !== regionOf(g.x, g.y)) continue;
+    if (e.region != null && e.region !== regionAt(w, g.x, g.y)) continue;
     if (e.kind === 'winter' && (m.winterProof || 0) > 0) continue;
     k *= e.mult;
   }
@@ -183,7 +202,12 @@ function armySide(w, g, troops, c1, c2, ctx, label) {
   if (c1) addMods(m, commanderMods(g, c1, { ...ctx, primary: true }));
   if (c2 && c2 !== c1) addMods(m, commanderMods(g, c2, ctx));
   for (const s of SYNERGY) if ((s.a === c1 && s.b === c2) || (s.a === c2 && s.b === c1)) addMods(m, s.mods);
-  if (g.guild >= 0) { const gt = w.guilds[g.guild].tech; m.atk = (m.atk || 0) + (gt.banners || 0) * 0.02; m.def = (m.def || 0) + (gt.bulwark || 0) * 0.02; }
+  if (g.guild >= 0) {
+    const gt = w.guilds[g.guild].tech;
+    m.atk = (m.atk || 0) + (gt.banners || 0) * 0.02; m.def = (m.def || 0) + (gt.bulwark || 0) * 0.02;
+    const bl = blessingMods(w, g.guild);
+    if (bl) for (const k of ['atk', 'def', 'hp']) if (bl[k]) m[k] = (m[k] || 0) + bl[k];
+  }
   if (ctx.city && ctx.defend) m.def = (m.def || 0) + (m.cityDef || 0);
   if (ctx.reinforce) m.def = (m.def || 0) + (m.reinforce || 0);
   const rough = ctx.terrain === T.forest || ctx.terrain === T.hills || ctx.terrain === T.snow;

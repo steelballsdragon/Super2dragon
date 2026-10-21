@@ -72,6 +72,10 @@ const ICONS = {
   flag: '<path d="M6 21V4M6 4.5h11l-2 4 2 4H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
   home: '<path d="M4 11.5 12 5l8 6.5M6.5 9.5V19h11V9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
   layers: '<path d="m12 4 9 4.5-9 4.5-9-4.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m3 13 9 4.5 9-4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  search: '<circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15 15 5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  gate: '<path d="M3 20V7h4v2h2V7h6v2h2V7h4v13h-6v-5a3 3 0 0 0-6 0v5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  temple: '<path d="M3 9.5 12 4l9 5.5ZM4.5 20h15M6 10v8M10 10v8M14 10v8M18 10v8M4 18h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>',
+  globe: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 12h17M12 3.5c-2.6 2.4-3.6 5.3-3.6 8.5s1 6.1 3.6 8.5c2.6-2.4 3.6-5.3 3.6-8.5S14.6 5.9 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.6"/>',
   plus: '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   minus: '<path d="M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   clock: '<circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
@@ -364,7 +368,8 @@ function onMessage(m) {
   switch (m.type) {
     case 'ready': {
       U.S.seed = m.seed;
-      U.S.ter = A.generateTerrain(m.seed).ter;
+      U.S.kingdom = A.generateTerrain(m.seed);
+      U.S.ter = U.S.kingdom.ter;
       U.S.cities = new Map();
       if (U._ready) { const r = U._ready; U._ready = null; r(m); }
       break;
@@ -660,9 +665,9 @@ async function beginWorld(msg) {
   const m = await ready;
   if (m.type === 'loadError') {
     // try the backup copy before giving up
-    const bak = msg.type === 'load' && !msg.backup ? await U.store.get('backup') : null;
+    const bak = msg.type === 'load' && !msg.backup && !m.old ? await U.store.get('backup') : null;
     if (bak?.json) { U.toast('Your save could not be read. Loading the backup copy.', 'bad'); return beginWorld({ type: 'load', json: bak.json, backup: true }); }
-    rootEl().innerHTML = `<div class="aoc-title"><div class="aoc-title-in"><h1 class="aoc-h2">The world could not be opened</h1><p class="aoc-p">${esc(m.err)}</p>
+    rootEl().innerHTML = `<div class="aoc-title"><div class="aoc-title-in"><h1 class="aoc-h2">${m.old ? 'A new, bigger map' : 'The world could not be opened'}</h1><p class="aoc-p">${esc(m.err)}</p>
       <button type="button" class="aoc-btn gold wide" id="aoc-err-new">Start a new world</button><button type="button" class="aoc-btn ghost wide" id="aoc-err-back">Back</button></div></div>`;
     rootEl().querySelector('#aoc-err-new').addEventListener('click', () => newWorld());
     rootEl().querySelector('#aoc-err-back').addEventListener('click', () => U.start());

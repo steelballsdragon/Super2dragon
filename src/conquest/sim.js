@@ -1,7 +1,7 @@
 /* Age of Conquest simulation: world creation, the clock, queues, marches, battles, landmarks, territory, world
    events and the chronicle. AI decisions live in ai.js, player commands and views in api.js. Part of the engine. */
 
-const SCHEMA = 1;
+const SCHEMA = 2;   // 2: the kingdom map (384 tiles, zones, passes and holy sites)
 const PLAYER = GOVERNORS - 1;
 
 // ================================================================ creation
@@ -56,10 +56,11 @@ function createWorld(opts = {}) {
   // the server opens: history begins with the founding of the guilds
   for (const gd of w.guilds) chronicle(w, 'guild_founded', `${gd.name} [${gd.tag}] raised its banner in ${SERVER.regions[gd.home.region]} under ${w.govs[gd.leader].name}.`, { g: [gd.id], p: [gd.leader], x: gd.home.x, y: gd.home.y, imp: 2 });
   chronicle(w, 'server_open', `The ${SERVER.name} server opened. ${GOVERNORS} governors in ${GUILD_COUNT} guilds and ${w.govs.filter(g => g.guild < 0).length} independents. The Capital opens on Day ${1 + THRONE_OPENS / DAY}.`, { imp: 3 });
-  // the newcomer knows the lands around their city, and every map shows where the fortresses and the Capital stand
+  // the newcomer knows the lands around their city, and every map shows where the passes, the holy sites and the
+  // Capital stand
   w.explored = new Uint8Array(N2);
   const P = w.govs[PLAYER];
-  stampDisc(w.explored, P.x, P.y, 14, 1);
+  stampDisc(w.explored, P.x, P.y, 16, 1);
   for (const mk of w.marks) if (mk.kind !== 'ruin') stampDisc(w.explored, mk.x, mk.y, 2, 1);
   if (opts.scenario === 'coalition') scenarioCoalition(w);
   updatePlayerVision(w);
@@ -67,46 +68,78 @@ function createWorld(opts = {}) {
 }
 
 function initMap(w) {
-  const { ter } = generateTerrain(w.seed);
-  w.map = { ter, occ: new Int32Array(N2), terr: new Uint8Array(N2) };
+  const k = generateTerrain(w.seed);
+  w.map = { ter: k.ter, reg: k.reg, wall: k.wall, gates: k.gates, occ: new Int32Array(N2), terr: new Uint8Array(N2) };
 }
 
+const PASS_NAMES = { 1: ['Wolfjaw Pass', 'Greystep Pass', 'Brinegate Pass', 'Redwall Pass', 'Duskgap Pass', 'Cinder Notch'], 2: ['Frost Gate', 'Grey Gate', 'Salt Gate', 'Red Gate', 'Dusk Gate', 'Cinder Gate'], 3: ['Ember Gate', 'Iron Gate', 'Ash Gate'] };
+const SITE_NAMES = {
+  sanctum: ['Sanctum of Dawn', 'Sanctum of Embers', 'Sanctum of Rain', 'Sanctum of the Oak', 'Sanctum of Salt', 'Sanctum of the Hearth', 'Sanctum of Stars', 'Sanctum of Echoes', 'Sanctum of the Well', 'Sanctum of Ash', 'Sanctum of the Moon', 'Sanctum of Thorns'],
+  altar: ['Altar of Blood', 'Altar of Iron', 'Altar of Storms', 'Altar of Bones', 'Altar of Flame', 'Altar of Frost'],
+  shrine: ['Shrine of the Sun', 'Shrine of the Deep', 'Shrine of Wings', 'Shrine of Crowns', 'Shrine of the Veil', 'Shrine of Tides'],
+  temple: ['Shrine of the First King', 'Shrine of the Last Flame', 'Shrine of the Open Sky'],
+};
+const RUIN_NAMES = ['Ruins of Old Kharum', 'The Sunken Temple', 'Ashfall Barrow', 'The Glass Library', 'Watchers\' Circle', 'Hollow Crown Ruins', 'The Drowned Abbey', 'Moonfall Crater', 'The Broken Aqueduct',
+  'Thornwall Keep', 'The Silent Forge', 'Pillars of Varn', 'The Buried Market', 'Saltbone Ruins', 'The Weeping Arch', 'Old Emberhold', 'The Fallen Spire', 'Graves of the Nine'];
+const fortGarrison = lv => ({ inf: 2600 + lv * 700, cav: 1400 + lv * 400, arc: 2000 + lv * 500, sie: 200 });
+// the Capital in the middle, a pass in every gap of the ranges, holy sites and ruins in every region
 function placeLandmarks(w) {
   const rng = makeRng(hash32(w.seed, 'marks'));
-  const c = N / 2;
-  const put = (kind, name, x, y, extra) => {
-    // nearest passable tile
-    let best = null, bd = Infinity;
-    for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) {
-      const nx = x + dx, ny = y + dy;
-      if (!inMap(nx, ny) || nx < 3 || ny < 3 || nx > N - 4 || ny > N - 4) continue;
-      const i = idx(nx, ny);
-      if (!passable(w, i) || w.map.occ[i]) continue;
-      // fortresses like passes and fords
-      const t = w.map.ter[i];
-      const d = Math.abs(dx) + Math.abs(dy) - (kind === 'fortress' && (t === T.pass || t === T.ford || t === T.hills) ? 6 : 0);
-      if (d < bd) { bd = d; best = [nx, ny]; }
-    }
-    if (!best) return null;
-    const m = { id: w.marks.length, kind, name, x: best[0], y: best[1], owner: -1, since: 0, level: extra.level, garrison: extra.garrison, base: { ...extra.garrison }, region: regionOf(best[0], best[1]), lastHit: 0, wallDur: 0, wallMax: 0 };
-    m.wallMax = wallDurability(m.level) * (kind === 'capital' ? 3 : 1.5);
+  const add = (kind, name, x, y, extra) => {
+    const m = { id: w.marks.length, kind, name, x, y, owner: -1, since: 0, level: extra.level, garrison: extra.garrison, base: { ...extra.garrison }, region: extra.region, lastHit: 0, wallDur: 0, wallMax: 0, opens: extra.opens || 0 };
+    for (const k of ['site', 'blessing', 'gate', 'tier', 'links']) if (extra[k] != null) m[k] = extra[k];
+    m.wallMax = wallDurability(m.level) * (kind === 'capital' ? 3 : kind === 'pass' ? 2 : 1.5);
     m.wallDur = m.wallMax;
     w.marks.push(m);
     w.map.occ[idx(m.x, m.y)] = OCC_MARK + m.id;
     return m;
   };
-  put('capital', 'The Ember Throne', c, c, { level: 20, garrison: { inf: 26000, cav: 14000, arc: 18000, sie: 2000 } });
-  const fortNames = ['Cinder Gate', 'Greywatch Keep', 'Emberfall Hold', 'Ironvale Bastion', 'Saltmere Fort', 'Frostreach Citadel', 'Duskwood Tower', 'Redmarch Castle'];
-  const spots = [[0, 0], [1, 0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 2]];
-  spots.forEach(([rx, ry], k) => {
-    const x = Math.round((rx + 0.5) * N / 3 + (rng() - 0.5) * 10), y = Math.round((ry + 0.5) * N / 3 + (rng() - 0.5) * 10);
-    const lv = 8 + rng.int(0, 4);
-    put('fortress', fortNames[k], x, y, { level: lv, garrison: { inf: 2600 + lv * 700, cav: 1400 + lv * 400, arc: 2000 + lv * 500, sie: 200 } });
-  });
-  const ruinNames = ['Ruins of Old Kharum', 'The Sunken Temple', 'Ashfall Barrow', 'The Glass Library', 'Watchers\' Circle', 'Hollow Crown Ruins'];
-  for (let k = 0; k < ruinNames.length; k++) {
-    const a = rng() * Math.PI * 2, r = N * (0.18 + rng() * 0.25);
-    put('ruin', ruinNames[k], Math.round(c + Math.cos(a) * r), Math.round(c + Math.sin(a) * r), { level: 6 + k, garrison: { inf: 1500 + k * 600, cav: 600 + k * 300, arc: 1200 + k * 400, sie: 0 } });
+  // the nearest free tile of the region, away from the ranges and from other landmarks
+  const put = (kind, name, x, y, extra) => {
+    let best = null, bd = Infinity;
+    for (let dy = -16; dy <= 16; dy++) for (let dx = -16; dx <= 16; dx++) {
+      const nx = x + dx, ny = y + dy, d = Math.abs(dx) + Math.abs(dy);
+      if (d >= bd || !inMap(nx, ny) || nx < 5 || ny < 5 || nx > N - 6 || ny > N - 6) continue;
+      const i = idx(nx, ny);
+      const t = w.map.ter[i];
+      if (!passable(w, i) || t === T.ford || t === T.pass || w.map.occ[i] || w.map.reg[i] !== extra.region) continue;
+      if (wallNear(w, nx, ny, 4) || w.marks.some(m => dist(m.x, m.y, nx, ny) < 9)) continue;
+      bd = d; best = [nx, ny];
+    }
+    return best ? add(kind, name, best[0], best[1], extra) : null;
+  };
+  const at = (a, r) => [Math.round(CX + Math.cos(a) * r), Math.round(CY + Math.sin(a) * r)];
+  const shuffled = arr => { const o = arr.slice(); for (let i = o.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [o[i], o[j]] = [o[j], o[i]]; } return o; };
+  put('capital', 'The Ember Throne', Math.round(CX), Math.round(CY), { level: 20, garrison: { inf: 26000, cav: 14000, arc: 18000, sie: 2000 }, region: 9, opens: THRONE_OPENS });
+  for (const G of w.map.gates) {
+    const PL = PASS_LEVELS[G.level];
+    const n = G.level === 3 ? G.k - 12 : G.k % 6;
+    add('pass', PASS_NAMES[G.level][n], G.x, G.y, { level: PL.garrison, garrison: fortGarrison(PL.garrison), region: G.links[0], opens: PL.opens, gate: G.k, tier: G.level, links: G.links.slice() });
+  }
+  const site = (kind, k, name, blessing, x, y, region) => {
+    const S = SITES[kind], lv = S.level + rng.int(0, 2);
+    return put('site', name, x, y, { level: lv, garrison: fortGarrison(lv), region, opens: S.opens, site: kind, blessing });
+  };
+  const sb = shuffled(SITES.sanctum.blessings), ab = shuffled(SITES.altar.blessings), shb = shuffled(SITES.shrine.blessings), tb = shuffled(SITES.temple.blessings);
+  const sn = shuffled(SITE_NAMES.sanctum);
+  const ruins = shuffled(RUIN_NAMES);
+  let ri = 0;
+  const ruin = (x, y, region, lv) => put('ruin', ruins[ri++], x, y, { level: lv, garrison: { inf: 600 * lv, cav: 260 * lv, arc: 450 * lv, sie: 0 }, region });
+  for (let k = 0; k < 6; k++) {
+    const ac = A0 + (k + 0.5) * SEC1;
+    const band = a => edgeDist(a) - R2;
+    const o = k >= 3 ? 1 : 0;
+    let a = ac - SEC1 * 0.28; site('sanctum', k, sn[2 * k], sb[(2 * k + o) % 6], ...at(a, R2 + band(a) * 0.32), k);
+    a = ac + SEC1 * 0.28; site('sanctum', k, sn[2 * k + 1], sb[(2 * k + 1 + o) % 6], ...at(a, R2 + band(a) * 0.66), k);
+    site('altar', k, SITE_NAMES.altar[k], ab[k % 3], ...at(ac + SEC1 * 0.05, R2 + band(ac) * 0.16), k);
+    for (let j = 0; j < 2; j++) { a = ac + (rng() - 0.5) * SEC1 * 0.7; ruin(...at(a, R2 + band(a) * (0.25 + rng() * 0.55)), k, 4 + rng.int(0, 3)); }
+  }
+  for (let j = 0; j < 3; j++) {
+    const ac = A0 + (j + 0.5) * SEC2;
+    site('shrine', j, SITE_NAMES.shrine[2 * j], shb[2 * j], ...at(ac - SEC2 * 0.24, (R3 + R2) / 2), 6 + j);
+    site('shrine', j, SITE_NAMES.shrine[2 * j + 1], shb[2 * j + 1], ...at(ac + SEC2 * 0.24, (R3 + R2) / 2 + 6), 6 + j);
+    for (let q = 0; q < 2; q++) { const a = ac + (rng() - 0.5) * SEC2 * 0.8; ruin(...at(a, R3 + (R2 - R3) * (0.3 + rng() * 0.4)), 6 + j, 9 + rng.int(0, 3)); }
+    site('temple', j, SITE_NAMES.temple[j], tb[j], ...at(A0 + (j + 1) * SEC2, R3 * 0.55), 9);
   }
 }
 
@@ -120,18 +153,23 @@ function placeGuildsAndGovernors(w, opts) {
   while (pool.length < GOVERNORS - 1) pool.push('casual');
   pool.length = GOVERNORS - 1;
   for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-  // guild homes around the Capital, each with a leading civilization
+  // guild homes in Zone 1, each with a leading civilization: two guilds share each of the four large corner
+  // regions, one has each of the two smaller ones (the north and the south)
   const civOrder = CIVS.map(x => x.id);
   for (let i = civOrder.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [civOrder[i], civOrder[j]] = [civOrder[j], civOrder[i]]; }
   const sizes = SERVER.bloc.map(k => clamp(Math.round(46 * k + rng.int(-3, 3)), 30, GUILD_MAX));
+  const slots = [];
+  for (const k of [0, 1, 2, 3, 4, 5]) { if (k === 0 || k === 3) slots.push([k, 0]); else slots.push([k, -0.25], [k, 0.25]); }
+  for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
   for (let gi = 0; gi < GUILD_COUNT; gi++) {
-    const a = (gi / GUILD_COUNT) * Math.PI * 2 + rng() * 0.3;
-    const r = N * (0.3 + rng() * 0.08);
-    let hx = Math.round(c + Math.cos(a) * r), hy = Math.round(c + Math.sin(a) * r);
-    const spot = freeTileNear(w, hx, hy, 8, rng) || [clamp(hx, 4, N - 5), clamp(hy, 4, N - 5)];
+    const [k, off] = slots[gi];
+    const a = A0 + (k + 0.5 + off) * SEC1;
+    const r = R2 + (edgeDist(a) - R2) * (0.5 + (rng() - 0.5) * 0.12);
+    const hx = Math.round(c + Math.cos(a) * r), hy = Math.round(c + Math.sin(a) * r);
+    const spot = freeTileNear(w, hx, hy, 10, rng, { region: k, nearWall: 6 }) || freeTileNear(w, hx, hy, 40, rng, { region: k }) || [hx, hy];
     const S = SERVER.guilds[gi];
     w.guilds.push({
-      id: gi, name: S.name, tag: S.tag, color: S.color, emblem: S.emblem, founded: w.t, home: { x: spot[0], y: spot[1], region: regionOf(spot[0], spot[1]) },
+      id: gi, name: S.name, tag: S.tag, color: S.color, emblem: S.emblem, founded: w.t, home: { x: spot[0], y: spot[1], region: k },
       civ: civOrder[gi], leader: -1, officers: [], members: [], rule: ['strongest', 'election', 'heir'][gi % 3], heir: -1,
       policy: { stance: 'grow', target: -1, objective: -1, since: w.t, why: 'The guild is building its strength.' },
       treasury: { food: 0, wood: 0, stone: 0, iron: 0, gold: 0 }, tech: { granary: 0, banners: 0, bulwark: 0 },
@@ -142,16 +180,18 @@ function placeGuildsAndGovernors(w, opts) {
   // initial relations: neighbours are wary, a few old friendships and grudges
   for (let i = 0; i < GUILD_COUNT; i++) for (let j = i + 1; j < GUILD_COUNT; j++) {
     const d = dist(w.guilds[i].home.x, w.guilds[i].home.y, w.guilds[j].home.x, w.guilds[j].home.y);
-    let v = Math.round((rng() - 0.5) * 50 - (d < 45 ? 12 : 0));
+    let v = Math.round((rng() - 0.5) * 50 - (d < 90 ? 12 : 0));
     w.guilds[i].rel[j] = w.guilds[j].rel[i] = v;
   }
   let id = 0;
   const mk = (gi, arch) => {
     const gd = gi >= 0 ? w.guilds[gi] : null;
     const civ = gd && rng() < 0.55 ? gd.civ : rng.pick(CIVS).id;
-    const cx0 = gd ? gd.home.x : c, cy0 = gd ? gd.home.y : c;
-    const spot = gd ? freeTileNear(w, cx0, cy0, 15, rng, { prefer: T[CIV[civ].terrain] ?? undefined, spread: true, awayFromMarks: 3 }) : freeTileNear(w, c, c, N * 0.46, rng, { minR: 14, spread: true, awayFromMarks: 4 });
-    const p = spot || freeTileNear(w, cx0, cy0, 40, rng, {}) || freeTileNear(w, c, c, 60, rng, {});
+    // members settle around their guild's home; independents anywhere in Zone 1, more of them in the large regions
+    const region = gd ? gd.home.region : rng.pick([0, 1, 1, 2, 2, 3, 4, 4, 5, 5]);
+    const [cx0, cy0] = gd ? [gd.home.x, gd.home.y] : regionCenter(region);
+    const spot = freeTileNear(w, cx0, cy0, gd ? 30 : 75, rng, { region, prefer: gd ? T[CIV[civ].terrain] ?? undefined : undefined, spread: true, awayFromMarks: 4 });
+    const p = spot || freeTileNear(w, cx0, cy0, 90, rng, { region }) || freeTileNear(w, c, c, N * 0.7, rng, { zone: 1 });
     const g = newGovernor(w, id, { civ, arch, x: p[0], y: p[1] });
     w.govs.push(g);
     w.map.occ[idx(g.x, g.y)] = OCC_CITY + g.id;
@@ -182,11 +222,13 @@ function placeGuildsAndGovernors(w, opts) {
     gd.heir = gd.officers[0] ?? -1;
   }
   for (const arch of left) mk(-1, arch);
-  // the player: an independent newcomer in the gap between two guilds' lands, with camps and fields nearby
-  const ref = w.guilds[rng.int(0, GUILD_COUNT - 1)].home;
-  const ang = Math.atan2(ref.y - c, ref.x - c) + Math.PI / GUILD_COUNT;
-  const px = Math.round(c + Math.cos(ang) * N * 0.36), py = Math.round(c + Math.sin(ang) * N * 0.36);
-  const ps = freeTileNear(w, px, py, 8, rng, { spread: true, awayFromMarks: 4 }) || freeTileNear(w, px, py, 20, rng, {}) || freeTileNear(w, c, c, 60, rng, {});
+  // the player: an independent newcomer in the north or the south of Zone 1, off to one side of the one guild there,
+  // with camps and fields nearby
+  const pk = rng() < 0.5 ? 0 : 3;
+  const pa = A0 + (pk + 0.5 + (rng() < 0.5 ? -0.3 : 0.3)) * SEC1;
+  const pr = R2 + (edgeDist(pa) - R2) * 0.5;
+  const px = Math.round(c + Math.cos(pa) * pr), py = Math.round(c + Math.sin(pa) * pr);
+  const ps = freeTileNear(w, px, py, 10, rng, { region: pk, spread: true, awayFromMarks: 5, nearWall: 6 }) || freeTileNear(w, px, py, 30, rng, { region: pk }) || freeTileNear(w, c, c, N * 0.7, rng, { zone: 1 });
   const pc = CIV[opts.civ] ? opts.civ : 'ashen';
   const player = newGovernor(w, PLAYER, { civ: pc, arch: 'tactician', x: ps[0], y: ps[1], human: true, name: String(opts.name || 'Governor').slice(0, 24) || 'Governor' });
   player.next = Infinity;
@@ -201,30 +243,38 @@ function placeCampsAndNodes(w) {
   const rng = makeRng(hash32(w.seed, 'camps'));
   // three weak camps and a few fields near the newcomer, so the first fights are winnable
   const P = w.govs[PLAYER];
+  const pr = regionAt(w, P.x, P.y);
   for (let k = 0; k < 3; k++) {
     const c = spawnCamp(w, rng);
-    const p = c && freeTileNear(w, P.x, P.y, 9, rng, { minR: 4, awayFromMarks: 2 });
+    const p = c && freeTileNear(w, P.x, P.y, 9, rng, { minR: 4, awayFromMarks: 2, region: pr });
     if (c && p) { w.map.occ[idx(c.x, c.y)] = 0; c.x = p[0]; c.y = p[1]; c.lv = 1; c.troops = { inf: 80, cav: 45, arc: 55, sie: 0 }; c.reserved = PLAYER; c.until = w.t + NEWCOMER_SHIELD; w.map.occ[idx(c.x, c.y)] = c.occ; }
   }
   for (const [res, pref] of [['food', T.plains], ['wood', T.forest], ['stone', T.hills]]) {
     const n = spawnNode(w, rng, res, pref);
-    const p = n && freeTileNear(w, P.x, P.y, 10, rng, { minR: 3, prefer: pref, awayFromMarks: 2 });
+    const p = n && freeTileNear(w, P.x, P.y, 10, rng, { minR: 3, prefer: pref, awayFromMarks: 2, region: pr });
     if (n && p) { w.map.occ[idx(n.x, n.y)] = 0; n.x = p[0]; n.y = p[1]; n.lv = 1; n.max = n.amount = res === 'stone' ? 30000 : 40000; w.map.occ[idx(n.x, n.y)] = n.occ; }
   }
-  for (let k = 0; k < 80; k++) spawnCamp(w, rng);
+  for (let k = 0; k < CAMPS; k++) spawnCamp(w, rng);
   const kinds = [['food', T.plains], ['wood', T.forest], ['stone', T.hills], ['iron', T.hills], ['gold', T.plains]];
-  for (let k = 0; k < 260; k++) {
+  for (let k = 0; k < NODES; k++) {
     const [res, pref] = kinds[k % 5 === 4 && rng() < 0.5 ? 4 : k % 4];
     spawnNode(w, rng, res, pref);
   }
 }
-function spawnCamp(w, rng) {
-  const c = N / 2;
-  const p = freeTileNear(w, c, c, N * 0.48, rng, { minR: 10, awayFromMarks: 3 });
+const CAMPS = 600, NODES = 1200;
+// how far toward the centre a tile lies within its zone: 0 at the zone's outer edge, 1 at its inner edge
+function depthOf(w, x, y) {
+  const r = dist(x, y, CX, CY), z = zoneAt(w, x, y);
+  if (z === 3) return clamp(1 - r / R3, 0, 1);
+  if (z === 2) return clamp((R2 - r) / (R2 - R3), 0, 1);
+  return clamp(1 - (r - R2) / (edgeDist(Math.atan2(y - CY, x - CX)) - R2), 0, 1);
+}
+// bandit camps: levels 1-4 in Zone 1, 4-7 in Zone 2 and 7-10 in the heartland, rising toward the centre
+function spawnCamp(w, rng, near) {
+  const p = near ? freeTileNear(w, near[0], near[1], near[2], rng, { awayFromMarks: 3, region: near[3] }) : freeTileNear(w, CX, CY, N * 0.71, rng, { minR: 12, awayFromMarks: 3 });
   if (!p) return null;
-  // weak camps on the frontier, strong ones near the Capital
-  const dc = clamp(dist(p[0], p[1], c, c) / (N / 2), 0, 1);
-  const lv = clamp(Math.round(1 + 9 * Math.pow(1 - dc, 1.5) + rng() * 1.5 - 0.5), 1, 10);
+  const z = zoneAt(w, p[0], p[1]), k = depthOf(w, p[0], p[1]);
+  const lv = clamp(Math.round((z === 1 ? 1 + 2.4 * k : z === 2 ? 4 + 2.6 * k : 7 + 3 * k) + rng() * 1.2 - 0.6), 1, 10);
   const base = 180 * lv * Math.pow(1.35, lv - 1);
   const camp = { id: w.nid++, x: p[0], y: p[1], lv, troops: { inf: Math.round(base * 0.45), cav: Math.round(base * 0.25), arc: Math.round(base * 0.3), sie: 0 } };
   w.camps.push(camp);
@@ -232,12 +282,12 @@ function spawnCamp(w, rng) {
   camp.occ = OCC_CAMP + (camp.id % 9999);
   return camp;
 }
-function spawnNode(w, rng, res, pref) {
-  const c = N / 2;
-  const p = freeTileNear(w, c, c, N * 0.48, rng, { prefer: pref, awayFromMarks: 2 });
+// resource fields: levels 1-2 in Zone 1, 3-4 in Zone 2, 5 in the heartland
+function spawnNode(w, rng, res, pref, near) {
+  const p = near ? freeTileNear(w, near[0], near[1], near[2], rng, { prefer: pref, awayFromMarks: 2, region: near[3] }) : freeTileNear(w, CX, CY, N * 0.71, rng, { prefer: pref, awayFromMarks: 2 });
   if (!p) return null;
-  const dc = dist(p[0], p[1], c, c) / (N / 2);
-  const lv = clamp(Math.round((1 - dc) * 4 + 1 + rng()), 1, 5);
+  const z = zoneAt(w, p[0], p[1]), k = depthOf(w, p[0], p[1]);
+  const lv = clamp(z === 3 ? 5 : z === 2 ? 3 + Math.round(k * 0.6 + rng() * 0.6) : 1 + Math.round(k * 0.6 + rng() * 0.6), 1, 5);
   const max = Math.round((res === 'gold' ? 8000 : res === 'iron' ? 15000 : 40000) * lv);
   const node = { id: w.nid++, x: p[0], y: p[1], res, lv, amount: max, max, by: null };
   w.nodes.push(node);
@@ -495,6 +545,17 @@ function tileTarget(w, i) {
   if (k === 'node') { const n = w.nodes.find(x => x.occ === v && idx(x.x, x.y) === i); return n ? { type: 'node', id: n.id } : null; }
   return null;
 }
+function opensText(mk) {
+  const d = Math.floor(mk.opens / DAY) + 1, h = Math.floor((mk.opens % DAY) / HOUR);
+  return `${mk.kind === 'capital' ? 'The Capital' : mk.name} opens on Day ${d}${h ? ` at ${String(h).padStart(2, '0')}:00` : ''}.`;
+}
+// why a march cannot get there: a closed pass in the way, or no way at all
+function noWayText(w, g, to) {
+  const reg = w.map.reg[to];
+  if (reg === 255) return 'There is no way to march there.';
+  if (!canReach(w, g, to)) return g.guild < 0 ? 'A mountain range is in the way. Only a guild that holds a pass can march through it: join a guild.' : 'A mountain range is in the way. Your guild must hold a pass into that region first.';
+  return 'There is no way to march there.';
+}
 // validated start of any march. Returns { ok, err, march }.
 function startMarch(w, g, o) {
   const kind = o.kind;
@@ -539,10 +600,10 @@ function startMarch(w, g, o) {
     } else if (target.type === 'mark') {
       const mk = w.marks[target.id];
       if (kind === 'attack') {
-        if (mk.kind === 'capital' && w.t < THRONE_OPENS) return { ok: false, err: `The Capital opens on Day ${1 + THRONE_OPENS / DAY}.` };
-        if (mk.kind !== 'ruin' && g.guild < 0) return { ok: false, err: 'Only guild members can attack fortresses and the Capital.' };
+        if (mk.kind !== 'ruin' && w.t < mk.opens) return { ok: false, err: opensText(mk) };
+        if (mk.kind !== 'ruin' && g.guild < 0) return { ok: false, err: 'Only guild members can fight for passes, holy sites and the Capital.' };
         if (mk.kind !== 'ruin' && mk.owner === g.guild && g.guild >= 0) return { ok: false, err: 'Your guild already holds it. Reinforce it instead.' };
-        if (mk.kind !== 'ruin' && !o.fromRally) return { ok: false, err: 'Fortresses and the Capital can only be taken by a rally.' };
+        if (mk.kind !== 'ruin' && !o.fromRally) return { ok: false, err: 'Passes, holy sites and the Capital can only be taken by a rally.' };
         if (mk.kind === 'ruin' && (mk.cleared || []).includes(g.id)) return { ok: false, err: 'You have already explored these ruins.' };
       }
     } else if (target.type === 'node' && kind === 'attack') {
@@ -565,10 +626,10 @@ function startMarch(w, g, o) {
   }
   if (kind === 'reinforce') {
     const mk = target && target.type === 'mark' ? w.marks[target.id] : null;
-    if (!mk || mk.kind === 'ruin' || g.guild < 0 || mk.owner !== g.guild) return { ok: false, err: 'You can only reinforce a fortress or Capital your guild holds.' };
+    if (!mk || mk.kind === 'ruin' || g.guild < 0 || mk.owner !== g.guild) return { ok: false, err: 'You can only reinforce a pass, holy site or Capital your guild holds.' };
   }
-  const path = findPath(w, from, to);
-  if (!path) return { ok: false, err: 'There is no way to march there.' };
+  const path = findPath(w, from, to, gateAccess(w, g.guild));
+  if (!path) return { ok: false, err: noWayText(w, g, to) };
   const speed = marchSpeed(w, g, troops, c1, c2, kind);
   const cost = pathCost(w, path);
   if (kind === 'attack' && target.type !== 'camp' && g.shield > w.t) g.shield = 0;   // attacking breaks your own shield
@@ -628,7 +689,7 @@ function sendHome(w, m, extra = {}) {
   let path;
   if (here === home) path = [home];
   else if (m.path[0] === home && m.kind !== 'return') path = m.path.slice(0, Math.min(m.k, m.path.length - 1) + 1).reverse();
-  else path = findPath(w, here, home) || [here, home];
+  else path = findPath(w, here, home, ALL_GATES) || [here, home];
   m.kind = 'return'; m.state = 'back'; m.path = path; m.k = 0; m.frac = 0; m.to = home; m.target = { type: 'city', id: g.id };
   m.speed = troopsTotal(m.troops) > 0 ? marchSpeed(w, g, m.troops, m.c1, m.c2, 'return') : 2.2;
   m.eta = w.t + Math.ceil(pathCost(w, path) / m.speed);
@@ -730,7 +791,7 @@ function arriveScout(w, m) {
     addIntel(w, g, rep);
     if (g.human) report(w, { ...rep, title: `Scout report: ${rep.name}` });
     // explorers widen what they know about the map
-    if (!g.human) g.explore = Math.min(70, Math.max(g.explore, Math.round(dist(g.x, g.y, tx(m.to), ty(m.to))) + 4));
+    if (!g.human) g.explore = Math.min(110, Math.max(g.explore, Math.round(dist(g.x, g.y, tx(m.to), ty(m.to))) + 4));
   } else if (g.human && tg) report(w, { kind: 'scout', title: 'Scout found nothing', text: 'The target had moved before your scout arrived.' });
   else if (g.human) note(w, 'scout', 'Your scout explored the land and is heading home.', 1);
   sendHome(w, m);
@@ -831,12 +892,12 @@ function startRally(w, g, o) {
   if (g.role !== 'leader' && g.role !== 'officer' && !(g.b.hall >= 12)) return { ok: false, err: 'Only guild leaders, officers and governors with a level 12 Town Hall can start rallies.' };
   if (w.rallies.some(r => r.leader === g.id && r.state === 'gathering')) return { ok: false, err: 'You are already leading a rally.' };
   const tgt = tileTarget(w, o.to);
-  if (!tgt || (tgt.type !== 'mark' && tgt.type !== 'city')) return { ok: false, err: 'Rally on a fortress, the Capital or an enemy city.' };
+  if (!tgt || (tgt.type !== 'mark' && tgt.type !== 'city')) return { ok: false, err: 'Rally on a pass, a holy site, the Capital or an enemy city.' };
   if (tgt.type === 'mark') {
     const mk = w.marks[tgt.id];
     if (mk.kind === 'ruin') return { ok: false, err: 'Ruins are explored, not rallied.' };
     if (mk.owner === g.guild) return { ok: false, err: 'Your guild already holds it.' };
-    if (mk.kind === 'capital' && w.t < THRONE_OPENS) return { ok: false, err: `The Capital opens on Day ${1 + THRONE_OPENS / DAY}.` };
+    if (w.t < mk.opens) return { ok: false, err: opensText(mk) };
     if (mk.owner >= 0 && treaty(w, g.guild, mk.owner)?.k === 'alliance') return { ok: false, err: 'An ally holds it.' };
   } else {
     const d = w.govs[tgt.id];
@@ -845,7 +906,7 @@ function startRally(w, g, o) {
     if (d.guild >= 0 && treaty(w, g.guild, d.guild)?.k === 'alliance') return { ok: false, err: 'That city belongs to an ally.' };
   }
   const wait = clamp(Math.round(Number(o.wait) || 30), 10, 120);
-  if (!findPath(w, idx(g.x, g.y), o.to)) return { ok: false, err: 'There is no way to march there.' };
+  if (!findPath(w, idx(g.x, g.y), o.to, gateAccess(w, g.guild))) return { ok: false, err: noWayText(w, g, o.to) };
   // the leader's own troops wait at home as part of the rally
   const lead = buildRallyLead(w, g, o);
   if (!lead.ok) return lead;
@@ -920,7 +981,7 @@ function processRallies(w) {
     const okTarget = tgt && tgt.type === r.target.type && tgt.id === r.target.id && !(tgt.type === 'mark' && w.marks[tgt.id].owner === r.guild) && !(tgt.type === 'city' && w.govs[tgt.id].shield > w.t);
     if (!okTarget) { for (const p of parts) sendHome(w, p); r.state = 'done'; if (leader.human || w.govs[PLAYER].guild === r.guild) note(w, 'rally', 'A rally was called off: its target changed.', 2); continue; }
     const home = idx(leader.x, leader.y);
-    const path = findPath(w, home, r.to);
+    const path = findPath(w, home, r.to, gateAccess(w, r.guild));
     if (!path) { for (const p of parts) sendHome(w, p); r.state = 'done'; continue; }
     const troops = { inf: 0, cav: 0, arc: 0, sie: 0 };
     const pp = [];
@@ -1069,7 +1130,7 @@ function sackCity(w, d, by) {
   if (opts.length) { const b = opts[hash32(w.seed, d.id, w.t) % opts.length]; d.b[b] -= 1; }
   const rng = makeRng(hash32(w.seed, 'relocate', d.id, w.t));
   const gd = d.guild >= 0 ? w.guilds[d.guild] : null;
-  const p = freeTileNear(w, gd ? gd.home.x : d.x, gd ? gd.home.y : d.y, 18, rng, { spread: true, awayFromMarks: 3 }) || freeTileNear(w, N / 2, N / 2, 60, rng, {});
+  const p = freeTileNear(w, gd ? gd.home.x : d.x, gd ? gd.home.y : d.y, 30, rng, { spread: true, awayFromMarks: 3, region: gd ? gd.home.region : regionAt(w, d.x, d.y) }) || freeTileNear(w, d.x, d.y, 60, rng, { region: regionAt(w, d.x, d.y) });
   if (p) relocate(w, d, p[0], p[1]);
   d.shield = w.t + SHIELD.minutes;
   d.wallDur = wallMax(d, cityMods(w, d)) * 0.5;
@@ -1235,13 +1296,13 @@ function battleRuin(w, m) {
   m.troops = { ...res.a.end };
   sendHome(w, m, { load: loot, wounded: aw.wd });
 }
-// fortresses and the Capital: a rally against the neutral garrison or the holding guild's garrison
+// passes, holy sites and the Capital: a rally against the neutral garrison or the holding guild's garrison
 function battleLandmark(w, m) {
   const g = w.govs[m.owner];
   const mk = w.marks[m.target.id];
   const parts = m.parts || [{ gov: g.id, troops: { ...m.troops }, c1: m.c1, c2: m.c2 }];
   const terrain = w.map.ter[m.to];
-  if (g.guild < 0 || mk.owner === g.guild || (mk.kind === 'capital' && w.t < THRONE_OPENS)) {
+  if (g.guild < 0 || mk.owner === g.guild || w.t < mk.opens) {
     for (const p of splitParts(parts, m.troops, null)) partHome(w, m.to, p);
     removeMarch(w, m);
     return;
@@ -1303,9 +1364,10 @@ function battleLandmark(w, m) {
       if (tr && tr.k === 'war') gd.warScore[prevOwner] = (gd.warScore[prevOwner] || 0) + 12;
     }
     if (mk.kind === 'capital') { w.throne = { owner: g.guild, since: w.t }; }
-    chronicle(w, mk.kind === 'capital' ? 'capital' : 'fortress', mk.kind === 'capital'
+    chronicle(w, mk.kind === 'capital' ? 'capital' : mk.kind, mk.kind === 'capital'
       ? `${gd.name} [${gd.tag}] stormed the Ember Throne${prevOwner >= 0 ? ` from ${w.guilds[prevOwner].name}` : ''}. If they hold it for ${THRONE_HOLD / DAY} days, the Age is theirs.`
-      : `${gd.name} [${gd.tag}] captured ${mk.name}${prevOwner >= 0 ? ` from ${w.guilds[prevOwner].name}` : ''}, led by ${g.name}.`, { g: [gd.id, prevOwner].filter(x => x >= 0), p: [g.id], x: mk.x, y: mk.y, imp: mk.kind === 'capital' ? 3 : 2 });
+      : mk.kind === 'pass' ? `${gd.name} [${gd.tag}] took ${mk.name}${prevOwner >= 0 ? ` from ${w.guilds[prevOwner].name}` : ''}, opening the road from ${REGIONS[mk.links[0]].name} to ${REGIONS[mk.links[1]].name} to its members. Led by ${g.name}.`
+      : `${gd.name} [${gd.tag}] captured ${mk.name}${prevOwner >= 0 ? ` from ${w.guilds[prevOwner].name}` : ''} and its ${BLESSINGS[mk.blessing].name}, led by ${g.name}.`, { g: [gd.id, prevOwner].filter(x => x >= 0), p: [g.id], x: mk.x, y: mk.y, imp: mk.kind === 'capital' ? 3 : 2 });
     recomputeTerritory(w);
   }
   recordBattle(w, m, g, null, input, res, { kind: 'rally on ' + mk.kind, dName: mk.name, dGuild: prevOwner, captured, aw, garrisonGovs: garGovs });
@@ -1350,7 +1412,8 @@ function respawnCamps(w) {
   const rng = makeRng(hash32(w.seed, 'campspawn', w.t));
   w.campRespawn = w.campRespawn.filter(t => { if (t <= w.t) { spawnCamp(w, rng); return false; } return true; });
 }
-const INF_WEIGHT = { city: 1, fortress: 4, capital: 6 };
+const INF_WEIGHT = { city: 1, site: 4, pass: 2.5, capital: 6 };
+const INF_RADIUS = { city: 5, site: 12, pass: 7, capital: 16 };
 function recomputeTerritory(w) {
   const inf = w._inf || (w._inf = new Float32Array(GUILD_COUNT * N2));
   inf.fill(0);
@@ -1369,8 +1432,8 @@ function recomputeTerritory(w) {
       }
     }
   };
-  for (const g of w.govs) if (g.guild >= 0) stamp(g.guild, g.x, g.y, 3, INF_WEIGHT.city * (1 + g.b.hall / 25));
-  for (const mk of w.marks) if (mk.owner >= 0 && mk.kind !== 'ruin') stamp(mk.owner, mk.x, mk.y, mk.kind === 'capital' ? 12 : 10, INF_WEIGHT[mk.kind]);
+  for (const g of w.govs) if (g.guild >= 0) stamp(g.guild, g.x, g.y, INF_RADIUS.city, INF_WEIGHT.city * (1 + g.b.hall / 25));
+  for (const mk of w.marks) if (mk.owner >= 0 && mk.kind !== 'ruin') stamp(mk.owner, mk.x, mk.y, INF_RADIUS[mk.kind], INF_WEIGHT[mk.kind]);
   const terr = w.map.terr;
   for (let i = 0; i < N2; i++) {
     let best = 0, bv = 0.9, second = 0;
@@ -1378,7 +1441,7 @@ function recomputeTerritory(w) {
       const v = inf[gi * N2 + i];
       if (v > bv) { second = bv; bv = v; best = gi + 1; } else if (v > second) second = v;
     }
-    terr[i] = best && bv > second * 1.15 && TERRAIN[w.map.ter[i]].cost !== Infinity ? best : 0;
+    terr[i] = best && bv > second * 1.15 && !w.map.wall[i] && TERRAIN[w.map.ter[i]].cost !== Infinity ? best : 0;
   }
   w._terrVer = (w._terrVer || 0) + 1;
   w._me = (w._me || 0) + 1;
@@ -1431,7 +1494,7 @@ function worldEvents(w) {
   // end finished events (settle everyone affected first so production stays exact)
   for (const e of w.events.slice()) {
     if (w.t < e.end) continue;
-    for (const g of w.govs) if (e.region == null || regionOf(g.x, g.y) === e.region) settle(w, g, w.t);
+    for (const g of w.govs) if (e.region == null || regionAt(w, g.x, g.y) === e.region) settle(w, g, w.t);
     w.events.splice(w.events.indexOf(e), 1);
     chronicle(w, 'event_end', `${e.name} ended${e.region != null ? ` in ${SERVER.regions[e.region]}` : ''}.`, { imp: 1 });
   }
@@ -1439,19 +1502,17 @@ function worldEvents(w) {
   const rng = makeRng(hash32(w.seed, 'event', w.t));
   w.nextEventAt = w.t + rng.int(16, 32) * HOUR;
   const def = rng.pick(EVENTS);
-  const region = def.all ? null : def.north ? rng.int(0, 2) : rng.int(0, 8);
+  const region = def.all ? null : def.north ? rng.pick([0, 1, 5, 6]) : rng.int(0, REGIONS.length - 1);
   const rname = region == null ? '' : SERVER.regions[region];
   if (def.hours > 0) {
-    for (const g of w.govs) if (region == null || regionOf(g.x, g.y) === region) settle(w, g, w.t);
+    for (const g of w.govs) if (region == null || regionAt(w, g.x, g.y) === region) settle(w, g, w.t);
     w.events.push({ kind: def.kind, name: def.name, res: def.res, mult: def.mult, region, start: w.t, end: w.t + def.hours * HOUR });
   } else if (def.kind === 'bandits') {
-    const cx = (region % 3 + 0.5) * N / 3, cy = (Math.floor(region / 3) + 0.5) * N / 3;
-    for (let k = 0; k < 6; k++) { const p = freeTileNear(w, cx, cy, 18, rng, { awayFromMarks: 3 }); if (p) { const c = spawnCamp(w, makeRng(hash32(w.seed, 'band', w.t, k))); if (c) { w.map.occ[idx(c.x, c.y)] = 0; c.x = p[0]; c.y = p[1]; w.map.occ[idx(c.x, c.y)] = c.occ; } } }
+    const [cx, cy] = regionCenter(region);
+    for (let k = 0; k < 10; k++) spawnCamp(w, makeRng(hash32(w.seed, 'band', w.t, k)), [cx, cy, 45, region]);
   } else if (def.kind === 'vein') {
-    for (let k = 0; k < 3; k++) {
-      const n = spawnNode(w, rng, k === 0 ? 'gold' : 'iron', T.hills);
-      if (n) { const cx = (region % 3 + 0.5) * N / 3, cy = (Math.floor(region / 3) + 0.5) * N / 3; const p = freeTileNear(w, cx, cy, 16, rng, {}); if (p) { w.map.occ[idx(n.x, n.y)] = 0; n.x = p[0]; n.y = p[1]; w.map.occ[idx(n.x, n.y)] = n.occ; } }
-    }
+    const [cx, cy] = regionCenter(region);
+    for (let k = 0; k < 4; k++) spawnNode(w, rng, k === 0 ? 'gold' : 'iron', T.hills, [cx, cy, 40, region]);
   }
   chronicle(w, 'event', def.text(rname), { imp: 2 });
 }
@@ -1460,10 +1521,11 @@ function worldEvents(w) {
 function dayTick(w, d) {
   // territory and power history for the chronicle maps (32x32 cells per day)
   const cells = [];
+  const CS = N / 32;
   for (let cy = 0; cy < 32; cy++) for (let cx = 0; cx < 32; cx++) {
     const counts = new Array(GUILD_COUNT + 1).fill(0);
-    for (let y = cy * 4; y < cy * 4 + 4; y++) for (let x = cx * 4; x < cx * 4 + 4; x++) counts[w.map.terr[idx(x, y)]]++;
-    let best = 0, bv = 5;
+    for (let y = cy * CS; y < cy * CS + CS; y++) for (let x = cx * CS; x < cx * CS + CS; x++) counts[w.map.terr[idx(x, y)]]++;
+    let best = 0, bv = CS * CS * 0.3;
     for (let k = 1; k <= GUILD_COUNT; k++) if (counts[k] > bv) { bv = counts[k]; best = k; }
     cells.push(best.toString(16));
   }
@@ -1485,7 +1547,7 @@ function updatePlayerVision(w) {
   stampDisc(vis, P.x, P.y, visionRadius(P.b.tower || 0, P.b.hall), 2);
   if (P.guild >= 0) {
     for (const id of w.guilds[P.guild].members) if (id !== PLAYER) { const g = w.govs[id]; stampDisc(vis, g.x, g.y, 3, 2); }
-    for (const mk of w.marks) if (mk.owner === P.guild && mk.kind !== 'ruin') stampDisc(vis, mk.x, mk.y, 8, 2);
+    for (const mk of w.marks) if (mk.owner === P.guild && mk.kind !== 'ruin') stampDisc(vis, mk.x, mk.y, mk.kind === 'pass' ? 6 : 9, 2);
   }
   for (const m of w.marches) {
     const own = m.owner === PLAYER || (P.guild >= 0 && w.govs[m.owner].guild === P.guild);
@@ -1523,16 +1585,28 @@ function scenarioCoalition(w) {
     for (const id in g.cmds) g.cmds[id].lv = top ? 18 : 10;
     g.power = computePower(g);
   }
-  // the hegemon already holds the three fortresses nearest its home
-  const forts = w.marks.filter(m => m.kind === 'fortress').sort((a, b) => dist(a.x, a.y, H.home.x, H.home.y) - dist(b.x, b.y, H.home.x, H.home.y)).slice(0, 3);
-  for (const mk of forts) {
+  // the hegemon has broken out of its region: it holds the level 1 passes out of it, the holy sites inside it, and
+  // the nearest sanctum in each neighbouring region, which the guilds living there will want back
+  const hr = H.home.region;
+  const near = (a, b) => dist(a.x, a.y, H.home.x, H.home.y) - dist(b.x, b.y, H.home.x, H.home.y);
+  const nb = [(hr + 5) % 6, (hr + 1) % 6];
+  const held = w.marks.filter(m => (m.kind === 'pass' && m.tier === 1 && m.links.includes(hr)) || (m.kind === 'site' && m.region === hr));
+  for (const r of nb) { const s2 = w.marks.filter(m => m.kind === 'site' && m.site === 'sanctum' && m.region === r).sort(near)[0]; if (s2) held.push(s2); }
+  for (const mk of held) {
     mk.owner = H.id; mk.since = w.t - DAY; mk.lastHit = w.t - DAY;
     const holder = w.govs[H.members[rng.int(1, H.members.length - 1)]];
     const at = idx(mk.x, mk.y);
-    const troops = { inf: 9000, cav: 3000, arc: 6000, sie: 0 };
+    const troops = mk.kind === 'pass' ? { inf: 6000, cav: 2000, arc: 4000, sie: 0 } : { inf: 9000, cav: 3000, arc: 6000, sie: 0 };
     for (const u of UNIT_KEYS) { holder.troops[u] += troops[u]; holder.away[u] += troops[u]; }
     w.marches.push({ id: w.nid++, kind: 'reinforce', owner: holder.id, troops, c1: null, c2: null, path: [at], k: 0, frac: 0, speed: 1, from: at, to: at, target: { type: 'mark', id: mk.id }, state: 'garrison', dep: w.t, eta: w.t, load: null, rally: null, wounded: null, gatherEnd: 0, alerted: true, parts: null });
-    chronicle(w, 'fortress', `${H.name} [${H.tag}] took ${mk.name} in the first days of the server.`, { g: [H.id], x: mk.x, y: mk.y, imp: 2 });
+    chronicle(w, mk.kind, `${H.name} [${H.tag}] took ${mk.name} in the first days of the server.`, { g: [H.id], x: mk.x, y: mk.y, imp: 2 });
+  }
+  // the player arrives in the neighbouring region with the most other guilds, near the sanctum taken there
+  const pr = nb.slice().sort((a, b) => w.guilds.filter(o => o.id !== H.id && o.home.region === b).length - w.guilds.filter(o => o.id !== H.id && o.home.region === a).length)[0];
+  const pSite = held.find(m => m.kind === 'site' && m.region === pr);
+  if (pSite) {
+    const spot = freeTileNear(w, pSite.x, pSite.y, 22, rng, { minR: 10, region: pr, spread: true, awayFromMarks: 4 });
+    if (spot) relocate(w, w.govs[PLAYER], spot[0], spot[1]);
   }
   for (const o of w.guilds) if (o.id !== H.id) { o.rel[H.id] = Math.min(o.rel[H.id], -30); H.rel[o.id] = Math.min(H.rel[o.id], -10); o.next = w.t + rint(w, 5, 90); }
   H.next = w.t + 30;
@@ -1549,7 +1623,7 @@ function scenarioCoalition(w) {
   rankGuilds(w);
   recomputeTerritory(w);
   const total = w.guilds.reduce((a, gd) => a + gd.power, 0);
-  chronicle(w, 'hegemon', `${H.name} [${H.tag}] now holds ${Math.round(H.power / total * 100)}% of the server's power and three fortresses. Its neighbours watch the Capital, which opens on Day ${1 + THRONE_OPENS / DAY}.`, { g: [H.id], imp: 3 });
+  chronicle(w, 'hegemon', `${H.name} [${H.tag}] now holds ${Math.round(H.power / total * 100)}% of the server's power, the passes out of ${REGIONS[hr].name} and ${held.filter(m => m.kind === 'site').length} holy sites. Its neighbours watch the Capital, which opens on Day ${1 + THRONE_OPENS / DAY}.`, { g: [H.id], imp: 3 });
   for (const q of QUESTS) if (q.check(P)) w.quests.claimed[q.id] = w.t;   // the tutorial goals are behind this governor
   stampDisc(w.explored, P.x, P.y, 24, 1);
 }

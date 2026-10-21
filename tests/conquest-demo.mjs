@@ -19,13 +19,15 @@ const base = A.createWorld({ seed: 31, name: 'Hero', civ: 'concord', scenario: '
 const total = base.guilds.reduce((s, g) => s + g.power, 0);
 check(A.validateWorld(base).length === 0, 'the scenario world is valid');
 check(base.guilds[H].power / total > 0.28, `Crown of Cinders should dominate (${Math.round(base.guilds[H].power / total * 100)}%)`);
-ok(`Crown of Cinders starts with ${Math.round(base.guilds[H].power / total * 100)}% of the server's power and three fortresses`);
+const held0 = base.marks.filter(m => m.owner === H);
+check(held0.some(m => m.kind === 'pass') && held0.some(m => m.kind === 'site'), 'the hegemon should start with passes and holy sites');
+ok(`Crown of Cinders starts with ${Math.round(base.guilds[H].power / total * 100)}% of the server's power, ${held0.filter(m => m.kind === 'pass').length} passes and ${held0.filter(m => m.kind === 'site').length} holy sites`);
 
 const a = clone(base), b = clone(base);
 const startOwners = a.marks.map(m => m.owner);
 const terr0 = Uint8Array.from(a.map.terr);
 A.advance(a, 12 * 60);
-const held = a.marks.filter(m => m.kind === 'fortress' && m.owner === H).map(m => m.id);
+const held = a.marks.filter(m => m.kind === 'site' && m.owner === H).map(m => m.id);
 A.advance(a, 24 * 60);
 const coalition = a.chron.find(e => e.k === 'coalition' && e.g.includes(H));
 check(coalition, 'no coalition formed against the dominant guild');
@@ -39,14 +41,15 @@ check(changed >= 1 && tiles > 200, `the war should change the map (landmarks ${c
 ok(`the war changed the map: ${changed} landmarks changed hands and ${tiles} tiles of territory moved in 36 hours`);
 check(A.validateWorld(a).length === 0, A.validateWorld(a).join('; '));
 
-// the player intervenes in copy b: joins the strongest coalition guild and leads a rally on a fortress the
-// hegemon still holds 12 hours later in the untouched copy
-let joined = null;
-for (const g of b.guilds.filter(g => g.id !== H).sort((x, y) => y.power - x.power)) { if (A.playerCommand(b, { type: 'apply', guild: g.id }).ok) { joined = g; break; } }
-check(joined, 'no coalition guild accepted the player');
+// the player intervenes in copy b: joins the strongest guild of their own region and leads a rally on a holy
+// site the hegemon still holds 12 hours later in the untouched copy
 const Pb = b.govs[P];
-const target = held.map(id => b.marks[id]).sort((m1, m2) => Math.hypot(m1.x - Pb.x, m1.y - Pb.y) - Math.hypot(m2.x - Pb.x, m2.y - Pb.y))[0];
-check(target, 'the hegemon should still hold a fortress after 12 hours without the player');
+const pReg = A.regionAt(b, Pb.x, Pb.y);
+let joined = null;
+for (const g of b.guilds.filter(g => g.id !== H).sort((x, y) => (y.home.region === pReg) - (x.home.region === pReg) || y.power - x.power)) { if (A.playerCommand(b, { type: 'apply', guild: g.id }).ok) { joined = g; break; } }
+check(joined, 'no coalition guild accepted the player');
+const target = held.map(id => b.marks[id]).filter(m => A.canReach(b, Pb, A.idx(m.x, m.y))).sort((m1, m2) => Math.hypot(m1.x - Pb.x, m1.y - Pb.y) - Math.hypot(m2.x - Pb.x, m2.y - Pb.y))[0];
+check(target, 'the hegemon should still hold a holy site the player can reach after 12 hours without the player');
 b.explored[A.idx(target.x, target.y)] = 1;
 const k = Math.min(1, A.marchCap(b, Pb) / A.troopsTotal(Pb.troops));
 const troops = {}; for (const u of A.UNIT_KEYS) troops[u] = Math.floor(Pb.troops[u] * k);
@@ -54,8 +57,8 @@ const r = A.playerCommand(b, { type: 'rally', to: A.idx(target.x, target.y), tro
 check(r.ok, r.err);
 A.advance(b, 12 * 60);
 const a12 = clone(base); A.advance(a12, 12 * 60);
-check(a12.marks[target.id].owner === H, 'without the player the hegemon keeps the fortress');
-check(b.marks[target.id].owner !== H, `with the player the fortress should fall (owner ${b.marks[target.id].owner})`);
+check(a12.marks[target.id].owner === H, 'without the player the hegemon keeps the holy site');
+check(b.marks[target.id].owner !== H, `with the player the holy site should fall (owner ${b.marks[target.id].owner})`);
 ok(`the player joined ${joined.name}, called a rally that guild mates joined, and took ${target.name}; without the player Crown of Cinders still holds it`);
 check(A.validateWorld(b).length === 0, A.validateWorld(b).join('; '));
 console.log(`conquest demo: all ${passed} checks passed`);

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Robustness test, in headless Chromium against dist/index.html: a damaged save falls back to the backup copy, a
-// world whose every copy is damaged offers a new one without deleting anything, blocked storage still plays, and
-// a long run at the developer's 64x speed keeps the page small and responsive.
+// world whose every copy is damaged offers a new one without deleting anything, a world from the old smaller map
+// is explained and kept, blocked storage still plays, and a long run at the developer's 64x speed keeps the page
+// small and responsive.
 //
 //   node tests/conquest-robust.mjs [path/to/dist/index.html]
 //
@@ -74,7 +75,7 @@ const getRecord = key => page.evaluate(k => new Promise(res => {
 console.log(`conquest-robust: ${FILE}`);
 
 await step('a damaged main save: the backup copy loads and the game goes on', async () => {
-  page = await newPage(null, /could not be opened|simulation error/);
+  page = await newPage(null, /could not be opened|simulation error|smaller map/);
   await found('Backup');
   await page.waitForFunction(() => window.AOCUI.F.t >= 362);
   await saveNow();
@@ -109,6 +110,22 @@ await step('every copy damaged: a clear message and a new world offered, nothing
   check((await getRecord('backup'))?.plain === 'not a save either', 'the damaged backup was deleted');
   await page.click('#aoc-err-new');
   await page.waitForSelector('#aoc-found');
+});
+
+await step('a world from the old, smaller map: the new map is explained and the old save is left alone', async () => {
+  await page.goto(URL);
+  await page.waitForSelector('#aoc-new');
+  const old = await page.evaluate(() => { const body = '{"t":0}'; return JSON.stringify({ format: 'age-of-conquest', v: 1, check: window.AOC.hash32(body), body }); });
+  await putRecord('main', old);
+  await putRecord('backup', old);
+  await page.reload();
+  await page.click('#aoc-continue');
+  await page.waitForSelector('#aoc-err-new', { timeout: 30000 });
+  const title = await page.locator('.aoc-title h1').textContent(), text = await page.locator('.aoc-title p').first().textContent();
+  check(/new, bigger map/i.test(title) && /old, smaller map/.test(text), `no explanation: ${title} / ${text}`);
+  check((await getRecord('main'))?.plain === old, 'the old save was changed or deleted');
+  const toasts = await page.locator('.aoc-toast').allTextContents();
+  check(!toasts.some(t => /backup/i.test(t)), 'it tried the backup of an old-map save');
 });
 
 await step('blocked storage: the game still starts and plays, and says saves cannot be kept', async () => {

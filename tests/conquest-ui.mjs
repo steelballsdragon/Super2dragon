@@ -135,12 +135,16 @@ await step('the world map draws castles and terrain around the city and hides th
     const c = document.querySelector('.aoc-map-cv');
     const g = c.getContext('2d');
     const d = g.getImageData(0, 0, c.width, c.height).data;
-    let lit = 0, dark = 0;
-    for (let i = 0; i < d.length; i += 4 * 97) { if (d[i] + d[i + 1] + d[i + 2] > 90) lit++; else dark++; }
-    return { lit, dark };
+    // explored land is coloured ground; unexplored land lies under pale blue-grey clouds
+    let lit = 0, cloud = 0;
+    for (let i = 0; i < d.length; i += 4 * 97) {
+      const r = d[i], gg = d[i + 1], b = d[i + 2];
+      if (r > 125 && gg > 140 && b > 160 && b >= r && b - r < 70) cloud++; else if (r + gg + b > 90) lit++;
+    }
+    return { lit, cloud };
   });
   check(stats.lit > 50, `the map looks empty (${JSON.stringify(stats)})`);
-  check(stats.dark > 50, 'no fog of war on screen');
+  check(stats.cloud > 50, `no fog of war on screen (${JSON.stringify(stats)})`);
   const v = await variety('.aoc-map-cv');
   check(v.colors > 60, `the map looks flat (${JSON.stringify(v)})`);
   const P = (await F()).P;
@@ -246,6 +250,31 @@ await step('attack the nearest bandit camp from the map; the report explains it 
   check((await page.locator('.aoc-battle').textContent()).includes('Why'), 'no explanation');
   await page.click('[data-rp="play"]');
   await page.waitForTimeout(600);
+  await closeSheets();
+});
+
+await step('the kingdom: zoom out to all ten regions, find a pass, read why the mountains stop you', async () => {
+  await page.click('#aoc-tab-map');
+  await page.click('[data-act="kingdom"]');
+  await page.waitForTimeout(600);
+  const where = await page.locator('.aoc-map-where').textContent();
+  check(/Zone 3/.test(where), `the kingdom view is not centred on the heartland: ${where}`);
+  const v = await variety('.aoc-map-cv');
+  check(v.colors > 40, `the kingdom view looks flat (${JSON.stringify(v)})`);
+  await page.click('[data-act="find"]');
+  await page.waitForSelector('.aoc-find-row');
+  const rows = await page.locator('.aoc-find-row').count();
+  check(rows >= 1 + 1 + 15 + 27, `the Find list should hold your city, the Capital, 15 passes and 27 holy sites (${rows})`);
+  const pass = await page.evaluate(() => window.AOCUI.F.marks.find(m => m.kind === 'pass' && m.tier === 2));
+  await page.click(`.aoc-find-row[data-goto="${pass.x},${pass.y}"] >> nth=0`);
+  await page.waitForTimeout(500);
+  const view = await page.locator('.aoc-map-where').textContent();
+  check(new RegExp(`${pass.x}, ${pass.y}`).test(view) || /Zone/.test(view), `the map did not go to the pass: ${view}`);
+  await page.evaluate(([x, y]) => window.AOCUI.openTile(y * window.AOC.MAP_N + x), [pass.x, pass.y]);
+  await page.waitForSelector('.aoc-sheet-body .aoc-kicker');
+  const body = await page.locator('.aoc-sheet-body').last().textContent();
+  check(/road through the mountains/i.test(body) && /Opens on Day 3/.test(body), `the pass sheet: ${body.slice(0, 200)}`);
+  check(/Mountains stand between you/.test(body), 'the sheet does not say the mountains stop an independent');
   await closeSheets();
 });
 

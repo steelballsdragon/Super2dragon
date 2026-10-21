@@ -216,8 +216,10 @@ function actRelocate(w, g, x, y, isAi) {
   if (!inMap(x, y) || x < 2 || y < 2 || x > N - 3 || y > N - 3) return { ok: false, err: 'That is off the map.' };
   const i = idx(x, y);
   const t = w.map.ter[i];
-  if (TERRAIN[t].cost === Infinity || t === T.ford || t === T.pass) return { ok: false, err: 'You cannot build a city there.' };
+  if (TERRAIN[t].cost === Infinity || t === T.ford || t === T.pass || t === T.gate || w.map.reg[i] >= 100) return { ok: false, err: 'You cannot build a city there.' };
   if (w.map.occ[i]) return { ok: false, err: 'That tile is taken.' };
+  // anywhere in Zone 1; deeper zones only once your guild holds a pass that leads there
+  if (zoneOfRegion(w.map.reg[i]) > 1 && !canReach(w, g, i)) return { ok: false, err: `${REGIONS[w.map.reg[i]].name} lies in Zone ${zoneOfRegion(w.map.reg[i])}. Your guild must hold a pass into it before you can move there.` };
   for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (w.map.occ[idx(clamp(x + dx, 0, N - 1), clamp(y + dy, 0, N - 1))] >= OCC_MARK) return { ok: false, err: 'Too close to a landmark.' };
   const cap = w.marks.find(m => m.kind === 'capital');
   if (dist(cap.x, cap.y, x, y) < 6) return { ok: false, err: 'Too close to the Capital.' };
@@ -454,7 +456,7 @@ function playerCommandRaw(w, cmd, opts) {
       const gd = P.guild >= 0 ? w.guilds[P.guild] : null;
       if (!gd || (gd.leader !== PLAYER && !gd.officers.includes(PLAYER))) return { ok: false, err: 'Only the leader and officers set objectives.' };
       const mk = intIn(a.mark, w.marks.length) ? w.marks[a.mark] : null;
-      if (a.mark !== -1 && (!mk || mk.kind === 'ruin')) return { ok: false, err: 'Choose a fortress or the Capital.' };
+      if (a.mark !== -1 && (!mk || mk.kind === 'ruin')) return { ok: false, err: 'Choose a pass, a holy site or the Capital.' };
       gd.policy = { ...gd.policy, objective: a.mark, why: a.mark === -1 ? 'No objective set.' : `Objective set by ${P.name}: ${mk.name}.`, since: w.t };
       gd.playerObjective = a.mark;
       return { ok: true };
@@ -576,6 +578,8 @@ function playerView(w) {
     marchCap: marchCap(w, P), marchSlots: marchLimit(w, P), marchesOut: activeMarches(w, P), vision: visionRadius(P.b.tower || 0, P.b.hall),
     fee: tradeFee(w, P), tradeLeft: Math.max(0, tradeLimit(P) - P.tradedToday), shieldCost: shieldCost(P), relocateCost: relocateCost(P), mods: m,
     invites: (P.invites || []).filter(gi => !w.guilds[gi].collapsed), alert: P.alert,
+    region: regionAt(w, P.x, P.y), reach: reachMaskOf(w, P), access: gateAccess(w, P.guild),
+    blessings: P.guild >= 0 ? [...new Set(w.marks.filter(m => m.blessing && m.owner === P.guild).map(m => m.blessing))] : [],
   };
 }
 function marchView(w, m, P) {
@@ -622,7 +626,7 @@ function frameView(w, since) {
   out.fights = w.battles.filter(b => w.t - b.t <= 8 && (b.seen || b.a === PLAYER || b.d === PLAYER)).map(b => ({ x: b.x, y: b.y, t: b.t }));
   out.camps = w.camps.filter(c => ex[idx(c.x, c.y)]).map(c => ({ id: c.id, x: c.x, y: c.y, lv: c.lv }));
   out.nodes = w.nodes.filter(n => ex[idx(n.x, n.y)]).map(n => ({ id: n.id, x: n.x, y: n.y, res: n.res, lv: n.lv, amount: vis[idx(n.x, n.y)] ? n.amount : null, max: n.max, busy: !!n.by && vis[idx(n.x, n.y)] >= 2 }));
-  out.marks = w.marks.map(mk => ({ id: mk.id, kind: mk.kind, name: mk.name, x: mk.x, y: mk.y, owner: mk.owner, since: mk.since, level: mk.level, known: !!ex[idx(mk.x, mk.y)], cleared: (mk.cleared || []).includes(PLAYER) }));
+  out.marks = w.marks.map(mk => ({ id: mk.id, kind: mk.kind, name: mk.name, x: mk.x, y: mk.y, owner: mk.owner, since: mk.since, level: mk.level, tier: mk.tier || 0, known: !!ex[idx(mk.x, mk.y)], cleared: (mk.cleared || []).includes(PLAYER), region: mk.region, opens: mk.opens, site: mk.site || null, blessing: mk.blessing || null, gate: mk.gate ?? null, links: mk.links || null }));
   out.guilds = w.guilds.map(gd => guildBrief(w, gd));
   out.rallies = P.guild >= 0 ? w.rallies.filter(r => r.guild === P.guild && r.state === 'gathering').map(r => rallyView(w, r)) : [];
   out.events = w.events.map(e => ({ ...e }));
@@ -656,7 +660,7 @@ function guildBrief(w, gd) {
     id: gd.id, name: gd.name, tag: gd.tag, color: gd.color, emblem: gd.emblem, collapsed: gd.collapsed, refoundAt: gd.refoundAt,
     leader: gd.leader, leaderName: gd.leader >= 0 ? w.govs[gd.leader].name : '', members: gd.members.length, power: gd.power, rank: gd.rank,
     officers: gd.officers.slice(), home: gd.home, civ: gd.civ, treaties, cred: Math.round(gd.cred), stance: gd.policy.stance, why: gd.policy.why,
-    forts: w.marks.filter(m => m.owner === gd.id && m.kind === 'fortress').length, capital: w.marks.some(m => m.owner === gd.id && m.kind === 'capital'),
+    region: gd.home.region, sites: w.marks.filter(m => m.owner === gd.id && m.kind === 'site').length, passes: w.marks.filter(m => m.owner === gd.id && m.kind === 'pass').length, capital: w.marks.some(m => m.owner === gd.id && m.kind === 'capital'),
     rel: mine ? gd.rel.map(Math.round) : null, relToMe: P.guild >= 0 && !mine ? Math.round(gd.rel[P.guild]) : null, rule: gd.rule, tech: { ...gd.tech },
     invitedMe: (P.invites || []).includes(gd.id),
   };
@@ -751,7 +755,7 @@ function rankings(w, kind) {
 function chronicleView(w, f = {}) {
   let list = w.chron.filter(e => chronVisible(w, e));
   if (f.guild != null && f.guild >= 0) list = list.filter(e => e.g.includes(Number(f.guild)));
-  if (f.kind === 'war') list = list.filter(e => ['war', 'peace', 'betrayal', 'coalition', 'battle', 'sacked', 'fortress', 'capital'].includes(e.k));
+  if (f.kind === 'war') list = list.filter(e => ['war', 'peace', 'betrayal', 'coalition', 'battle', 'sacked', 'site', 'pass', 'capital'].includes(e.k));
   else if (f.kind === 'politics') list = list.filter(e => ['nap', 'alliance', 'leader', 'coup', 'election', 'defection', 'splinter', 'collapse', 'guild_founded', 'treaty_end', 'officer', 'join', 'leave', 'expel'].includes(e.k));
   else if (f.kind === 'world') list = list.filter(e => ['event', 'event_end', 'ruin', 'exchange', 'exchange_start', 'age_end', 'server_open', 'growth', 'guildtech', 'commander'].includes(e.k));
   else if (f.kind === 'major') list = list.filter(e => e.imp >= 2);
@@ -768,7 +772,8 @@ function tileView(w, i) {
   i = Math.floor(Number(i));
   if (!(i >= 0 && i < N2)) return null;
   const x = tx(i), y = ty(i);
-  const out = { i, x, y, ter: w.map.ter[i], terrain: TERRAIN[w.map.ter[i]].name, explored: !!w.explored[i], visible: w._vis[i] >= 2, territory: w.map.terr[i] ? w.map.terr[i] - 1 : -1, region: SERVER.regions[regionOf(x, y)] };
+  const rg = regionAt(w, x, y);
+  const out = { i, x, y, ter: w.map.ter[i], terrain: TERRAIN[w.map.ter[i]].name, explored: !!w.explored[i], visible: w._vis[i] >= 2, territory: w.map.terr[i] ? w.map.terr[i] - 1 : -1, region: REGIONS[rg].name, zone: zoneOfRegion(rg), wall: w.map.wall[i], reachable: canReach(w, P, i), canSettle: !w.map.wall[i] && (zoneOfRegion(rg) === 1 || canReach(w, P, i)) };
   if (!out.explored) return out;
   const t = tileTarget(w, i);
   out.target = t;
@@ -778,7 +783,7 @@ function tileView(w, i) {
   if (t?.type === 'mark') {
     const mk = w.marks[t.id];
     const rep = intelOn(w, P, 'mark', mk.id, 12 * HOUR);
-    out.mark = { id: mk.id, kind: mk.kind, name: mk.name, owner: mk.owner, level: mk.level, wallDur: out.visible ? Math.round(mk.wallDur) : null, wallMax: mk.wallMax, since: mk.since, cleared: (mk.cleared || []).includes(PLAYER), intel: rep ? { at: rep.at, troops: rep.troops, acc: rep.acc } : null, garrisonMine: mk.owner >= 0 && mk.owner === P.guild ? garrisonOf(w, mk) : null, myTroops: garrisonMarches(w, mk).filter(m => m.owner === PLAYER).map(m => ({ id: m.id, troops: m.troops })) };
+    out.mark = { id: mk.id, kind: mk.kind, name: mk.name, owner: mk.owner, level: mk.level, tier: mk.tier || 0, opens: mk.opens, site: mk.site || null, blessing: mk.blessing ? { id: mk.blessing, ...BLESSINGS[mk.blessing], mods: undefined } : null, links: mk.links ? mk.links.map(r => REGIONS[r].name) : null, open: w.t >= mk.opens, wallDur: out.visible ? Math.round(mk.wallDur) : null, wallMax: mk.wallMax, since: mk.since, cleared: (mk.cleared || []).includes(PLAYER), intel: rep ? { at: rep.at, troops: rep.troops, acc: rep.acc } : null, garrisonMine: mk.owner >= 0 && mk.owner === P.guild ? garrisonOf(w, mk) : null, myTroops: garrisonMarches(w, mk).filter(m => m.owner === PLAYER).map(m => ({ id: m.id, troops: m.troops })) };
   }
   return out;
 }
@@ -787,8 +792,8 @@ function marchPreview(w, o) {
   const P = w.govs[PLAYER];
   const to = Math.floor(Number(o.to));
   if (!(to >= 0 && to < N2)) return { ok: false, err: 'That is not a place on the map.' };
-  const path = findPath(w, idx(P.x, P.y), to);
-  if (!path) return { ok: false, err: 'There is no way to march there.' };
+  const path = findPath(w, idx(P.x, P.y), to, gateAccess(w, P.guild));
+  if (!path) return { ok: false, err: noWayText(w, P, to) };
   const troops = o.troops || {};
   const speed = marchSpeed(w, P, troops, o.c1, o.c2, o.kind);
   const minutes = Math.ceil(pathCost(w, path) / speed);
@@ -797,7 +802,7 @@ function marchPreview(w, o) {
 
 // ================================================================ saves
 function serialize(w, now) {
-  const skip = new Set(['map', '_vis', '_inf', '_buckets', '_pathCache', 'explored']);
+  const skip = new Set(['map', '_vis', '_inf', '_buckets', '_pathCache', '_reach', '_bless', 'explored']);
   const data = {};
   for (const k in w) if (!skip.has(k) && !k.startsWith('_')) data[k] = w[k];
   data.realSavedAt = now || w.realSavedAt;
@@ -836,6 +841,7 @@ function deserialize(json) {
   if (!wrap || wrap.format !== 'age-of-conquest' || typeof wrap.body !== 'string') return { ok: false, err: 'This is not an Age of Conquest save.' };
   if (hash32(wrap.body) !== wrap.check) return { ok: false, err: 'The save is damaged (its checksum does not match).' };
   if (wrap.v > SCHEMA) return { ok: false, err: 'This save comes from a newer version of the game.' };
+  if (wrap.v < 2) return { ok: false, old: true, err: 'This world was made on the old, smaller map, which this version no longer opens. Start a new world to play on the new kingdom map; it replaces the old save.' };
   let w;
   try { w = JSON.parse(wrap.body); } catch (e) { return { ok: false, err: 'The save is not readable.' }; }
   migrate(w, wrap.v);
@@ -856,7 +862,7 @@ function deserialize(json) {
   return { ok: true, world: w };
 }
 function migrate(w, v) {
-  // schema 1 is the first version; later versions add their upgrades here
+  // schema 2 (the kingdom map) is the oldest save that loads; later versions add their upgrades here
   if (!w.settings) w.settings = { offlineCap: 12 * HOUR, notify: 'important' };
   if (!w.notes) w.notes = [];
   if (!w.campRespawn) w.campRespawn = [];
@@ -906,6 +912,7 @@ function validateWorld(w) {
     if (seenTile.has(key)) p.push(`two cities share tile ${key}`);
     seenTile.add(key);
     if (w.map && TERRAIN[w.map.ter[idx(g.x, g.y)]].cost === Infinity) p.push(`governor ${i} sits on impassable terrain`);
+    if (w.map && w.map.reg[idx(g.x, g.y)] >= 100) p.push(`governor ${i} sits on a mountain range or a pass`);
   });
   if (!w.govs[PLAYER] || !w.govs[PLAYER].human) p.push('the player slot is missing');
   if (w.govs.filter(g => g.human).length !== 1) p.push('there must be exactly one human governor');
@@ -962,7 +969,7 @@ function createServer(host) {
           }
           case 'load': {
             const r = deserialize(msg.json);
-            if (!r.ok) { post({ type: 'loadError', err: r.err }); return; }
+            if (!r.ok) { post({ type: 'loadError', err: r.err, old: !!r.old }); return; }
             S.w = r.world;
             S.speed = 1; S.acc = 0;
             const awaySec = Math.max(0, (now() - (S.w.realSavedAt || now())) / 1000);

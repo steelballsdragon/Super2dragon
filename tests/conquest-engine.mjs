@@ -114,6 +114,9 @@ await test('damaged, tampered or impossible saves are refused', () => {
   check(!A.deserialize(tampered).ok, 'a tampered save loaded');
   check(!A.deserialize('{not json').ok, 'garbage loaded');
   check(!A.deserialize(JSON.stringify({ ...wrap, v: 99 })).ok, 'a future version loaded');
+  // a world from the old, smaller map is refused with a clear reason
+  const old = A.deserialize(JSON.stringify({ ...wrap, v: 1 }));
+  check(!old.ok && old.old && /old, smaller map/.test(old.err), `an old-map save: ${old.err}`);
   // a save whose checksum matches but whose content breaks the rules (61 members) is still refused
   const body = JSON.parse(wrap.body);
   const gd = body.guilds[0];
@@ -234,17 +237,115 @@ await test('market prices move with trade and the fee depends on the Market', ()
 // ---------------------------------------------------------------- movement
 await test('paths connect cities around mountains and lakes and never cross impassable land', () => {
   const w = fresh();
-  for (let k = 0; k < 40; k++) {
+  let n = 0;
+  for (let k = 0; k < 400 && n < 40; k++) {
     const a = w.govs[(k * 37) % 600], b = w.govs[(k * 91 + 13) % 600];
+    if (A.regionAt(w, a.x, a.y) !== A.regionAt(w, b.x, b.y)) continue;
+    n++;
     const path = A.findPath(w, A.idx(a.x, a.y), A.idx(b.x, b.y));
     check(path, `no path between ${a.id} and ${b.id}`);
     for (let i = 1; i < path.length; i++) {
       check(Math.abs(A.tx(path[i]) - A.tx(path[i - 1])) <= 1 && Math.abs(A.ty(path[i]) - A.ty(path[i - 1])) <= 1, 'steps must be neighbours');
       check(A.TERRAIN[w.map.ter[path[i]]].cost !== Infinity, 'path crosses impassable land');
+      check(w.map.reg[path[i]] < 100, 'a path inside a region used a pass road');
     }
   }
+  check(n >= 30, `too few same-region pairs (${n})`);
   const mountain = w.map.ter.findIndex(t => t === A.T.mountain);
   check(A.findPath(w, A.idx(w.govs[P].x, w.govs[P].y), mountain) === null, 'a mountain tile is unreachable');
+});
+await test('the kingdom: six Zone 1 regions, three in Zone 2 and the heartland, walled by mountains with 15 passes', () => {
+  const w = fresh();
+  check(A.MAP_N === 384 && A.REGIONS.length === 10, 'the map is 384 tiles with 10 regions');
+  const zones = [1, 1, 1, 1, 1, 1, 2, 2, 2, 3];
+  A.REGIONS.forEach((r, k) => check(r.zone === zones[k] && A.zoneOfRegion(k) === zones[k], `region ${r.name} is in the wrong zone`));
+  const passes = w.marks.filter(m => m.kind === 'pass');
+  check(passes.length === 15, `expected 15 passes, found ${passes.length}`);
+  check([1, 2, 3].map(l => passes.filter(m => m.tier === l).length).join() === '6,6,3', 'six level 1, six level 2 and three level 3 passes');
+  for (const m of passes) {
+    const [ra, rb] = m.links;
+    if (m.tier === 1) check(A.zoneOfRegion(ra) === 1 && A.zoneOfRegion(rb) === 1, `${m.name} should join two Zone 1 regions`);
+    if (m.tier === 2) check(A.zoneOfRegion(ra) === 1 && A.zoneOfRegion(rb) === 2, `${m.name} should lead from Zone 1 into Zone 2`);
+    if (m.tier === 3) check(A.zoneOfRegion(ra) === 2 && rb === 9, `${m.name} should lead into the heartland`);
+  }
+  // every governor starts in Zone 1; the Capital stands in the heartland
+  check(w.govs.every(g => A.zoneAt(w, g.x, g.y) === 1), 'a governor started outside Zone 1');
+  const cap = w.marks.find(m => m.kind === 'capital');
+  check(A.regionAt(w, cap.x, cap.y) === 9, 'the Capital is not in the heartland');
+  // nothing reaches another region while every pass is closed; each pass, once held, opens exactly its own road
+  const inside = r => { const [x, y] = A.regionCenter(r); for (let d = 0; d < 40; d++) for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) { const i = A.idx(x + dx, y + dy); if (w.map.reg[i] === r) return i; } return -1; };
+  for (const m of passes) {
+    const a = inside(m.links[0]), b = inside(m.links[1]);
+    check(A.findPath(w, a, b, 0) === null, `${m.name}: a way between its regions without the pass`);
+    const path = A.findPath(w, a, b, 1 << m.gate);
+    check(path && path.includes(A.idx(m.x, m.y)), `${m.name}: no way through the pass when it is open`);
+    check(A.findPath(w, a, A.idx(m.x, m.y), 0) && A.findPath(w, b, A.idx(m.x, m.y), 0), `${m.name}: cannot be reached from both sides to attack it`);
+  }
+});
+await test('a pass lets only the guild that holds it, and its allies, march through', () => {
+  const w = fresh();
+  const gd = w.guilds[0];
+  const lead = w.govs[gd.leader];
+  const home = A.regionAt(w, lead.x, lead.y);
+  const pass = w.marks.find(m => m.kind === 'pass' && m.tier === 1 && m.links.includes(home));
+  const beyond = pass.links[0] === home ? pass.links[1] : pass.links[0];
+  const target = w.govs.find(g => A.regionAt(w, g.x, g.y) === beyond && g.guild !== gd.id);
+  const to = A.idx(target.x, target.y);
+  lead.troops.inf = 5000;
+  const send = g => A.startMarch(w, g, { kind: 'scout', to: A.idx(target.x, target.y) });
+  check(!A.canReach(w, lead, to) && !send(lead).ok, 'marched through a pass nobody holds');
+  pass.owner = gd.id;
+  check(A.canReach(w, lead, to), 'the guild cannot reach the region beyond its own pass');
+  check(send(lead).ok, 'the guild cannot march through its own pass');
+  const ally = w.guilds.find(o => o.id !== gd.id);
+  const allyGov = w.govs.find(g => g.guild === ally.id && A.regionAt(w, g.x, g.y) === home) || w.govs[ally.leader];
+  const other = w.guilds.find(o => o.id !== gd.id && o.id !== ally.id);
+  const otherGov = w.govs.find(g => g.guild === other.id && A.regionAt(w, g.x, g.y) === home);
+  if (otherGov) check(!A.canReach(w, otherGov, to), 'another guild used the pass');
+  A.setTreaty(w, gd.id, ally.id, 'alliance');
+  if (A.regionAt(w, allyGov.x, allyGov.y) === home) check(A.canReach(w, allyGov, to), 'an ally cannot use the pass');
+  // an independent never passes, and the player is told why
+  w.explored[to] = 1;
+  const r = cmd(w, { type: 'march', kind: 'scout', to });
+  if (A.regionAt(w, w.govs[P].x, w.govs[P].y) !== beyond) check(!r.ok && /mountain range/i.test(r.err), `an independent crossed a range: ${r.err}`);
+  // an army going home may always use any pass
+  check(A.findPath(w, to, A.idx(lead.x, lead.y), A.ALL_GATES), 'no way home through the passes');
+});
+await test('holy sites bless every member of the guild that holds them; the same blessing twice counts once', () => {
+  const w = fresh();
+  const gd = w.guilds[1];
+  const g = w.govs[gd.members[2]];
+  const base = A.armySide(w, g, { inf: 1000 }, null, null, {}, 'x').mul.atk.inf;
+  const war = w.marks.filter(m => m.kind === 'site' && m.blessing === 'war');
+  check(war.length === 2, 'two altars give the Blessing of War');
+  war[0].owner = gd.id; A.recomputeTerritory(w);
+  const one = A.armySide(w, g, { inf: 1000 }, null, null, {}, 'x').mul.atk.inf;
+  check(Math.abs(one - base - 0.03) < 1e-9, `the Blessing of War should add 3% attack (${base} -> ${one})`);
+  war[1].owner = gd.id; A.recomputeTerritory(w);
+  const two = A.armySide(w, g, { inf: 1000 }, null, null, {}, 'x').mul.atk.inf;
+  check(Math.abs(two - one) < 1e-9, 'two Blessings of War added up');
+  const plenty = w.marks.find(m => m.blessing === 'plenty');
+  const before = A.production(w, g).food;
+  plenty.owner = gd.id; A.recomputeTerritory(w);
+  check(A.production(w, g).food > before * 1.04, 'the Blessing of Plenty should raise Food production');
+  const outsider = w.govs.find(o => o.guild !== gd.id && o.guild >= 0);
+  check(!A.blessingMods(w, outsider.guild) || !A.blessingMods(w, outsider.guild).atk, 'another guild got the blessing');
+});
+await test('passes, holy sites and the Capital open on their day; camps and fields grow stronger toward the centre', () => {
+  const w = fresh();
+  const gd = w.guilds[0];
+  const lead = w.govs[gd.leader];
+  lead.troops = { inf: 20000, cav: 0, arc: 0, sie: 0 };
+  const home = A.regionAt(w, lead.x, lead.y);
+  const altar = w.marks.find(m => m.kind === 'site' && m.site === 'altar' && m.region === home);
+  check(w.t < altar.opens, 'altars open on Day 2');
+  const r = A.startRally(w, lead, { to: A.idx(altar.x, altar.y), troops: { inf: 1000 }, c1: Object.keys(lead.cmds)[0], wait: 20 });
+  check(!r.ok && /opens on Day 2/.test(r.err), `a rally on an altar before it opens: ${r.err}`);
+  const sanctum = w.marks.find(m => m.kind === 'site' && m.site === 'sanctum' && m.region === home);
+  check(A.startRally(w, lead, { to: A.idx(sanctum.x, sanctum.y), troops: { inf: 1000 }, c1: Object.keys(lead.cmds)[0], wait: 20 }).ok, 'sanctums are open from the start');
+  const lv = z => { const c = w.camps.filter(x => A.zoneAt(w, x.x, x.y) === z); return c.reduce((s, x) => s + x.lv, 0) / Math.max(1, c.length); };
+  check(lv(1) < lv(2) && lv(2) < lv(3), `camp levels should rise toward the centre (${lv(1).toFixed(1)}, ${lv(2).toFixed(1)}, ${lv(3).toFixed(1)})`);
+  check(w.camps.length >= 590 && w.nodes.length >= 1190, 'the big map has its camps and fields');
 });
 await test('marches take travel time; scouts return with a report; armies return home', () => {
   const w = fresh();
@@ -338,6 +439,13 @@ await test('scouting a guild leader uncovers its secret pacts; market prices dri
   A.setTreaty(w, 2, 3, 'nap', { secret: true });
   check(!A.frameView(w, {}).guilds[2].treaties[3], 'a secret pact was visible');
   const leader = w.govs[w.guilds[2].leader];
+  // a guild leader the player's scouts can reach (in the player's region)
+  const pr = A.regionAt(w, w.govs[P].x, w.govs[P].y);
+  const near = w.govs.filter(g => !g.human && g.guild >= 0 && g.guild !== 2 && A.regionAt(w, g.x, g.y) === pr)[0];
+  w.map.occ[A.idx(leader.x, leader.y)] = 0; w.map.occ[A.idx(near.x, near.y)] = 0;
+  [leader.x, leader.y, near.x, near.y] = [near.x, near.y, leader.x, leader.y];
+  w.map.occ[A.idx(leader.x, leader.y)] = 1 + leader.id; w.map.occ[A.idx(near.x, near.y)] = 1 + near.id;
+  w._buckets = null;
   w.explored[A.idx(leader.x, leader.y)] = 1;
   const r = cmd(w, { type: 'march', kind: 'scout', to: A.idx(leader.x, leader.y) });
   check(r.ok, r.err);
@@ -431,7 +539,7 @@ await test('a sacked city loses a level, moves to safety behind a shield, and ca
   const w = fresh();
   const P0 = w.govs[P];
   P0.shield = 0; P0.b.farm = 3; P0.b.hall = 3; P0.b.lumber = 3; P0.wallDur = 0; P0.troops = { inf: 0, cav: 0, arc: 0, sie: 0 };
-  const attacker = w.govs.find(g => !g.human && g.guild >= 0);
+  const attacker = w.govs.find(g => !g.human && g.guild >= 0 && A.canReach(w, g, A.idx(P0.x, P0.y)));
   attacker.troops = { inf: 20000, cav: 0, arc: 0, sie: 0 };
   attacker.shield = 0;
   const x0 = P0.x, y0 = P0.y;
@@ -471,11 +579,11 @@ await test('the Grand Exchange is an economic victory, open to the player', () =
   A.advance(w, A.EXCHANGE.minutes);
   check(w.ages.length === 1 && w.ages[0].gov === P && w.ages[0].playerWon, 'the player should win the Age');
 });
-await test('a guild rally captures a fortress and leaves a garrison', () => {
+await test('a guild rally captures a holy site and leaves a garrison', () => {
   const w = fresh();
   const gd = w.guilds[0];
   const lead = w.govs[gd.leader];
-  const fort = w.marks.filter(m => m.kind === 'fortress').sort((a, b) => Math.hypot(a.x - lead.x, a.y - lead.y) - Math.hypot(b.x - lead.x, b.y - lead.y))[0];
+  const fort = w.marks.filter(m => m.kind === 'site' && m.opens <= w.t && A.canReach(w, lead, A.idx(m.x, m.y))).sort((a, b) => Math.hypot(a.x - lead.x, a.y - lead.y) - Math.hypot(b.x - lead.x, b.y - lead.y))[0];
   lead.troops = { inf: 30000, cav: 15000, arc: 15000, sie: 3000 };
   lead.b.hall = 15;
   const cap = A.marchCap(w, lead);
@@ -485,7 +593,7 @@ await test('a guild rally captures a fortress and leaves a garrison', () => {
   check(r.ok, r.err);
   // the three nearest members join
   let joined = 0;
-  const near = gd.members.filter(id => id !== lead.id).sort((a, b) => Math.hypot(w.govs[a].x - lead.x, w.govs[a].y - lead.y) - Math.hypot(w.govs[b].x - lead.x, w.govs[b].y - lead.y));
+  const near = gd.members.filter(id => id !== lead.id && A.canReach(w, w.govs[id], A.idx(lead.x, lead.y))).sort((a, b) => Math.hypot(w.govs[a].x - lead.x, w.govs[a].y - lead.y) - Math.hypot(w.govs[b].x - lead.x, w.govs[b].y - lead.y));
   for (const id of near) {
     if (joined >= 3) break;
     const m = w.govs[id];
@@ -495,7 +603,7 @@ await test('a guild rally captures a fortress and leaves a garrison', () => {
     if (jr.ok) joined++;
   }
   A.advance(w, 10 * 60);
-  check(fort.owner === gd.id, `the fortress was not captured (owner ${fort.owner}, joined ${joined})`);
+  check(fort.owner === gd.id, `the holy site was not captured (owner ${fort.owner}, joined ${joined})`);
   check(A.troopsTotal(A.garrisonOf(w, fort)) > 0, 'no garrison was left');
   check(A.validateWorld(w).length === 0, A.validateWorld(w).join('; '));
 });

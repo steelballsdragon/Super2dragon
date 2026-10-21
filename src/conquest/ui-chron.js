@@ -68,7 +68,7 @@ function drawMap() {
   const ter = U.S.ter;
   // faint terrain underneath
   for (let cy = 0; cy < 32; cy++) for (let cx = 0; cx < 32; cx++) {
-    const t = ter[(cy * 4 + 2) * A.MAP_N + cx * 4 + 2];
+    const CS = A.MAP_N / 32, t = ter[(cy * CS + (CS >> 1)) * A.MAP_N + cx * CS + (CS >> 1)];
     g.fillStyle = A.TERRAIN[t].color; g.globalAlpha = 0.45; g.fillRect(cx * 10, cy * 10, 10, 10);
   }
   g.globalAlpha = 1;

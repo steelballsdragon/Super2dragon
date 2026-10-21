@@ -485,6 +485,14 @@ body { margin: 0; }
 .aoc-map-cv { position: absolute; inset: 0; touch-action: none; cursor: grab; display: block; }
 .aoc-map-cv:active { cursor: grabbing; }
 .aoc-map-tools { position: absolute; right: 10px; bottom: 12px; display: grid; gap: 8px; }
+.aoc-map-where { position: absolute; left: max(10px, env(safe-area-inset-left)); top: 10px; max-width: calc(100% - 20px); padding: 5px 11px; border-radius: 999px; background: var(--a-chip); border: 1px solid var(--a-line); color: var(--a-text-2); font: 700 12px/1.2 Barlow, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.aoc-map-where:empty { display: none; }
+.aoc-find { margin: 2px 0 12px; }
+.aoc-find-row { width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--a-line); color: inherit; cursor: pointer; font: inherit; }
+.aoc-find-row:active { background: var(--a-line-soft); }
+.aoc-find-row .aoc-row-main { display: flex; flex-direction: column; gap: 2px; }
+.aoc-row-ico { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--a-card-2); color: var(--a-ice); border: 1px solid var(--a-line); }
+.aoc-opens { display: flex; align-items: center; gap: 6px; color: var(--a-gold); font-weight: 700; }
 
 .aoc-tile-pic { display: block; margin: 0 auto 4px; max-width: 40%; height: auto; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5)); }
 

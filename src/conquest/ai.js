@@ -8,7 +8,7 @@
 // active: near the player or in the player's guild/wars; strategic: at war; background: everyone else (slower)
 function tierOf(w, g) {
   const P = w.govs[PLAYER];
-  if (dist(g.x, g.y, P.x, P.y) < 28) return 'active';
+  if (dist(g.x, g.y, P.x, P.y) < 40) return 'active';
   if (g.guild >= 0 && (g.guild === P.guild || (P.guild >= 0 && treaty(w, g.guild, P.guild)?.k === 'war'))) return 'active';
   if (g.st === 'war' || g.st === 'defend' || (g.guild >= 0 && atWar(w, g.guild))) return 'strategic';
   return 'background';
@@ -185,12 +185,14 @@ function aiDefend(w, g) {
 function aiGuildDuties(w, g) {
   if (g.guild < 0) return;
   const gd = w.guilds[g.guild];
+  const reach = reachMaskOf(w, g);
   // join a guild rally that we can reach in time
   for (const r of w.rallies) {
     if (r.state !== 'gathering' || r.guild !== g.guild || r.leader === g.id) continue;
     if (w.marches.some(m => m.owner === g.id && m.rally === r.id)) continue;
     if (rnd(w) > g.t.loyal * (0.5 + g.t.agg)) continue;
     const leader = w.govs[r.leader];
+    if (!inReach(w, reach, idx(leader.x, leader.y))) continue;
     const army = pickArmy(w, g, 0.4 + g.t.loyal * 0.4, null);
     if (!army) continue;
     // rough arrival estimate from the straight-line distance (roads wind, so allow 40% extra)
@@ -204,7 +206,7 @@ function aiGuildDuties(w, g) {
   for (const mk of w.marks) {
     if (mk.owner !== g.guild || mk.kind === 'ruin') continue;
     const gar = troopsTotal(garrisonOf(w, mk));
-    if (gar >= 30000 + mk.level * 2000 || dist(g.x, g.y, mk.x, mk.y) > 34) continue;
+    if (gar >= 30000 + mk.level * 2000 || dist(g.x, g.y, mk.x, mk.y) > 60 || !inReach(w, reach, idx(mk.x, mk.y))) continue;
     if (w.marches.some(m => m.owner === g.id && m.kind === 'reinforce')) continue;
     if (rnd(w) > g.t.loyal * 0.6) continue;
     const army = pickArmy(w, g, 0.3, null);
@@ -251,6 +253,7 @@ function pickArmy(w, g, share, counterTo) {
 function aiMilitary(w, g) {
   const homePow = troopPower(g.troops);
   if (homePow < 300) return;
+  const reach = reachMaskOf(w, g);
   // 1) bandit camps: commander experience and loot
   if (rnd(w) < 0.35 + g.t.agg * 0.3 + g.t.greed * 0.2) {
     const army = pickArmy(w, g, 0.45 + g.t.risk * 0.3, null);
@@ -260,7 +263,7 @@ function aiMilitary(w, g) {
       for (const c of w.camps) {
         if (c.reserved != null && c.reserved !== g.id && w.t < c.until) continue;
         const d = dist(g.x, g.y, c.x, c.y);
-        if (d > g.explore + 4) continue;
+        if (d > g.explore + 4 || !inReach(w, reach, idx(c.x, c.y))) continue;
         const cp = troopPower(c.troops) * (1 + c.lv * 0.04);
         if (cp > myPow * (0.55 + g.t.risk * 0.25)) continue;
         const s = c.lv * 2 - d / 6;
@@ -290,7 +293,7 @@ function aiMilitary(w, g) {
       for (const nd of w.nodes) {
         if (nd.by) continue;
         const d = dist(g.x, g.y, nd.x, nd.y);
-        if (d > Math.min(g.explore, 30)) continue;
+        if (d > Math.min(g.explore, 40) || !inReach(w, reach, idx(nd.x, nd.y))) continue;
         const t = w.map.terr[idx(nd.x, nd.y)];
         if (enemyTerr.has(t) || (t && t !== g.guild + 1 && g.t.risk < 0.5)) continue;
         const s = d - (nd.res === need ? 12 : 0) - nd.lv;
@@ -303,10 +306,10 @@ function aiMilitary(w, g) {
     }
   }
   // 4) explorers and the curious push their scouting radius out
-  if (g.explore < 60 && rnd(w) < (g.arch === 'explorer' ? 0.5 : 0.1)) {
+  if (g.explore < 100 && rnd(w) < (g.arch === 'explorer' ? 0.5 : 0.1)) {
     const a = rnd(w) * Math.PI * 2;
     const x = clamp(Math.round(g.x + Math.cos(a) * (g.explore + 6)), 2, N - 3), y = clamp(Math.round(g.y + Math.sin(a) * (g.explore + 6)), 2, N - 3);
-    const near = govsNear(w, x, y, 6).filter(id => id !== g.id);
+    const near = govsNear(w, x, y, 8).filter(id => id !== g.id && inReach(w, reach, idx(w.govs[id].x, w.govs[id].y)));
     if (near.length) {
       const t = w.govs[near[0]];
       const r = startMarch(w, g, { kind: 'scout', to: idx(t.x, t.y) });
@@ -319,11 +322,12 @@ function aiAttack(w, g) {
   const myGuild = g.guild >= 0 ? w.guilds[g.guild] : null;
   const known = new Set(govsNear(w, g.x, g.y, g.explore));
   for (const e of g.mem) if (e.who != null && (e.k === 'attacked' || e.k === 'ambushed')) known.add(e.who);
+  const reach = reachMaskOf(w, g);
   let best = null, bs = 0;
   for (const id of known) {
     if (id === g.id) continue;
     const d = w.govs[id];
-    if (d.shield > w.t) continue;
+    if (d.shield > w.t || !inReach(w, reach, idx(d.x, d.y))) continue;
     if (myGuild && d.guild === g.guild) continue;
     let s = 0;
     const tr = myGuild && d.guild >= 0 ? treaty(w, g.guild, d.guild) : null;
@@ -341,7 +345,7 @@ function aiAttack(w, g) {
     // honorable governors do not prey on far weaker cities without a war or a grudge
     if (ratio < 0.3 && !grudge && !(tr && tr.k === 'war') && g.t.honor > 0.5) continue;
     s += (1 - ratio) * (0.5 + g.t.agg);
-    s -= dist(g.x, g.y, d.x, d.y) / 25;
+    s -= dist(g.x, g.y, d.x, d.y) / 40;
     if (ratio > 1.6 && g.t.risk < 0.7) continue;
     // a city sacked within the last day has little left to take
     if (d.stats.sacked && d.lastAttack && w.t - d.lastAttack.t < DAY && !grudge && !(tr && tr.k === 'war')) s -= 1.5;
@@ -397,8 +401,8 @@ function aiPolitics(w, g) {
   if (g.guild < 0) {
     // independents look for a guild
     if (rnd(w) < 0.12 + g.t.diplo * 0.2 + g.t.ambition * 0.1 && g.arch !== 'mercenary') {
-      const cands = w.guilds.filter(gd => !gd.collapsed && gd.members.length < GUILD_MAX && dist(g.x, g.y, gd.home.x, gd.home.y) < 50)
-        .sort((a, b) => (b.power / (1 + dist(g.x, g.y, b.home.x, b.home.y) / 20)) - (a.power / (1 + dist(g.x, g.y, a.home.x, a.home.y) / 20)));
+      const cands = w.guilds.filter(gd => !gd.collapsed && gd.members.length < GUILD_MAX && dist(g.x, g.y, gd.home.x, gd.home.y) < 90)
+        .sort((a, b) => (b.power / (1 + dist(g.x, g.y, b.home.x, b.home.y) / 30)) - (a.power / (1 + dist(g.x, g.y, a.home.x, a.home.y) / 30)));
       for (const gd of cands.slice(0, 3)) {
         if (applyToGuild(w, g, gd).ok) { decide(w, g, 'join', `Joined ${gd.name} for protection and shared goals.`, 'public'); break; }
       }
@@ -406,10 +410,10 @@ function aiPolitics(w, g) {
     return;
   }
   const gd = w.guilds[g.guild];
-  // move closer to the guild after joining (one relocation, paid for in gold)
-  if (dist(g.x, g.y, gd.home.x, gd.home.y) > 26 && !g.movedToGuild && g.res.gold >= relocateCost(g) && rnd(w) < 0.3) {
+  // move closer to the guild after joining (one relocation, paid for in gold), into the guild's own region
+  if ((dist(g.x, g.y, gd.home.x, gd.home.y) > 40 || regionAt(w, g.x, g.y) !== gd.home.region) && !g.movedToGuild && g.res.gold >= relocateCost(g) && rnd(w) < 0.3) {
     const rng = makeRng(hash32(w.seed, 'move', g.id, w.t));
-    const p = freeTileNear(w, gd.home.x, gd.home.y, 16, rng, { spread: true, awayFromMarks: 3 });
+    const p = freeTileNear(w, gd.home.x, gd.home.y, 28, rng, { spread: true, awayFromMarks: 3, region: gd.home.region });
     if (p && actRelocate(w, g, p[0], p[1], true).ok) { g.movedToGuild = true; decide(w, g, 'move', `Moved the city closer to ${gd.name}'s lands.`, 'public'); }
   }
   // defection: disloyal members of a guild that is losing look elsewhere
@@ -417,7 +421,7 @@ function aiPolitics(w, g) {
   if (g.role !== 'leader' && g.t.loyal < 0.35 && (losing || gd.rank >= 8) && rnd(w) < 0.08) {
     const better = w.guilds.filter(o => o.id !== gd.id && !o.collapsed && o.members.length < GUILD_MAX && o.rank < gd.rank && o.rel[gd.id] > -60)
       .sort((a, b) => a.rank - b.rank)[0];
-    if (better && dist(g.x, g.y, better.home.x, better.home.y) < 60) {
+    if (better && dist(g.x, g.y, better.home.x, better.home.y) < 100) {
       const from = gd;
       if (applyToGuild(w, g, better).ok) {
         decide(w, g, 'defect', `Left ${from.name} for ${better.name}.`, 'public');
@@ -511,7 +515,7 @@ function thinkGuild(w, gd) {
     if (o.id === gd.id || o.collapsed) continue;
     const d = dist(gd.home.x, gd.home.y, o.home.x, o.home.y);
     let dr = 0;
-    if (d < 40) dr -= 1;
+    if (d < 70) dr -= 1;
     const tr = treaty(w, gd.id, o.id);
     if (tr && tr.k === 'nap') dr += 0.8;
     if (tr && tr.k === 'alliance') dr += 1.5;
@@ -601,21 +605,35 @@ function formCoalition(w, h) {
     o.policy = { stance: 'war', target: h.id, objective: o.policy.objective, since: w.t, why: `Coalition war against ${h.name}.` };
   }
 }
-// what the guild works toward: the nearest fortress it can take, or the Throne for the strongest
+// what the guild works toward: the most valuable pass or holy site its armies can reach and take, or the Throne
+// for the strongest. A pass is worth what lies beyond it, as long as the guild has no other way in.
+const SITE_VALUE = { sanctum: 10, altar: 12, shrine: 15, temple: 18 };
 function planObjective(w, gd, share) {
   const wars = warsOf(w, gd.id);
   let army = 0;
   for (const id of gd.members) army += troopPower(w.govs[id].troops);
   const reach = army * 0.35;
+  const regs = regionsReachable(w, gd.home.region, gateAccess(w, gd.id));
+  const blessed = new Set(w.marks.filter(m => m.owner === gd.id && m.blessing).map(m => m.blessing));
   let best = null, bs = -Infinity;
   for (const mk of w.marks) {
     if (mk.kind === 'ruin' || mk.owner === gd.id) continue;
-    if (mk.kind === 'capital' && (w.t < THRONE_OPENS - 6 * HOUR || gd.rank > 3)) continue;
+    if (w.t < mk.opens - 3 * HOUR || (mk.kind === 'capital' && gd.rank > 3)) continue;
     if (mk.owner >= 0 && treaty(w, gd.id, mk.owner)?.k !== 'war') continue;
+    const open = mk.kind === 'pass' ? (regs >> mk.links[0] & 1) || (regs >> mk.links[1] & 1) : regs >> mk.region & 1;
+    if (!open) continue;
     const gar = troopPower(garrisonOf(w, mk)) * (1 + mk.level * 0.04);
     if (gar > reach * 1.6) continue;
+    let v;
+    if (mk.kind === 'capital') v = 40;
+    else if (mk.kind === 'site') v = SITE_VALUE[mk.site] - (blessed.has(mk.blessing) ? 5 : 0);
+    else {
+      const beyond = !(regs >> mk.links[0] & 1) ? mk.links[0] : !(regs >> mk.links[1] & 1) ? mk.links[1] : -1;
+      v = 2;
+      if (beyond >= 0) { v = 3 + mk.tier * 2; for (const o of w.marks) if (o.region === beyond && (o.kind === 'site' || (o.kind === 'capital' && gd.rank <= 3)) && o.owner !== gd.id) v += o.kind === 'capital' ? 14 : 1; }
+    }
     const d = dist(gd.home.x, gd.home.y, mk.x, mk.y);
-    const s = (mk.kind === 'capital' ? 40 : 10) - d / 4 - gar / Math.max(1, reach) * 5;
+    const s = v - d / 12 - gar / Math.max(1, reach) * 5;
     if (s > bs) { bs = s; best = mk; }
   }
   const prevStance = gd.policy.stance;
@@ -643,7 +661,7 @@ function aiRallyPlanning(w, gd) {
     const garPow = troopPower(rep.troops) * (1 + mk.level * 0.045) + 60 * Math.pow(mk.level, 1.3);
     // expected help: about a quarter of the nearby members' armies
     let help = 0;
-    for (const id of gd.members) { const mg = w.govs[id]; if (id !== g.id && dist(mg.x, mg.y, g.x, g.y) < 30) help += troopPower(mg.troops) * 0.25 * mg.t.loyal; }
+    for (const id of gd.members) { const mg = w.govs[id]; if (id !== g.id && dist(mg.x, mg.y, g.x, g.y) < 50 && canReach(w, mg, idx(g.x, g.y))) help += troopPower(mg.troops) * 0.25 * mg.t.loyal; }
     const expected = troopPower(army.troops) + help;
     if (expected < garPow * lerp(1.6, 1.1, g.t.risk)) continue;
     const r = startRally(w, g, { to: idx(mk.x, mk.y), troops: army.troops, c1: army.c1, c2: army.c2, wait: 45 });
@@ -727,7 +745,7 @@ function recruit(w, gd) {
   if (gd.members.length >= GUILD_MAX - 1) return;
   const leader = w.govs[gd.leader];
   if (leader && leader.human) return;
-  const cands = govsNear(w, gd.home.x, gd.home.y, 40).map(id => w.govs[id]).filter(g => g.guild < 0 && !g.human && g.arch !== 'mercenary');
+  const cands = govsNear(w, gd.home.x, gd.home.y, 70).map(id => w.govs[id]).filter(g => g.guild < 0 && !g.human && g.arch !== 'mercenary');
   cands.sort((a, b) => b.power - a.power);
   for (const g of cands.slice(0, 3)) {
     if (gd.members.length >= GUILD_MAX) break;
@@ -735,7 +753,7 @@ function recruit(w, gd) {
   }
   // the player can be invited too, if they are independent and strong enough
   const P = w.govs[PLAYER];
-  if (P.guild < 0 && !gd.invited && dist(P.x, P.y, gd.home.x, gd.home.y) < 45 && P.power > medianPower(w, gd) * 0.3 && rnd(w) < 0.25) {
+  if (P.guild < 0 && !gd.invited && dist(P.x, P.y, gd.home.x, gd.home.y) < 80 && P.power > medianPower(w, gd) * 0.3 && rnd(w) < 0.25) {
     gd.invited = true;
     P.invites = (P.invites || []).filter(x => x !== gd.id).concat([gd.id]);
     note(w, 'guild', `${gd.name} [${gd.tag}] invited you to join them.`, 3, { guild: gd.id });
@@ -803,7 +821,7 @@ function refoundGuild(w, gd, founderId) {
   const oldName = gd.name;
   gd.name = nm[0]; gd.tag = nm[1]; gd.collapsed = false; gd.founded = w.t; gd.cred = 60; gd.treasury = { food: 0, wood: 0, stone: 0, iron: 0, gold: 0 };
   gd.tech = { granary: 0, banners: 0, bulwark: 0 }; gd.warScore = {}; gd.proposals = []; gd.applicants = []; gd.invited = false;
-  gd.home = { x: founder.x, y: founder.y, region: regionOf(founder.x, founder.y) };
+  gd.home = { x: founder.x, y: founder.y, region: regionAt(w, founder.x, founder.y) };
   gd.rel = gd.rel.map(() => 0);
   for (const o of w.guilds) if (o.id !== gd.id) o.rel[gd.id] = 0;
   gd.members = [];

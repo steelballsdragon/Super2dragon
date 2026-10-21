@@ -25,12 +25,12 @@ function guildCard(gd, f) {
     <button type="button" class="aoc-gcard-main" data-guild="${gd.id}">${U.banner(gd, 40)}<span><b>${esc(gd.name)}</b> <span class="aoc-tag">[${esc(gd.tag)}]</span>
       <span class="aoc-muted aoc-small">${gd.collapsed ? `Fallen. The slot is refounded ${gd.refoundAt > f.t ? `in ${dur(gd.refoundAt - f.t)}` : 'soon'}.` : `#${gd.rank} · ${fmt(gd.power)} power · ${gd.members}/${A.GUILD_MAX} · led by ${esc(gd.leaderName)}`}</span>
       ${gd.collapsed ? '' : `<span class="aoc-small">${esc(STANCE[gd.stance] || gd.stance)}: ${esc(gd.why)}${tr.length ? ` <span class="aoc-bad">War: ${tr.map(esc).join(', ')}</span>` : ''}</span>
-      <span class="aoc-muted aoc-small">${gd.forts} fortress${gd.forts === 1 ? '' : 'es'}${gd.capital ? ' · holds the Throne' : ''} · word kept ${gd.cred}/100 · ${distTo(gd)} tiles from you</span>`}</span></button>${act}</div>`;
+      <span class="aoc-muted aoc-small">${esc(A.REGIONS[gd.region]?.name || '')} · ${gd.sites} holy site${gd.sites === 1 ? '' : 's'} · ${gd.passes} pass${gd.passes === 1 ? '' : 'es'}${gd.capital ? ' · holds the Throne' : ''} · word kept ${gd.cred}/100 · ${distTo(gd)} tiles from you</span>`}</span></button>${act}</div>`;
 }
 function independent(f) {
   const P = f.player;
   const inv = f.guilds.filter(g => g.invitedMe && !g.collapsed);
-  return `<div class="aoc-card"><h2 class="aoc-h3">You are independent</h2><p class="aoc-p">A guild shares vision, scout reports and territory bonuses, protects its members, and fights for fortresses and the Throne. Leaders judge applications by your power against their members' (you have ${fmt(P.power)}), by grudges, and by how full they are.</p></div>
+  return `<div class="aoc-card"><h2 class="aoc-h3">You are independent</h2><p class="aoc-p">A guild shares vision, scout reports and territory bonuses, protects its members, opens passes through the mountains for its members, and fights for holy sites and the Throne. Leaders judge applications by your power against their members' (you have ${fmt(P.power)}), by grudges, and by how full they are.</p></div>
     ${inv.length ? `<h3 class="aoc-h4">Invitations</h3>${inv.map(g => guildCard(g, f)).join('')}` : ''}
     <h3 class="aoc-h4">The ten guilds of ${esc(A.SERVER.name)}</h3>${f.guilds.slice().sort((a, b) => (a.collapsed - b.collapsed) || a.rank - b.rank).map(g => guildCard(g, f)).join('')}`;
 }
@@ -41,7 +41,7 @@ function member(f) {
   const leader = gd.leader === P.id;
   const officer = leader || gd.officers.includes(P.id);
   const rallies = f.rallies.map(r => `<div class="aoc-row"><div class="aoc-row-main"><b>${esc(r.leaderName)}'s rally on ${esc(r.targetName)}</b><div class="aoc-muted aoc-small">Leaves in ${dur(r.launchAt - f.t)} (${realDur(r.launchAt - f.t)} at 1x) · ${full(r.troops)} of ${full(r.cap)} troops</div></div>
-    <div class="aoc-row-act">${r.leader === P.id ? '<span class="aoc-pill">Yours</span>' : r.joined ? '<span class="aoc-pill is-good">Joined</span>' : `<button type="button" class="aoc-btn red small" data-join="${r.id}">Join</button>`}</div></div>`).join('') || '<p class="aoc-muted">No rally is gathering. Leaders and officers call them on fortresses, the Capital and enemy cities.</p>';
+    <div class="aoc-row-act">${r.leader === P.id ? '<span class="aoc-pill">Yours</span>' : r.joined ? '<span class="aoc-pill is-good">Joined</span>' : `<button type="button" class="aoc-btn red small" data-join="${r.id}">Join</button>`}</div></div>`).join('') || '<p class="aoc-muted">No rally is gathering. Leaders and officers call them on passes, holy sites, the Capital and enemy cities.</p>';
   const diplo = f.guilds.filter(o => o.id !== gd.id && !o.collapsed).map(o => {
     const t = gd.treaties[o.id];
     const rel = gd.rel ? gd.rel[o.id] : null;
@@ -65,7 +65,7 @@ function member(f) {
   const tech = D ? Object.entries(D.techDefs).map(([k, d]) => `<div class="aoc-row"><div class="aoc-row-main"><b>${esc(d.name)}</b> <span class="aoc-lv">${gd.tech[k] || 0}/5</span><div class="aoc-muted aoc-small">${esc(d.desc)}</div></div></div>`).join('') : '';
   const hist = D ? D.history.slice(0, 12).map(e => `<li><span class="aoc-muted">${A.clock(e.t)}</span> ${esc(e.txt)}</li>`).join('') : '';
   return `<div class="aoc-card aoc-ghead" style="--gc:${gd.color}">${U.banner(gd, 54)}<div><h2 class="aoc-h3">${esc(gd.name)} <span class="aoc-tag">[${esc(gd.tag)}]</span></h2>
-      <div class="aoc-muted">Rank ${gd.rank} · ${fmt(gd.power)} power · ${gd.members}/${A.GUILD_MAX} members · ${gd.forts} fortresses${gd.capital ? ' · holds the Throne' : ''}</div>
+      <div class="aoc-muted">Rank ${gd.rank} · ${fmt(gd.power)} power · ${gd.members}/${A.GUILD_MAX} members · ${gd.sites} holy sites · ${gd.passes} passes${gd.capital ? ' · holds the Throne' : ''}</div>
       <div class="aoc-muted">Leader ${esc(gd.leaderName)} · you are ${esc(P.role)} · succession: ${esc({ strongest: 'the strongest officer', election: 'elections every 5 days', heir: 'a named heir' }[gd.rule])}</div></div></div>
     <div class="aoc-card"><span class="aoc-kicker">${esc(STANCE[gd.stance] || gd.stance)}</span><p class="aoc-p">${esc(gd.why)}</p>
       ${officer ? `<label class="aoc-label">Guild objective<select class="aoc-input" data-objective><option value="-1">None</option>${objOpts}</select></label>` : ''}</div>

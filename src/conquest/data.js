@@ -5,7 +5,7 @@
 const MIN = 1;
 const HOUR = 60;
 const DAY = 1440;
-const MAP_N = 128;
+const MAP_N = 384;
 
 // ================================================================ resources
 const RES = ['food', 'wood', 'stone', 'iron', 'gold'];
@@ -41,10 +41,59 @@ const TERRAIN = [
   { id: 'mountain', name: 'Mountains', cost: Infinity, color: '#4a4440' },
   { id: 'river', name: 'River', cost: Infinity, color: '#2a5675' },
   { id: 'ford', name: 'Ford', cost: 2.5, color: '#4f7f8e' },
-  { id: 'pass', name: 'Mountain pass', cost: 2, color: '#7b6a55' },
+  { id: 'pass', name: 'Mountain trail', cost: 2, color: '#7b6a55' },
   { id: 'snow', name: 'Tundra', cost: 1.4, color: '#8a9298' },
+  // the road through one of the kingdom's passes: open only to the guild that holds the pass and its allies
+  { id: 'gate', name: 'Pass road', cost: 2, color: '#8c7b5f' },
 ];
-const T = { water: 0, plains: 1, forest: 2, hills: 3, mountain: 4, river: 5, ford: 6, pass: 7, snow: 8 };
+const T = { water: 0, plains: 1, forest: 2, hills: 3, mountain: 4, river: 5, ford: 6, pass: 7, snow: 8, gate: 9 };
+
+// ================================================================ the kingdom (laid out like a Rise of Kingdoms kingdom)
+// Zone 1, the outer ring, is six regions where every governor starts. Zone 2 is a ring of three richer regions and
+// Zone 3 the heartland around the Ember Throne. Mountain ranges wall every region; the only ways through are 15
+// passes: level 1 between neighbouring Zone 1 regions, level 2 from Zone 1 into Zone 2 and level 3 into Zone 3.
+// A guild must capture a pass before its members (and its allies) can march through it.
+const ZONES = { r3: 0.17, r2: 0.345 };   // outer radius of Zone 3 and of Zone 2, as a share of MAP_N
+// Zone 1 region k spans the compass from -120 + 60k degrees (k = 0 is the north); Zone 2 region 6 + j from -120 + 120j
+const REGIONS = [
+  { name: 'Frostreach', zone: 1 }, { name: 'Greywatch', zone: 1 }, { name: 'Saltmere', zone: 1 },
+  { name: 'Redmarch', zone: 1 }, { name: 'Duskwood', zone: 1 }, { name: 'Cinderhold', zone: 1 },
+  { name: 'Emberfall', zone: 2 }, { name: 'Ironvale', zone: 2 }, { name: 'Ashmoor', zone: 2 },
+  { name: 'The Throne Lands', zone: 3 },
+];
+// when each kind of landmark can first be attacked (game minutes; the server opens on Day 1 at 06:00)
+const PASS_LEVELS = {
+  1: { opens: 1 * DAY, garrison: 8 },
+  2: { opens: 2 * DAY, garrison: 11 },
+  3: { opens: 2 * DAY + 12 * HOUR, garrison: 14 },
+};
+// holy sites: the guild holding one gives every member its blessing; two sites with the same blessing do not add up
+const SITES = {
+  sanctum: { name: 'Sanctum', level: 4, opens: 0, blessings: ['plenty', 'stone', 'haste', 'masons', 'scholars', 'mercy'] },
+  altar: { name: 'Altar', level: 7, opens: 1 * DAY, blessings: ['war', 'ward', 'vigor'] },
+  shrine: { name: 'Shrine', level: 10, opens: 2 * DAY, blessings: ['conquest', 'bulwark', 'life', 'gold', 'wind', 'harvest'] },
+  temple: { name: 'Shrine', level: 14, opens: 3 * DAY, blessings: ['dominion', 'eternal', 'abundance'] },
+};
+const BLESSINGS = {
+  plenty: { name: 'Blessing of Plenty', text: '+5% Food and Wood production', mods: { food: 0.05, wood: 0.05 } },
+  stone: { name: 'Blessing of Stone', text: '+5% Stone and Iron production', mods: { stone: 0.05, iron: 0.05 } },
+  haste: { name: 'Blessing of Haste', text: '+5% gathering speed', mods: { gather: 0.05 } },
+  masons: { name: 'Masons\' Blessing', text: '+5% building speed', mods: { buildSpeed: 0.05 } },
+  scholars: { name: 'Scholars\' Blessing', text: '+5% research speed', mods: { research: 0.05 } },
+  mercy: { name: 'Blessing of Mercy', text: '+8% healing speed', mods: { heal: 0.08 } },
+  war: { name: 'Blessing of War', text: '+3% troop attack', mods: { atk: 0.03 } },
+  ward: { name: 'Blessing of the Ward', text: '+3% troop defense', mods: { def: 0.03 } },
+  vigor: { name: 'Blessing of Vigor', text: '+3% troop health', mods: { hp: 0.03 } },
+  conquest: { name: 'Blessing of Conquest', text: '+5% troop attack', mods: { atk: 0.05 } },
+  bulwark: { name: 'Blessing of the Bulwark', text: '+5% troop defense', mods: { def: 0.05 } },
+  life: { name: 'Blessing of Life', text: '+5% troop health', mods: { hp: 0.05 } },
+  gold: { name: 'Blessing of Gold', text: '+10% Gold production', mods: { gold: 0.1 } },
+  wind: { name: 'Blessing of the Wind', text: '+8% march speed', mods: { speed: 0.08 } },
+  harvest: { name: 'Blessing of the Harvest', text: '+8% Food, Wood and Stone production', mods: { food: 0.08, wood: 0.08, stone: 0.08 } },
+  dominion: { name: 'Blessing of Dominion', text: '+6% troop attack and defense', mods: { atk: 0.06, def: 0.06 } },
+  eternal: { name: 'Eternal Blessing', text: '+10% healing speed and +5% troop health', mods: { heal: 0.1, hp: 0.05 } },
+  abundance: { name: 'Blessing of Abundance', text: '+10% production of every resource', mods: { food: 0.1, wood: 0.1, stone: 0.1, iron: 0.1, gold: 0.1 } },
+};
 
 // ================================================================ buildings
 // cost(L) = base * GROWTH^(L-1); time(L) = minutes * TGROWTH^(L-1) game minutes. needHall: Town Hall level that
@@ -333,7 +382,7 @@ const ARCH_MIX = { economist: 55, casual: 90, raider: 50, turtle: 55, competitor
 // ================================================================ server identity (one server in this version)
 const SERVER = {
   id: 'ashen-crown', name: 'Ashen Crown', motto: 'Established powers and central political blocs.',
-  regions: ['Cinderhold', 'Greywatch', 'Emberfall', 'Ironvale', 'The Throne Lands', 'Saltmere', 'Frostreach', 'Duskwood', 'Redmarch'],
+  regions: REGIONS.map(r => r.name),
   guilds: [
     { name: 'Crown of Cinders', tag: 'CRN', color: '#d4573b', emblem: 'crown' },
     { name: 'Iron Covenant', tag: 'ICV', color: '#8796a6', emblem: 'anvil' },
