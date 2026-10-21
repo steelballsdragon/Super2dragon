@@ -396,8 +396,14 @@ function loadSaved() {
 
 // Cloud copy in the viewer's private claude.ai storage (data/users/<id>/save). Off outside the Claude app,
 // when signed out, or for viewers the artifact does not let write; the game then saves on this device only.
-const Cloud = { state: 'idle', note: '', ref: null, last: '', queued: null, busy: false, nextAt: 0, ready: null, loaded: null, hold: false };
+const Cloud = { state: 'idle', note: '', ref: null, last: '', writing: null, queued: null, busy: false, nextAt: 0, ready: null, loaded: null, hold: false, warned: false };
 function cloudOff(note) { Cloud.state = 'off'; Cloud.note = note; Cloud.ref = null; }
+function cloudConflict() {
+  Cloud.hold = true;
+  Cloud.state = 'conflict';
+  Cloud.note = 'This city was saved on another device. Reopen the game to continue with the newest save.';
+  if (booted && !Cloud.warned) { Cloud.warned = true; Game.toast('Your city was saved on another device. Reopen the game to load the newest save.', 'bad'); }
+}
 function cloudInit() {
   if (Cloud.ready) return Cloud.ready;
   Cloud.state = 'checking';
@@ -418,6 +424,14 @@ function cloudInit() {
       Cloud.state = 'on';
       Cloud.note = 'Saved to your Claude account';
       Cloud.loaded = st;
+      // another device saving this city means this copy is now older: stop writing so it never overwrites that
+      try {
+        ref.onSnapshot(s => {
+          const b = s.exists ? s.data() : null;
+          if (!b || typeof b.json !== 'string' || b.json === Cloud.last || b.json === Cloud.writing || Cloud.hold) return;
+          cloudConflict();
+        }, () => {});
+      } catch (e) { /* no live updates: conflicts are only caught on the next open */ }
       return st;
     } catch (e) {
       cloudOff('Saved on this device. The cloud is not answering right now.');
@@ -438,7 +452,13 @@ async function cloudFlush() {
   if (!json || !Cloud.ref || Cloud.busy) return;
   Cloud.busy = true;
   Cloud.queued = null;
+  Cloud.writing = json;
   try {
+    // write only over the copy this session last saw; anything else was saved by another device
+    const cur = await Cloud.ref.get();
+    const b = cur.exists ? cur.data() : null;
+    if (b && typeof b.json === 'string' && b.json !== Cloud.last) { cloudConflict(); return; }
+    if (Cloud.hold) return;
     await Cloud.ref.set({ v: 2, savedAt: Date.now(), json });
     Cloud.last = json;
     Cloud.nextAt = Date.now() + CLOUD_EVERY_MS;
@@ -453,6 +473,7 @@ async function cloudFlush() {
     }
   } finally {
     Cloud.busy = false;
+    Cloud.writing = null;
   }
 }
 Game.cloud = {

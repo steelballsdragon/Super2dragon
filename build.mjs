@@ -5,7 +5,7 @@
 //   node build.mjs --out DIR               -> DIR/index.html + DIR/dist/index.html
 //   node build.mjs --only city,shop        -> core plus only the listed modules
 //
-// CSS order: core, then modules. JS order: core, then city, military, shop, progress, then the boot snippet.
+// CSS order: core, then modules. JS order: core, then city, military, shop, progress, online, then the boot snippet.
 // Every JS source is wrapped in its own function scope, so top-level names stay private to that file.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
@@ -14,8 +14,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const SRC = join(ROOT, 'src');
-const MODULES = ['city', 'military', 'shop', 'progress'];
-const ALIASES = { mil: 'military', prog: 'progress', heroes: 'military' };
+const MODULES = ['city', 'military', 'shop', 'progress', 'online'];
+const ALIASES = { mil: 'military', prog: 'progress', heroes: 'military', net: 'online', world: 'online' };
 
 // ---------- arguments
 function parseArgs(argv) {
