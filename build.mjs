@@ -108,7 +108,10 @@ const css = cssParts
   .join('\n');
 
 const wrapJs = p => `/* ===== ${p.name} ===== */\n;(function () {\n'use strict';\ntry {\n${safeJs(p.text.trim())}\n} catch (e) { console.error('[build] ${p.name} failed to load', e); }\n})();\n`;
-const js = jsParts.map(wrapJs).join('\n') + `\n/* ===== boot ===== */\n${BOOT}\n`;
+// images the page needs are inlined (the Artifact frame cannot load files): public/logo.webp becomes LF_ASSETS.logo
+const logoPath = join(ROOT, 'public', 'logo.webp');
+const ASSETS = existsSync(logoPath) ? `window.LF_ASSETS = { logo: 'data:image/webp;base64,${readFileSync(logoPath).toString('base64')}' };\n` : 'window.LF_ASSETS = {};\n';
+const js = `/* ===== assets ===== */\n${ASSETS}\n` + jsParts.map(wrapJs).join('\n') + `\n/* ===== boot ===== */\n${BOOT}\n`;
 
 const filled = template
   .replace(CSS_MARK, () => css)
@@ -158,6 +161,7 @@ const distDir = dirname(distPath);
 const version = createHash('sha256').update(standalone).digest('hex').slice(0, 12);
 const icons = existsSync(join(ROOT, 'public', 'icons')) ? readdirSync(join(ROOT, 'public', 'icons')).filter(f => f.endsWith('.png')) : [];
 mkdirSync(join(distDir, 'icons'), { recursive: true });
+writeFileSync(join(distDir, '.nojekyll'), '');   // GitHub Pages serves the files as they are
 for (const f of icons) copyFileSync(join(ROOT, 'public', 'icons', f), join(distDir, 'icons', f));
 writeFileSync(join(distDir, 'manifest.webmanifest'), JSON.stringify({
   name: 'Last Furnace',

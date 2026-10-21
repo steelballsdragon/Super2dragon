@@ -1617,8 +1617,10 @@ Game.start = (d = {}) => {
     <div class="start-snow" aria-hidden="true"></div>
     <div class="start-inner">
       <div class="start-brand">
-        <div class="start-mark" aria-hidden="true">${Game.icon('flame', 46)}</div>
-        <h1 class="start-title" id="start-title">Last <span>Furnace</span></h1>
+        ${window.LF_ASSETS?.logo
+          ? `<img class="start-logo" src="${window.LF_ASSETS.logo}" alt="" width="760" height="639">`
+          : `<div class="start-mark" aria-hidden="true">${Game.icon('flame', 46)}</div>`}
+        <h1 class="start-title${window.LF_ASSETS?.logo ? ' sr-only' : ''}" id="start-title">Last <span>Furnace</span></h1>
         <p class="start-tag">Keep the great furnace burning and build the last city in the frozen north.</p>
       </div>
       <section class="start-card" aria-live="polite">

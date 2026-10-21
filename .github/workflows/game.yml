@@ -1,5 +1,5 @@
-# Builds Last Furnace, runs every test suite, and publishes dist/ to GitHub Pages from main.
-# One-time setup: repository Settings > Pages > Build and deployment > Source: GitHub Actions.
+# Builds Last Furnace, runs every test suite, and publishes dist/ to the gh-pages branch (GitHub Pages)
+# only when all tests pass. Public link: https://steelballsdragon.github.io/Super2dragon/
 name: Test and publish the game
 
 on:
@@ -9,18 +9,16 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: game-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
+  test-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,18 +30,11 @@ jobs:
       - name: Check the committed build matches the sources
         run: git diff --exit-code -- index.html dist/
       - run: node tests/all.mjs
-      - uses: actions/upload-pages-artifact@v3
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        with:
-          path: dist
-
-  publish:
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
+      - name: Publish dist/ to gh-pages
+        if: github.event_name == 'push'
+        run: |
+          cd dist
+          git init -q -b gh-pages
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Publish ${GITHUB_SHA::7} from ${GITHUB_REF_NAME}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages

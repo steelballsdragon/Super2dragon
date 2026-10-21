@@ -1108,3 +1108,23 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 .start-install { display: grid; gap: 6px; }
 .start-install .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .start-install-note { color: var(--text-2); font-size: 13px; text-align: center; }
+
+/* logo artwork: drawn on near-black, so the start screen goes darker behind it and the image edges fade out */
+.start:has(.start-logo) {
+  background:
+    radial-gradient(70% 34% at 50% 100%, var(--ember-glow), transparent 70%),
+    radial-gradient(60% 40% at 50% 26%, rgba(120, 44, 10, 0.18), transparent 70%),
+    #030303;
+}
+.start-logo {
+  display: block;
+  width: min(380px, 92vw);
+  max-width: 100%;
+  height: auto;
+  margin-bottom: -6px;
+  -webkit-mask-image: radial-gradient(ellipse 62% 58% at 50% 50%, #000 82%, transparent 100%);
+  mask-image: radial-gradient(ellipse 62% 58% at 50% 50%, #000 82%, transparent 100%);
+}
+@media (orientation: landscape) and (max-height: 640px) {
+  .start-logo { width: min(400px, 40vw); max-height: 62vh; object-fit: contain; }
+}
