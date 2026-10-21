@@ -1034,6 +1034,8 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 }
 .start-title span { color: var(--gold); display: block; }
 .start-tag { max-width: 32ch; color: var(--text-2); font-size: 15px; }
+.start-brand { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.start-dev { padding: 4px 10px; border: 1px solid var(--gold-3); border-radius: 999px; color: var(--gold); font-size: 13px; }
 .start-card {
   display: grid;
   gap: 10px;
@@ -1062,46 +1064,6 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 .start-confirm { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--red-2); border-radius: var(--r); background: var(--panel-deep); }
 .start-confirm-t { color: var(--text-2); font-size: 14px; }
 .start-confirm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.start-online {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r);
-  background: var(--chip-bg);
-  cursor: pointer;
-}
-.start-online input {
-  appearance: none;
-  -webkit-appearance: none;
-  flex: none;
-  position: relative;
-  width: 46px;
-  height: 26px;
-  margin: 0;
-  border-radius: 13px;
-  background: var(--panel-3);
-  border: 1px solid var(--line);
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.start-online input::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--text);
-  transition: transform 0.15s ease;
-}
-.start-online input:checked { background: var(--green-2); }
-.start-online input:checked::after { transform: translateX(20px); }
-.start-online-txt { display: grid; gap: 2px; min-width: 0; }
-.start-online-txt b { font: 16px/1.1 var(--font-display); letter-spacing: 0.02em; }
-.start-online-note { color: var(--muted); font-size: 13px; }
 .start-foot { text-align: center; color: var(--dim); font-size: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .start-snow, .start-dot.is-wait { animation: none; }
@@ -1113,7 +1075,6 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
   .start-title { font-size: clamp(38px, 11vh, 60px); }
   .start-mark { width: 60px; height: 60px; }
   .start-go { min-height: 46px; font-size: 18px; }
-  .start-online { padding: 9px 12px; }
 }
 .start-install { display: grid; gap: 6px; }
 .start-install .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
@@ -3601,105 +3562,70 @@ html.lf-standalone { background: var(--tab-bot); }
   .prog-banner-ico, .prog-banner-num { display: none; }
 }
 
-/* ===== modules/online.css ===== */
-/* World tab: online status, chiefs here now, world chat and the leaderboard */
-.net { display: grid; gap: 12px; }
-.net-head { display: grid; gap: 8px; }
-.net-head-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.net-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px 3px 8px;
-  border-radius: 999px;
-  font: 14px/1.2 var(--font-display);
-  letter-spacing: 0.03em;
-  background: var(--panel-3);
-  color: var(--text);
-}
-.net-pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
-.net-pill.is-on::before { background: var(--good); box-shadow: 0 0 6px var(--good); }
-.net-pill.is-watch::before { background: var(--ice); }
-.net-pill.is-wait::before { background: var(--warn); }
-.net-pill.is-off::before { background: var(--dim); }
-.net-online { color: var(--text-2); font-size: 14px; }
-.net-note { color: var(--muted); font-size: 14px; max-width: 60ch; }
-.net-actions { display: flex; gap: 8px; }
-.net-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
-.net-chip {
-  flex: none;
+/* ===== modules/dev.css ===== */
+/* Developer panel */
+.dev { display: grid; gap: 8px; }
+.dev-note { margin: 0; color: var(--muted); font-size: 13px; }
+.dev .section-title { margin-top: 8px; }
+.dev-switch {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px 6px 6px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r);
-  background: var(--chip-bg);
-}
-.net-chip.is-me { border-color: var(--gold-2); }
-.net-chip-t { display: grid; gap: 1px; min-width: 0; }
-.net-chip-t b { font: 14px/1.1 var(--font-display); letter-spacing: 0.02em; white-space: nowrap; }
-.net-chip-t small { color: var(--muted); font-size: 12px; white-space: nowrap; }
-.net-av { flex: none; display: block; border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--line); background: var(--panel-3); line-height: 0; }
-.net-av svg { display: block; }
-.net-tabs > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-.net-chat { display: grid; gap: 8px; }
-.net-msgs {
-  list-style: none;
-  margin: 0;
-  padding: 8px;
-  display: grid;
-  gap: 8px;
-  align-content: start;
-  height: min(52vh, 460px);
-  overflow-y: auto;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r-lg);
-  background: var(--panel-deep);
-  scrollbar-width: thin;
-}
-.net-msg { display: flex; gap: 8px; align-items: flex-start; }
-.net-msg-body { min-width: 0; padding: 6px 10px 8px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line-soft); }
-.net-msg.is-me .net-msg-body { background: var(--card-2); border-color: var(--gold-3); }
-.net-msg-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-.net-msg-head b { font: 14px/1.2 var(--font-display); letter-spacing: 0.02em; }
-.net-lv, .net-when { color: var(--muted); font-size: 12px; }
-.net-msg-body p { margin-top: 2px; color: var(--text); font-size: 15px; overflow-wrap: anywhere; }
-.net-empty { padding: 18px 8px; color: var(--muted); text-align: center; list-style: none; }
-.net-send { display: flex; gap: 8px; }
-.net-send input {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 42px;
-  padding: 0 12px;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--chip-bg);
+  border-radius: 10px;
+  background: var(--panel-deep);
   color: var(--text);
-  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
 }
-.net-send input::placeholder { color: var(--dim); }
-.net-send input:disabled { opacity: 0.6; }
-.net-board { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.net-row {
+.dev-switch-txt { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.dev-switch-txt span, .dev-act span { color: var(--muted); font-size: 12px; }
+.dev-knob {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--panel-3);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  transition: background 0.15s;
+}
+.dev-knob::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition: transform 0.15s;
+}
+.dev-switch[aria-pressed="true"] { border-color: var(--green); }
+.dev-switch[aria-pressed="true"] .dev-knob { background: var(--green); }
+.dev-switch[aria-pressed="true"] .dev-knob::after { transform: translateX(18px); background: #fff; }
+.dev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.dev-act {
   display: grid;
-  grid-template-columns: 30px auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r);
-  background: var(--panel);
+  gap: 3px;
+  align-content: start;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel-deep));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
 }
-.net-row.is-me { border-color: var(--gold-2); background: var(--card-2); }
-.net-rank-n { font: 18px/1 var(--font-display); color: var(--muted); text-align: center; }
-.net-row.is-top1 .net-rank-n { color: var(--gold); }
-.net-row.is-top2 .net-rank-n { color: var(--text-2); }
-.net-row.is-top3 .net-rank-n { color: var(--ember); }
-.net-row-t { display: grid; gap: 1px; min-width: 0; }
-.net-row-t b { font: 15px/1.15 var(--font-display); letter-spacing: 0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.net-row-t small { color: var(--muted); font-size: 12px; }
-.net-pow { display: inline-flex; align-items: center; gap: 4px; font: 15px/1 var(--font-display); }
+.dev-act:active, .dev-switch:active { transform: translateY(1px); }
+.dev-skips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dev-now { margin: 4px 0 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .dev-knob, .dev-knob::after { transition: none; } }
 
 </style>
 <div class="app" id="app">
@@ -5313,12 +5239,20 @@ Game.boot = (d = {}) => {
 // Shown on every fresh open. It waits for the cloud save (so an older copy on this device never overwrites a
 // newer one from another device), then boots the newest save, or a new game. A live update of an open game
 // (hot reload with a state) skips it and keeps playing.
-const ONLINE_KEY = 'last-furnace-online';
 // installable web-app build (GitHub Pages): the browser's install offer is kept for the start screen's button
 let installOffer = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installOffer = e; Game.emit('install:ready', {}); });
 const standaloneApp = () => !!(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone);
-Game.onlineWanted = () => Game.storage.get(ONLINE_KEY) !== '0';
+// developer mode (this device): 7 taps on the start screen logo turn it on or off; the dev module adds the panel
+const DEV_KEY = 'last-furnace-dev';
+let devMem = null;
+Game.devMode = () => devMem ?? Game.storage.get(DEV_KEY) === '1';
+Game.setDevMode = v => {
+  devMem = !!v;
+  Game.storage.set(DEV_KEY, devMem ? '1' : '0');
+  Game.emit('dev:changed', { on: devMem });
+  if (booted) Game.toast(devMem ? 'Developer mode on' : 'Developer mode off', 'info');
+};
 function ago(ms) {
   const s = Math.max(0, (Date.now() - ms) / 1000);
   if (s < 90) return 'just now';
@@ -5341,6 +5275,7 @@ Game.start = (d = {}) => {
           : `<div class="start-mark" aria-hidden="true">${Game.icon('flame', 46)}</div>`}
         <h1 class="start-title${window.LF_ASSETS?.logo ? ' sr-only' : ''}" id="start-title">Last <span>Furnace</span></h1>
         <p class="start-tag">Keep the great furnace burning and build the last city in the frozen north.</p>
+        <p class="start-dev" hidden></p>
       </div>
       <section class="start-card" aria-live="polite">
         <div class="start-save"></div>
@@ -5362,20 +5297,12 @@ Game.start = (d = {}) => {
         <button type="button" class="btn blue wide" id="start-install">${Game.icon('arrow_down', 18)}<span>Install the game</span></button>
         <p class="start-install-note"></p>
       </div>
-      <label class="start-online" for="start-online">
-        <input type="checkbox" id="start-online">
-        <span class="start-online-txt"><b>Play online</b><small class="start-online-note">Leaderboard, world chat and chiefs online</small></span>
-      </label>
       <p class="start-foot">Test store: purchases are free in this version.</p>
     </div>
   </div>`);
   document.body.appendChild(wrap);
   const $ = s => wrap.querySelector(s);
   const go = $('#start-continue'), neu = $('#start-new'), skip = $('#start-skip'), conf = $('.start-confirm');
-  const onl = $('#start-online');
-  onl.checked = Game.onlineWanted();
-  onl.addEventListener('change', () => { Game.storage.set(ONLINE_KEY, onl.checked ? '1' : '0'); Game.emit('online:pref', { on: onl.checked }); });
-  try { Game.net?.check?.().then(r => { if (r?.note) setText($('.start-online-note'), r.note); }).catch(() => {}); } catch (e) { /* online module absent */ }
   // install: the browser's own offer where there is one (Android, desktop Chrome), instructions on iPhone and iPad
   const inst = $('.start-install'), instBtn = $('#start-install'), instNote = $('.start-install-note');
   const showInstall = () => {
@@ -5391,6 +5318,25 @@ Game.start = (d = {}) => {
     installOffer = null;
     try { await offer.prompt(); const r = await offer.userChoice; if (r?.outcome === 'accepted') inst.hidden = true; } catch (e) { /* the browser declined to show it */ }
     if (!installOffer) instBtn.hidden = true;
+  });
+
+  // developer mode: 7 quick taps on the logo
+  const devNote = $('.start-dev');
+  const showDev = said => {
+    const on = Game.devMode();
+    devNote.hidden = !on && !said;
+    setText(devNote, on ? 'Developer mode is on. Use the Dev button in your city.' : 'Developer mode is off.');
+  };
+  showDev(false);
+  let taps = 0, tapAt = 0;
+  $('.start-brand').addEventListener('click', () => {
+    const t = Date.now();
+    taps = t - tapAt < 1500 ? taps + 1 : 1;
+    tapAt = t;
+    if (taps < 7) return;
+    taps = 0;
+    Game.setDevMode(!Game.devMode());
+    showDev(true);
   });
 
   function summary(st) {
@@ -8468,6 +8414,25 @@ Game.city = {
   isUpgrading: id => !!buildTimer(id),
   canUpgrade: id => canUpgradeNow(id),
   upgrade: id => startUpgrade(id),
+  // developer panel: sets a level directly, without cost, timer or toast. Others cap at the Furnace level.
+  setLevel: (id, L) => {
+    if (!Game.S || !B[id]) return false;
+    const cap = id === 'furnace' ? FMAX : lvl('furnace');
+    if (id !== 'furnace' && cap < (B[id].unlock ?? 1)) return false;
+    L = clamp(Math.floor(Number(L) || 0), 0, cap);
+    const was = lvl(id);
+    if (L <= was) return false;
+    if (buildTimer(id)) Game.timers.cancel(timerId(id));
+    const c = C();
+    c.levels[id] = L;
+    if (PRODUCERS[id] && was === 0) {
+      const n = Math.min(slots(L), idle());
+      if (n > 0) c.workers[id] = (c.workers[id] || 0) + n;
+    }
+    Game.emit('building:upgraded', { id, level: L });
+    View.requestDraw();
+    return true;
+  },
   _snowCount: () => View.v?.snow?.length ?? 0,
   upgradeCost: (id, level) => (B[id] ? upgradeCost(id, level ?? lvl(id) + 1) : null),
   focus: id => View.focus(id),
@@ -10616,6 +10581,39 @@ Game.mil = {
   pityLeft: () => (Game.S?.mil ? pityLeft() : PITY_AT),
   recruit: (n, pay) => (Game.S?.mil ? recruit(n, pay) : null),
   grantHero: (id, opts) => grantHero(id, isObj(opts) ? opts.source : opts),
+  // developer panel: owns every hero at the level cap the Furnace allows and full stars
+  devMaxHeroes: () => {
+    if (!Game.S?.mil) return 0;
+    let n = 0;
+    for (const h of HEROES) {
+      if (!heroRec(h.id)) addHero(h.id, 'dev');
+      const r = heroRec(h.id);
+      if (!r) continue;
+      r.lv = Math.max(r.lv, maxLevel());
+      r.xp = 0;
+      r.stars = MAX_STARS;
+      n++;
+    }
+    updateBadges(true);
+    return n;
+  },
+  // developer panel: marks stages cleared up to `stage`, with each first-clear reward and hero
+  devClearTo: stage => {
+    if (!Game.S?.mil) return 0;
+    const s = mil();
+    const to = clamp(int(stage), 0, MAX_STAGE);
+    let n = 0;
+    while (s.stage < to) {
+      s.stage++;
+      Game.grant(stageRewards(s.stage), { source: 'stage' });
+      const hid = STAGE_HEROES[s.stage];
+      if (hid) grantHero(hid, 'stage');
+      Game.emit('stage:cleared', { stage: s.stage });
+      n++;
+    }
+    updateBadges(true);
+    return n;
+  },
   claimIdle: () => (Game.S?.mil ? claimIdle() : false),
   startTraining: (type, n) => (Game.S?.mil ? startTraining(type, n) : false),
   openHero,
@@ -13444,381 +13442,195 @@ Game.prog = {
 } catch (e) { console.error('[build] modules/progress.js failed to load', e); }
 })();
 
-/* ===== modules/online.js ===== */
+/* ===== modules/dev.js ===== */
 ;(function () {
 'use strict';
 try {
-/* Last Furnace online play: chiefs online now (room presence), a power leaderboard (players/<id>) and world chat
-   (chat collection), on the claude.ai artifact platform's storage. Who can join in is decided by the artifact's
-   sharing: the owner and anyone invited as an Editor write; other signed-in visitors watch. Outside the Claude
-   app (a saved file, another host) the World tab explains that online play is off and the game stays offline.
-   Game.net is the public surface (the start screen reads Game.net.check()). Everything other players send is
-   untrusted text: it is checked, clipped and rendered with textContent only. */
+/* Last Furnace developer panel (owner: dev).
+   Hidden by default: tap the logo on the start screen 7 times to turn developer mode on (Game.devMode()). The
+   City then shows a Dev button with unlimited gems and resources, instant timers, every item, every hero, max
+   buildings and VIP, stage clears, time skips and a blizzard on demand. Uses only the Game API and the public
+   objects of the other modules, each through optional chaining. Public object: Game.dev. */
 
-const NAME_MAX = 24;
-const MSG_MAX = 160;
-const CHAT_SHOW = 60;          // messages shown and subscribed
-const CHAT_KEEP = 200;         // older messages are pruned now and then
-const SEND_GAP_MS = 4000;      // one chat message per 4 s
-const PLAYER_EVERY_MS = 60000; // leaderboard entry refresh, only when something changed
-const PRESENCE_EVERY_MS = 20000;
+const LOTS = 999999999;
+const ITEM_FILL = 999;
+const D = () => Game.S?.dev || null;
+const on = () => !!Game.devMode?.() && !!D();
 
-const N = {
-  state: 'idle',   // idle | connecting | on | watch | off
-  note: '',
-  db: null, room: null, user: null, uid: null,
-  canWrite: false,
-  peers: [], players: [], chat: [],
-  unsub: [],
-  lastPlayerJson: '', lastPlayerAt: 0, playerBusy: false,
-  lastPresence: '', lastPresenceAt: 0,
-  lastSend: 0, sending: false,
-  readAt: 0,
-  sub: 'chat',
-  view: null,
-};
-const READ_KEY = 'last-furnace-chat-read';
-N.readAt = Number(Game.storage.get(READ_KEY)) || 0;
+Game.addIcon('dev', '<path d="M14.6 3.4a5 5 0 0 0-5.9 6.5L3.6 15a2 2 0 0 0 0 2.8l2.6 2.6a2 2 0 0 0 2.8 0l5.1-5.1a5 5 0 0 0 6.5-5.9l-3 3-3-.6-.6-3Z" fill="#b6c3cf" stroke="#46566a" stroke-width="1.2" stroke-linejoin="round"/><circle cx="6.5" cy="17.5" r="1.2" fill="#46566a"/>');
 
-Game.addIcon('globe', '<circle cx="12" cy="12" r="9" fill="#2f7fc4" stroke="#0f3a66" stroke-width="1.2"/><path d="M6 8.5c2 .5 2.5 2.5 4.5 2.5s1.5 2.5 3.5 3-1 3.5.5 5M14 4c-.5 1.5.5 2.5 2 2.8s2.5 1.6 3.4 3.4" fill="none" stroke="#9fe0a8" stroke-width="2" stroke-linecap="round"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" fill="none" stroke="#bfe3ff" stroke-width=".8" opacity=".7"/>');
-Game.addIcon('chat', '<path d="M4 5h16v11H9l-4 3.5V16H4Z" fill="#8fd8ff" stroke="#1d5a8a" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 9.5h8M8 12.5h5" stroke="#1d5a8a" stroke-width="1.6" stroke-linecap="round"/>');
-Game.addIcon('trophy', '<path d="M7 4h10v4a5 5 0 0 1-10 0Z" fill="#ffd862" stroke="#9c5c0e" stroke-width="1.2"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 3M17 6h2.5a2.5 2.5 0 0 1-2.6 3" fill="none" stroke="#9c5c0e" stroke-width="1.2"/><path d="M10.5 13h3l.5 4h-4Z" fill="#f3a72e"/><rect x="8" y="17" width="8" height="3" rx="1" fill="#9c5c0e"/>');
-
-// ---------------------------------------------------------------- helpers
-const esc = s => Game.esc(s);
-const clip = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
-const int = (v, lo, hi) => { const n = Math.floor(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
-const me = () => ({
-  name: clip(Game.S?.meta?.chiefName || 'Chief', NAME_MAX) || 'Chief',
-  av: int(Game.S?.meta?.avatar ?? 0, 0, 5),
-  power: Math.floor(Game.power?.() || 0),
-  furnace: Game.furnaceLevel?.() || 1,
-  stage: int(Game.mil?.highestStage?.() ?? 0, 0, 100000),
-});
-function timeAgo(ts) {
-  const s = Math.max(0, (Date.now() - ts) / 1000);
-  if (s < 60) return 'now';
-  if (s < 3600) return Math.floor(s / 60) + 'm';
-  if (s < 86400) return Math.floor(s / 3600) + 'h';
-  return Math.floor(s / 86400) + 'd';
-}
-const useCap = name => {
-  const use = window.claude?.use;
-  if (typeof use !== 'function') return Promise.resolve(null);
-  try { return Promise.resolve(use.call(window.claude, name)).catch(() => null); } catch (e) { return Promise.resolve(null); }
-};
-
-// ---------------------------------------------------------------- availability (also used by the start screen)
-let checkP = null;
-function check() {
-  if (checkP) return checkP;
-  checkP = (async () => {
-    if (typeof window.claude?.use !== 'function') return { ok: false, write: false, note: 'Online play works when the game is opened in the Claude app.' };
-    const [db, user] = await Promise.all([useCap('db'), useCap('user')]);
-    const uid = user ? await user.id() : null;
-    if (!db || !uid) return { ok: false, write: false, note: 'Sign in to Claude to play online.' };
-    const can = await user.can('data.write');
-    if (can === false) return { ok: true, write: false, note: 'You can watch the leaderboard and chat. Ask the owner to invite you as an Editor to join in.' };
-    return { ok: true, write: true, note: 'Leaderboard, world chat and chiefs online' };
-  })().catch(() => ({ ok: false, write: false, note: 'Online play is not available right now.' }));
-  return checkP;
-}
-
-// ---------------------------------------------------------------- connect / disconnect
-async function connect() {
-  if (N.state === 'connecting' || N.state === 'on' || N.state === 'watch') return;
-  if (!Game.onlineWanted()) { N.state = 'off'; N.note = 'Online play is switched off.'; return; }
-  N.state = 'connecting';
-  N.note = 'Connecting';
-  const info = await check();
-  if (!info.ok) { N.state = 'off'; N.note = info.note; return; }
-  const [db, user, room] = await Promise.all([useCap('db'), useCap('user'), useCap('room')]);
-  if (!Game.onlineWanted()) { N.state = 'off'; N.note = 'Online play is switched off.'; return; }
-  N.db = db; N.user = user; N.room = room;
-  N.uid = await user.id();
-  N.canWrite = info.write;
-  N.state = info.write ? 'on' : 'watch';
-  N.note = info.note;
-  try {
-    N.unsub.push(db.collection('players').orderBy('power', 'desc').limit(50).onSnapshot(
-      snap => { N.players = snap.docs.map(d => cleanPlayer(d.id, d.data())).filter(Boolean); },
-      () => { N.players = []; },
-    ));
-    N.unsub.push(db.collection('chat').orderBy('ts', 'desc').limit(CHAT_SHOW).onSnapshot(
-      snap => { N.chat = snap.docs.map(d => cleanMsg(d.id, d.data())).filter(Boolean).reverse(); chatChanged(); },
-      () => { N.chat = []; },
-    ));
-  } catch (e) { console.warn('[online] subscribe failed', e); }
-  if (room) {
-    try {
-      N.unsub.push(room.onPeers(ch => { N.peers = ch.peers.filter(p => p.kind === 'viewer'); }, () => { N.peers = []; }));
-    } catch (e) { N.room = null; }
-  }
-  pushPresence(true);
-  pushPlayer(true);
-}
-function disconnect(note) {
-  for (const u of N.unsub.splice(0)) { try { u(); } catch (e) { /* already closed */ } }
-  try { N.room?.presence?.({ name: null, power: null, furnace: null, av: null }).catch(() => {}); } catch (e) { /* gone */ }
-  Object.assign(N, { state: 'off', note: note || 'Online play is switched off.', peers: [], players: [], chat: [], db: null, room: null });
-  Game.badge('world', 0);
-}
-
-// ---------------------------------------------------------------- what other players sent (untrusted)
-function cleanPlayer(id, d) {
-  if (!d || typeof d !== 'object') return null;
-  return {
-    id,
-    name: clip(d.name, NAME_MAX) || 'Chief',
-    av: int(d.av, 0, 5),
-    power: int(d.power, 0, 1e12),
-    furnace: int(d.furnace, 1, 30),
-    stage: int(d.stage, 0, 100000),
-    at: int(d.at, 0, 4e12),
-  };
-}
-function cleanMsg(id, d) {
-  if (!d || typeof d !== 'object') return null;
-  const text = clip(d.text, MSG_MAX);
-  if (!text) return null;
-  return { id, by: typeof d.by === 'string' ? d.by : '', name: clip(d.name, NAME_MAX) || 'Chief', av: int(d.av, 0, 5), furnace: int(d.furnace, 1, 30), text, ts: int(d.ts, 0, 4e12) };
-}
-
-// ---------------------------------------------------------------- what this player sends
-async function pushPlayer(force) {
-  if (N.state !== 'on' || !N.db || !N.uid || N.playerBusy) return;
-  const m = me();
-  const body = { name: m.name, av: m.av, power: m.power, furnace: m.furnace, stage: m.stage };
-  const json = JSON.stringify(body);
-  if (json === N.lastPlayerJson) return;
-  if (!force && Date.now() - N.lastPlayerAt < PLAYER_EVERY_MS) return;
-  N.playerBusy = true;
-  try {
-    await N.db.doc('players/' + N.uid).set({ ...body, at: Date.now() });
-    N.lastPlayerJson = json;
-    N.lastPlayerAt = Date.now();
-  } catch (e) {
-    if (e?.code === 'invalid_argument') { N.canWrite = false; N.state = 'watch'; N.note = 'You can watch the leaderboard and chat. Ask the owner to invite you as an Editor to join in.'; }
-    N.lastPlayerAt = Date.now();
-  } finally { N.playerBusy = false; }
-}
-function pushPresence(force) {
-  if (!N.room || (N.state !== 'on' && N.state !== 'watch')) return;
-  const m = me();
-  const p = { name: m.name, av: m.av, power: m.power, furnace: m.furnace };
-  const json = JSON.stringify(p);
-  if (!force && (json === N.lastPresence || Date.now() - N.lastPresenceAt < PRESENCE_EVERY_MS)) return;
-  N.lastPresence = json;
-  N.lastPresenceAt = Date.now();
-  try { N.room.presence(p).catch(() => {}); } catch (e) { /* room gone */ }
-}
-async function sendChat(text) {
-  text = clip(text, MSG_MAX);
-  if (!text || N.state !== 'on' || !N.db || N.sending) return false;
-  const wait = N.lastSend + SEND_GAP_MS - Date.now();
-  if (wait > 0) { Game.toast(`Wait ${Math.ceil(wait / 1000)}s before sending again`, 'info'); return false; }
-  N.sending = true;
-  const m = me();
-  try {
-    await N.db.collection('chat').add({ by: N.uid, name: m.name, av: m.av, furnace: m.furnace, text, ts: Date.now() });
-    N.lastSend = Date.now();
-    if (Math.random() < 0.15) pruneChat();
-    return true;
-  } catch (e) {
-    if (e?.code === 'invalid_argument') { N.canWrite = false; N.state = 'watch'; N.note = 'You can watch the chat. Ask the owner to invite you as an Editor to send messages.'; }
-    else if (e?.code === 'quota_exceeded') Game.toast('The chat is full right now. Try again later.', 'bad');
-    else Game.toast('Message not sent. Check your connection.', 'bad');
-    return false;
-  } finally { N.sending = false; }
-}
-// the store holds at most 25,000 documents, so old chat is trimmed to the newest CHAT_KEEP
-async function pruneChat() {
-  try {
-    const snap = await N.db.collection('chat').orderBy('ts', 'desc').limit(CHAT_KEEP + 40).get();
-    for (const d of snap.docs.slice(CHAT_KEEP)) await N.db.doc('chat/' + d.id).delete();
-  } catch (e) { /* trimming can wait */ }
-}
-
-// ---------------------------------------------------------------- unread badge
-function unread() {
-  return N.chat.filter(m => m.ts > N.readAt && m.by !== N.uid).length;
-}
-function chatChanged() {
-  if (Game.screen?.() === 'world' && N.sub === 'chat') markRead();
-  Game.badge('world', Math.min(99, unread()));
-  if (N.view) renderChat(N.view, true);
-}
-function markRead() {
-  const last = N.chat.length ? N.chat[N.chat.length - 1].ts : 0;
-  if (last > N.readAt) {
-    N.readAt = last;
-    Game.storage.set(READ_KEY, String(last));
-  }
-  Game.badge('world', 0);
-}
-
-// ---------------------------------------------------------------- World screen
-function mount(el) {
-  N.view = el;
-  el.innerHTML = `<div class="net">
-    <section class="net-head panel">
-      <div class="net-head-row">
-        <span class="net-pill" data-f="pill"></span>
-        <span class="net-online" data-f="online"></span>
-      </div>
-      <p class="net-note" data-f="note"></p>
-      <div class="net-actions">
-        <button type="button" class="btn small blue" id="net-toggle"></button>
-      </div>
-    </section>
-    <section class="net-here" data-f="herewrap" hidden>
-      <h3 class="section-title">Chiefs here now</h3>
-      <div class="net-chips" data-f="here"></div>
-    </section>
-    <div class="net-tabs seg" role="group" aria-label="World">
-      <button type="button" id="net-sub-chat" data-sub="chat">${Game.icon('chat', 18)}<span>World chat</span></button>
-      <button type="button" id="net-sub-rank" data-sub="rank">${Game.icon('trophy', 18)}<span>Leaderboard</span></button>
-    </div>
-    <section class="net-chat" data-pane="chat">
-      <ol class="net-msgs" data-f="msgs" aria-live="polite"></ol>
-      <form class="net-send" id="net-send-form" autocomplete="off">
-        <label class="sr-only" for="net-input">Message</label>
-        <input id="net-input" type="text" maxlength="${MSG_MAX}" placeholder="Say something to every chief" enterkeyhint="send">
-        <button type="submit" class="btn gold" id="net-send">Send</button>
-      </form>
-    </section>
-    <section class="net-rank" data-pane="rank" hidden>
-      <ol class="net-board" data-f="board"></ol>
-    </section>
-  </div>`;
-  el.querySelector('#net-toggle').addEventListener('click', () => {
-    const on = !Game.onlineWanted();
-    Game.storage.set('last-furnace-online', on ? '1' : '0');
-    Game.emit('online:pref', { on });
-  });
-  el.querySelectorAll('[data-sub]').forEach(b => b.addEventListener('click', () => { N.sub = b.dataset.sub; update(el); if (N.sub === 'chat') markRead(); }));
-  el.querySelector('#net-send-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const input = el.querySelector('#net-input');
-    if (await sendChat(input.value)) input.value = '';
-  });
-  update(el);
-}
-function update(el) {
-  const q = s => el.querySelector(s);
-  const live = N.state === 'on' || N.state === 'watch';
-  const pill = q('[data-f="pill"]');
-  const label = N.state === 'on' ? 'Online' : N.state === 'watch' ? 'Watching' : N.state === 'connecting' ? 'Connecting' : 'Offline';
-  Game.setText(pill, label);
-  pill.className = 'net-pill is-' + (N.state === 'on' ? 'on' : N.state === 'watch' ? 'watch' : N.state === 'connecting' ? 'wait' : 'off');
-  Game.setText(q('[data-f="online"]'), live ? `${Math.max(1, N.peers.length)} ${N.peers.length === 1 ? 'chief' : 'chiefs'} here now` : '');
-  Game.setText(q('[data-f="note"]'), N.note || 'Leaderboard, world chat and chiefs online.');
-  Game.setText(q('#net-toggle'), Game.onlineWanted() ? 'Go offline' : 'Go online');
-  // chiefs here now
-  q('[data-f="herewrap"]').hidden = !live || !N.peers.length;
-  const hereSig = N.peers.map(p => p.peer + JSON.stringify(p.presence)).join('|');
-  if (hereSig !== q('[data-f="here"]').dataset.sig) {
-    q('[data-f="here"]').dataset.sig = hereSig;
-    const box = q('[data-f="here"]');
-    box.textContent = '';
-    for (const p of N.peers.slice(0, 30)) {
-      const pr = p.presence || {};
-      const chip = document.createElement('div');
-      chip.className = 'net-chip' + (p.isMe ? ' is-me' : '');
-      chip.innerHTML = `<span class="net-av">${Game.avatarSvg(int(pr.av, 0, 5), 28)}</span><span class="net-chip-t"><b></b><small></small></span>`;
-      chip.querySelector('b').textContent = (clip(pr.name, NAME_MAX) || 'Chief') + (p.isMe && p.sameTab ? ' (you)' : '');
-      chip.querySelector('small').textContent = `Furnace Lv ${int(pr.furnace, 1, 30)}`;
-      box.appendChild(chip);
-    }
-  }
-  // sub tabs
-  for (const b of el.querySelectorAll('[data-sub]')) b.setAttribute('aria-pressed', String(b.dataset.sub === N.sub));
-  q('[data-pane="chat"]').hidden = N.sub !== 'chat';
-  q('[data-pane="rank"]').hidden = N.sub !== 'rank';
-  // send box
-  const canSend = N.state === 'on';
-  q('#net-input').disabled = !canSend;
-  q('#net-send').disabled = !canSend || N.sending;
-  q('#net-input').placeholder = canSend ? 'Say something to every chief' : live ? 'Only invited chiefs can send messages' : 'Go online to chat';
-  renderChat(el, false);
-  renderBoard(el);
-}
-function renderChat(el, scroll) {
-  const box = el.querySelector('[data-f="msgs"]');
-  if (!box) return;
-  const sig = N.chat.length ? N.chat[N.chat.length - 1].id + ':' + N.chat.length : (N.state + 'empty');
-  if (box.dataset.sig === sig) return;
-  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
-  box.dataset.sig = sig;
-  box.textContent = '';
-  if (!N.chat.length) {
-    const li = document.createElement('li');
-    li.className = 'net-empty';
-    li.textContent = N.state === 'on' || N.state === 'watch' ? 'No messages yet. Say hello to the other chiefs.' : 'Chat appears here when you are online.';
-    box.appendChild(li);
-    return;
-  }
-  for (const m of N.chat) {
-    const li = document.createElement('li');
-    li.className = 'net-msg' + (m.by && m.by === N.uid ? ' is-me' : '');
-    li.innerHTML = `<span class="net-av">${Game.avatarSvg(m.av, 30)}</span><div class="net-msg-body"><div class="net-msg-head"><b></b><small class="net-lv"></small><small class="net-when"></small></div><p></p></div>`;
-    li.querySelector('b').textContent = m.name;
-    li.querySelector('.net-lv').textContent = `Lv ${m.furnace}`;
-    li.querySelector('.net-when').textContent = timeAgo(m.ts);
-    li.querySelector('p').textContent = m.text;
-    box.appendChild(li);
-  }
-  if (scroll || atBottom) box.scrollTop = box.scrollHeight;
-}
-function renderBoard(el) {
-  const box = el.querySelector('[data-f="board"]');
-  if (!box) return;
-  const sig = N.players.map(p => p.id + p.power + p.name + p.furnace).join('|') + N.state;
-  if (box.dataset.sig === sig) return;
-  box.dataset.sig = sig;
-  box.textContent = '';
-  if (!N.players.length) {
-    const li = document.createElement('li');
-    li.className = 'net-empty';
-    li.textContent = N.state === 'on' || N.state === 'watch' ? 'No chiefs ranked yet.' : 'The leaderboard appears here when you are online.';
-    box.appendChild(li);
-    return;
-  }
-  N.players.forEach((p, i) => {
-    const li = document.createElement('li');
-    li.className = 'net-row' + (p.id === N.uid ? ' is-me' : '') + (i < 3 ? ' is-top' + (i + 1) : '');
-    li.innerHTML = `<span class="net-rank-n">${i + 1}</span><span class="net-av">${Game.avatarSvg(p.av, 32)}</span><span class="net-row-t"><b></b><small></small></span><span class="net-pow">${Game.icon('power', 15)}<span></span></span>`;
-    li.querySelector('b').textContent = p.name + (p.id === N.uid ? ' (you)' : '');
-    li.querySelector('small').textContent = `Furnace Lv ${p.furnace}`;
-    li.querySelector('.net-pow span').textContent = Game.fmt(p.power);
-    box.appendChild(li);
-  });
-}
-
-// ---------------------------------------------------------------- module
 Game.registerModule({
-  id: 'net',
-  tick() {
-    if (N.state === 'on') pushPlayer(false);
-    pushPresence(false);
+  id: 'dev',
+  initState: () => ({ unlimited: false, instant: false }),
+  migrate: s => ({ unlimited: !!s.unlimited, instant: !!s.instant }),
+  tick: () => {
+    if (!on()) return;
+    if (D().unlimited) topUp();
+    if (D().instant) finishAll();
   },
 });
-Game.registerScreen('world', {
-  tab: { label: 'World', icon: 'globe', order: 6 },
-  mount,
-  update,
-});
-Game.registerNav('world', rest => { if (rest === 'chat' || rest === 'rank') N.sub = rest; });
-Game.on('ready', () => { connect(); });
-Game.on('screen:shown', ({ id } = {}) => { if (id === 'world' && N.sub === 'chat') markRead(); });
-Game.on('online:pref', ({ on } = {}) => { if (on) { checkP = null; N.state = 'idle'; connect(); } else disconnect(); });
 
-Game.net = {
-  check,
-  status: () => ({ state: N.state, note: N.note, peers: N.peers.length }),
-  send: sendChat,
+function topUp() {
+  const S = Game.S;
+  if (!S) return;
+  for (const k of [...Game.RES, 'gems']) if (!(S.res[k] >= LOTS)) S.res[k] = LOTS;
+}
+function finishAll() {
+  let n = 0;
+  for (const t of Game.timers.list()) if (Game.timers.finishNow(t.id)) n++;
+  return n;
+}
+function fillItems() {
+  const S = Game.S;
+  let n = 0;
+  for (const id of Object.keys(Game.itemDefs)) {
+    if ((S.items[id] || 0) < ITEM_FILL) { S.items[id] = ITEM_FILL; n++; }
+  }
+  Game.emit('granted', { rewards: {}, source: 'dev' });
+  return n;
+}
+function maxBuildings() {
+  const c = Game.city;
+  if (!c?.setLevel) return 0;
+  let n = 0;
+  if (c.setLevel('furnace', c.maxLevel('furnace'))) n++;
+  for (const id of c.ids) if (id !== 'furnace' && c.setLevel(id, c.maxLevel(id))) n++;
+  c.autoAssign?.();
+  return n;
+}
+function fillSurvivors() {
+  const s = Game.city?.survivors?.();
+  const pop = Game.S?.city?.pop;
+  if (!s || !pop) return false;
+  pop.total = Math.max(pop.total, s.cap);
+  pop.sick = 0;
+  Game.city.autoAssign?.();
+  return true;
+}
+function startBlizzard() {
+  const w = Game.S?.city?.wx;
+  if (!w) return false;
+  const now = Game.now();
+  w.start = now + 3000;
+  w.end = w.start + 120e3;
+  w.warned = false;
+  return true;
+}
+function maxVip() {
+  const sh = Game.shop;
+  if (!sh?.addVipPoints) return 0;
+  const need = 100000 - (sh.vipPoints?.() || 0);
+  if (need > 0) sh.addVipPoints(need, 'dev');
+  return sh.vipLevel();
+}
+
+// [id, label, note, run] for the one-tap actions; run returns the toast text
+const ACTIONS = [
+  ['items', 'Every item x999', 'Speedups, crates, tickets, books and shards', () => `${fillItems()} items filled to ${ITEM_FILL}`],
+  ['heroes', 'Every hero, max level, 5 stars', 'Level cap follows the Furnace, so max the city first', () => `${Game.mil?.devMaxHeroes?.() || 0} heroes maxed`],
+  ['city', 'Max every building', 'Furnace 30 and every building at its cap', () => `${maxBuildings()} buildings raised`],
+  ['vip', 'Max VIP', 'VIP 12 perks and the second builder', () => `VIP ${maxVip()}`],
+  ['stages', 'Clear every stage', 'With each first-clear reward', () => `${Game.mil?.devClearTo?.(Game.mil.MAX_STAGE) || 0} stages cleared`],
+  ['timers', 'Finish all timers', 'Builds and training', () => `${finishAll()} timers finished`],
+  ['people', 'Fill and heal survivors', 'Up to the housing cap', () => (fillSurvivors() ? 'Survivors filled' : 'No city yet')],
+  ['storm', 'Start a blizzard', 'Hits in 3 seconds and lasts 2 minutes', () => (startBlizzard() ? 'A blizzard is coming' : 'No city yet')],
+];
+const SKIPS = [['1h', 3600, '+1 hour'], ['8h', 28800, '+8 hours'], ['1d', 86400, '+1 day']];
+
+function panelHtml() {
+  const d = D();
+  const sw = (id, label, note, val) => `<button type="button" class="dev-switch" data-sw="${id}" aria-pressed="${val ? 'true' : 'false'}">
+      <span class="dev-switch-txt"><b>${label}</b><span>${note}</span></span><span class="dev-knob" aria-hidden="true"></span></button>`;
+  return `<div class="dev">
+    <p class="dev-note">Developer mode. Changes apply to this save. Turn it off on this panel or with 7 taps on the start screen logo.</p>
+    <h3 class="section-title">Always on</h3>
+    ${sw('unlimited', 'Unlimited gems and resources', `Kept at ${Game.fmt(LOTS)} each`, d.unlimited)}
+    ${sw('instant', 'Instant builds and training', 'Every timer finishes as it starts', d.instant)}
+    <h3 class="section-title">One tap</h3>
+    <div class="dev-grid">${ACTIONS.map(([id, label, note]) => `<button type="button" class="dev-act" data-act="${id}"><b>${label}</b><span>${note}</span></button>`).join('')}</div>
+    <h3 class="section-title">Skip time</h3>
+    <div class="dev-skips">${SKIPS.map(([id, , label]) => `<button type="button" class="btn ghost small" data-skip="${id}">${label}</button>`).join('')}</div>
+    <p class="dev-now muted"></p>
+  </div>`;
+}
+
+let panel = null;
+function openPanel() {
+  if (!on()) return null;
+  if (panel && !panel.closed) return panel;
+  panel = Game.sheet({
+    title: 'Developer',
+    className: 'dev-sheet',
+    body: panelHtml(),
+    update: body => {
+      const d = D();
+      if (!d) return;
+      body.querySelectorAll('[data-sw]').forEach(b => b.setAttribute('aria-pressed', d[b.dataset.sw] ? 'true' : 'false'));
+      const S = Game.S;
+      Game.setText(body.querySelector('.dev-now'), `Gems ${Game.fmt(S.res.gems)} · Furnace Lv ${Game.furnaceLevel()} · VIP ${Game.shop?.vipLevel?.() ?? 0} · ${Game.timers.list().length} timers running`);
+    },
+    actions: [
+      { label: 'Developer mode off', kind: 'ghost', onClick: () => { Game.setDevMode?.(false); } },
+      { label: 'Start screen', kind: 'ghost', onClick: () => { toStart(); } },
+    ],
+    onClose: () => { panel = null; },
+  });
+  panel.body.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || !D()) return;
+    if (b.dataset.sw) {
+      const k = b.dataset.sw;
+      D()[k] = !D()[k];
+      if (k === 'unlimited' && D()[k]) topUp();
+      if (k === 'instant' && D()[k]) finishAll();
+      Game.toast(`${k === 'unlimited' ? 'Unlimited resources' : 'Instant timers'} ${D()[k] ? 'on' : 'off'}`, 'info');
+    } else if (b.dataset.act) {
+      const a = ACTIONS.find(x => x[0] === b.dataset.act);
+      let msg = '';
+      try { msg = a[3](); } catch (err) { console.error('[dev] action failed', err); msg = 'That did not work'; }
+      Game.toast(msg, 'good');
+    } else if (b.dataset.skip) {
+      const s = SKIPS.find(x => x[0] === b.dataset.skip);
+      Game.debug.skip(s[1]);
+      Game.toast(`Skipped ${s[2].slice(1)}`, 'info');
+    } else return;
+    Game.save?.();
+    Game.render?.();
+    panel?.refresh();
+  });
+  return panel;
+}
+function toStart() {
+  Game.save?.(true);
+  try { window.location.reload(); } catch (e) { Game.toast('Reopen the game to see the start screen', 'info'); }
+}
+
+function syncButton() {
+  if (!Game.isReady) return;
+  if (on()) Game.city?.addSideButton?.({ id: 'dev', icon: 'dev', label: 'Dev', onClick: openPanel });
+  else {
+    Game.city?.removeSideButton?.('dev');
+    if (panel && !panel.closed) panel.close();
+  }
+}
+Game.on('ready', syncButton);
+Game.on('dev:changed', syncButton);
+Game.on('spent', () => { if (on() && D().unlimited) topUp(); });
+Game.on('building:started', () => { if (on() && D().instant) queueMicrotask(finishAll); });
+Game.on('troops:started', () => { if (on() && D().instant) queueMicrotask(finishAll); });
+
+Game.dev = {
+  on,
+  open: openPanel,
+  topUp,
+  finishAll,
+  fillItems,
+  maxBuildings,
+  maxVip,
+  startBlizzard,
+  fillSurvivors,
 };
-} catch (e) { console.error('[build] modules/online.js failed to load', e); }
+} catch (e) { console.error('[build] modules/dev.js failed to load', e); }
 })();
 
 /* ===== boot ===== */

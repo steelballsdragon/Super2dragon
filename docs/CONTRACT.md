@@ -277,6 +277,7 @@ Always read these with optional chaining; each one is missing in a `--only` buil
 - `Game.store` (shop): `{ provider, setProvider(p), products(), product(id), canPurchase(id) → { ok, reason }, purchase(id) → Promise, buy (alias of purchase), restore(), history(), deliver(...), busy, isTest, DemoProvider }`. Product ids are `lf.gems.t1`..`t6`, `lf.pack.starter`, `lf.card.monthly`, `lf.pack.builder`, `lf.pack.daily`, `lf.pack.hero`; the aliases `starter_pack`, `builder`, `monthly_card`, `daily_deal` and `hero_pack` also work. Every purchase goes through the provider; the only one shipped is the DemoProvider test store ("Test mode. No money is charged."). See docs/IAP.md.
 - `Game.shop`: `{ vipLevel(), vipPoints(), addVipPoints(n, source), vipPerks(lv?), open(section?), giftReady(), claimGift(), openGift(), monthlyCard() → { active, claimable, claimsLeft }, claimMonthly(), hasSecondBuilder(), claimables(), gemShop() }`.
 - `Game.mil` (military): `heroIds()`, `owns(id)`, `heroDef(id)`, `heroLevel(id)`, `heroStars(id)`, `heroPower(id)`, `heroMaxLevel()`, `squad()`, `squadPower()`, `troopPower()`, `troopCount(type?)`, `troopTier(type)`, `campLevel(type)`, `highestStage()`, `stageLabel(n)`, `enemyPower(n)`, `idleMinutes()`, `freeRecruitReady()`, `pityLeft()`, `recruit(n, pay)`, `grantHero(id, { source })`, `claimIdle()`, `startTraining(type, n)`, `openHero(id)`, `openRecruit()`, `openTraining(type)`, `openBattle()`, `openIdle()`, `portraitSvg(id)`, `enemySvg(type, boss)`, plus the data tables `HEROES`, `CLASSES`, `RARITIES`, `TROOPS`, `ODDS`, `PITY_AT`, `MAX_STAGE`.
+- `Game.dev` (dev): `{ on(), open(), topUp(), finishAll(), fillItems(), maxBuildings(), maxVip(), startBlizzard(), fillSurvivors() }`. Its settings live in `S.dev` (`{ unlimited, instant }`). It uses two developer-only hooks: `Game.city.setLevel(id, level)` (no cost, timer or toast; other buildings cap at the Furnace level) and `Game.mil.devMaxHeroes()` / `Game.mil.devClearTo(stage)`.
 - `Game.prog` (progress): `openMail()`, `openLetter(id)`, `sendMail({ id, from, title, body: [paragraphs], rewards?, go?: { label, target } })`, `mailUnread()`, `claimables()`, `chapter()`, `current()` (the City banner model), `daily()`, `loginReady()`, `claimTask(id)`, `claimChapterChest()`, `claimMission(id)`, `claimDailyChest(at)`, `claimLogin()`, `claimMail(id)`.
 
 ## UI helpers
@@ -330,6 +331,10 @@ Layout: `.app` is a flex column (HUD, `.screens`, tab bar) max 480 px wide, cent
 ## Storage
 
 `Game.storage.get(key)`, `.set(key, value)` → boolean, `.remove(key)` (**extra**): wrappers that never throw. Use them for per-viewer conveniences. Game state lives in `Game.S` and is saved by core (every 5 s, on hide and on pagehide) under `last-furnace-v2`. Modules do not save on their own, with one exception: right after something the player paid for is delivered (a store purchase or a restore), call `Game.save()` so a crash inside the 5 s window cannot lose it. The shop module does this.
+
+## Developer mode (core)
+
+`Game.devMode()` → boolean, `Game.setDevMode(on)` (stored on this device under `last-furnace-dev`, emits `dev:changed { on }`). The start screen toggles it after 7 quick taps on the logo; the dev module adds the City's Dev button only while it is on.
 
 ## Debug (tests only, never in UI)
 

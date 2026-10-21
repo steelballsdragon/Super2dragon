@@ -1594,12 +1594,20 @@ Game.boot = (d = {}) => {
 // Shown on every fresh open. It waits for the cloud save (so an older copy on this device never overwrites a
 // newer one from another device), then boots the newest save, or a new game. A live update of an open game
 // (hot reload with a state) skips it and keeps playing.
-const ONLINE_KEY = 'last-furnace-online';
 // installable web-app build (GitHub Pages): the browser's install offer is kept for the start screen's button
 let installOffer = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installOffer = e; Game.emit('install:ready', {}); });
 const standaloneApp = () => !!(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone);
-Game.onlineWanted = () => Game.storage.get(ONLINE_KEY) !== '0';
+// developer mode (this device): 7 taps on the start screen logo turn it on or off; the dev module adds the panel
+const DEV_KEY = 'last-furnace-dev';
+let devMem = null;
+Game.devMode = () => devMem ?? Game.storage.get(DEV_KEY) === '1';
+Game.setDevMode = v => {
+  devMem = !!v;
+  Game.storage.set(DEV_KEY, devMem ? '1' : '0');
+  Game.emit('dev:changed', { on: devMem });
+  if (booted) Game.toast(devMem ? 'Developer mode on' : 'Developer mode off', 'info');
+};
 function ago(ms) {
   const s = Math.max(0, (Date.now() - ms) / 1000);
   if (s < 90) return 'just now';
@@ -1622,6 +1630,7 @@ Game.start = (d = {}) => {
           : `<div class="start-mark" aria-hidden="true">${Game.icon('flame', 46)}</div>`}
         <h1 class="start-title${window.LF_ASSETS?.logo ? ' sr-only' : ''}" id="start-title">Last <span>Furnace</span></h1>
         <p class="start-tag">Keep the great furnace burning and build the last city in the frozen north.</p>
+        <p class="start-dev" hidden></p>
       </div>
       <section class="start-card" aria-live="polite">
         <div class="start-save"></div>
@@ -1643,20 +1652,12 @@ Game.start = (d = {}) => {
         <button type="button" class="btn blue wide" id="start-install">${Game.icon('arrow_down', 18)}<span>Install the game</span></button>
         <p class="start-install-note"></p>
       </div>
-      <label class="start-online" for="start-online">
-        <input type="checkbox" id="start-online">
-        <span class="start-online-txt"><b>Play online</b><small class="start-online-note">Leaderboard, world chat and chiefs online</small></span>
-      </label>
       <p class="start-foot">Test store: purchases are free in this version.</p>
     </div>
   </div>`);
   document.body.appendChild(wrap);
   const $ = s => wrap.querySelector(s);
   const go = $('#start-continue'), neu = $('#start-new'), skip = $('#start-skip'), conf = $('.start-confirm');
-  const onl = $('#start-online');
-  onl.checked = Game.onlineWanted();
-  onl.addEventListener('change', () => { Game.storage.set(ONLINE_KEY, onl.checked ? '1' : '0'); Game.emit('online:pref', { on: onl.checked }); });
-  try { Game.net?.check?.().then(r => { if (r?.note) setText($('.start-online-note'), r.note); }).catch(() => {}); } catch (e) { /* online module absent */ }
   // install: the browser's own offer where there is one (Android, desktop Chrome), instructions on iPhone and iPad
   const inst = $('.start-install'), instBtn = $('#start-install'), instNote = $('.start-install-note');
   const showInstall = () => {
@@ -1672,6 +1673,25 @@ Game.start = (d = {}) => {
     installOffer = null;
     try { await offer.prompt(); const r = await offer.userChoice; if (r?.outcome === 'accepted') inst.hidden = true; } catch (e) { /* the browser declined to show it */ }
     if (!installOffer) instBtn.hidden = true;
+  });
+
+  // developer mode: 7 quick taps on the logo
+  const devNote = $('.start-dev');
+  const showDev = said => {
+    const on = Game.devMode();
+    devNote.hidden = !on && !said;
+    setText(devNote, on ? 'Developer mode is on. Use the Dev button in your city.' : 'Developer mode is off.');
+  };
+  showDev(false);
+  let taps = 0, tapAt = 0;
+  $('.start-brand').addEventListener('click', () => {
+    const t = Date.now();
+    taps = t - tapAt < 1500 ? taps + 1 : 1;
+    tapAt = t;
+    if (taps < 7) return;
+    taps = 0;
+    Game.setDevMode(!Game.devMode());
+    showDev(true);
   });
 
   function summary(st) {

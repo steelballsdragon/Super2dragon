@@ -2111,6 +2111,39 @@ Game.mil = {
   pityLeft: () => (Game.S?.mil ? pityLeft() : PITY_AT),
   recruit: (n, pay) => (Game.S?.mil ? recruit(n, pay) : null),
   grantHero: (id, opts) => grantHero(id, isObj(opts) ? opts.source : opts),
+  // developer panel: owns every hero at the level cap the Furnace allows and full stars
+  devMaxHeroes: () => {
+    if (!Game.S?.mil) return 0;
+    let n = 0;
+    for (const h of HEROES) {
+      if (!heroRec(h.id)) addHero(h.id, 'dev');
+      const r = heroRec(h.id);
+      if (!r) continue;
+      r.lv = Math.max(r.lv, maxLevel());
+      r.xp = 0;
+      r.stars = MAX_STARS;
+      n++;
+    }
+    updateBadges(true);
+    return n;
+  },
+  // developer panel: marks stages cleared up to `stage`, with each first-clear reward and hero
+  devClearTo: stage => {
+    if (!Game.S?.mil) return 0;
+    const s = mil();
+    const to = clamp(int(stage), 0, MAX_STAGE);
+    let n = 0;
+    while (s.stage < to) {
+      s.stage++;
+      Game.grant(stageRewards(s.stage), { source: 'stage' });
+      const hid = STAGE_HEROES[s.stage];
+      if (hid) grantHero(hid, 'stage');
+      Game.emit('stage:cleared', { stage: s.stage });
+      n++;
+    }
+    updateBadges(true);
+    return n;
+  },
   claimIdle: () => (Game.S?.mil ? claimIdle() : false),
   startTraining: (type, n) => (Game.S?.mil ? startTraining(type, n) : false),
   openHero,

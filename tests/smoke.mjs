@@ -135,9 +135,9 @@ await step('new game boots from the start screen', async () => {
   start = await state();
   check(start.v === 2, 'state version is not 2');
   check(start.city.levels.furnace === 1, 'Furnace does not start at Lv 1');
-  check(await G(() => Game.modules().join()) === 'city,mil,shop,prog,net', 'not all five modules registered');
+  check(await G(() => Game.modules().join()) === 'city,mil,shop,prog,dev', 'not all five modules registered');
   check(await G(() => document.documentElement.scrollWidth <= window.innerWidth), 'page scrolls sideways at 390px');
-  for (const t of ['city', 'heroes', 'explore', 'events', 'shop', 'world']) check(await page.locator(`#tab-${t}`).isVisible(), `tab ${t} missing`);
+  for (const t of ['city', 'heroes', 'explore', 'events', 'shop']) check(await page.locator(`#tab-${t}`).isVisible(), `tab ${t} missing`);
 });
 
 await step('chapter banner shows the first quest', async () => {

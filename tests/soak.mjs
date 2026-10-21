@@ -83,7 +83,7 @@ const PLAY_LEVEL = target => {
   Game.mil.claimIdle(); ok();
   Game.shop.claimGift(); ok();
   Game.bagSheet(); close();
-  for (const s of ['heroes', 'explore', 'events', 'shop', 'world', 'city']) Game.navigate(s);
+  for (const s of ['heroes', 'explore', 'events', 'shop', 'city']) Game.navigate(s);
   Game.mil.openBattle();
   return Game.city.level('furnace');
 };

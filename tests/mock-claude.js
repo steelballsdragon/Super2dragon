@@ -1,18 +1,16 @@
-// Test stand-in for the claude.ai artifact runtime (window.claude.use), so tests can exercise cloud saves and
-// online play without the platform. Each player is its own browser context (own localStorage, like its own
+// Test stand-in for the claude.ai artifact runtime (window.claude.use), so tests can exercise cloud saves
+// without the platform. Each player is its own browser context (own localStorage, like its own
 // device); the store they share lives in the Node test process and is reached through an exposed function:
 //
 //   const server = createMockServer();
 //   await server.attach(context);                          // once per player context
 //   await page.addInitScript(mockClaude, { uid, write });  // before the page loads
 //
-// It mirrors the documented shapes (db docs, collections, orderBy/limit, onSnapshot; user.id/can; room
-// presence/onPeers), not every rule: a viewer without write access gets invalid_argument outside its own
+// It mirrors the documented shapes (db docs, collections, orderBy/limit, onSnapshot; user.id/can), not every rule: a viewer without write access gets invalid_argument outside its own
 // data/users/<id>/ subtree, like a view-only visitor on the platform.
 
 export function createMockServer() {
   const docs = new Map();   // path -> body
-  const peers = new Map();  // peer -> { by, presence, at }
   const segs = p => p.split('/').length;
   function handle(op, a = {}) {
     switch (op) {
@@ -20,15 +18,11 @@ export function createMockServer() {
       case 'set': docs.set(a.path, a.data); return true;
       case 'delete': docs.delete(a.path); return true;
       case 'list': return [...docs.entries()].filter(([k]) => k.startsWith(a.path + '/') && segs(k) === segs(a.path) + 1).map(([path, data]) => ({ path, data }));
-      case 'peerSet': peers.set(a.peer, { by: a.by, presence: a.presence, at: Date.now() }); return true;
-      case 'peerDrop': peers.delete(a.peer); return true;
-      case 'peers': { const now = Date.now(); return [...peers.entries()].filter(([, v]) => now - v.at < 60000).map(([peer, v]) => ({ peer, ...v })); }
       default: throw new Error('mock: unknown op ' + op);
     }
   }
   return {
     docs,
-    peers,
     async attach(context) { await context.exposeFunction('__mockServer', (op, a) => JSON.parse(JSON.stringify(handle(op, a) ?? null))); },
   };
 }
@@ -37,7 +31,6 @@ export function createMockServer() {
 export function mockClaude(opts) {
   const uid = opts.uid;
   const canWrite = opts.write !== false;
-  const peerId = 'p' + Math.random().toString(36).slice(2, 10);
   const call = (op, a) => window.__mockServer(op, a);
   const deny = () => Promise.reject({ code: 'invalid_argument', message: 'this viewer cannot write here' });
   const allowed = path => canWrite || path.startsWith('data/users/' + uid + '/');
@@ -105,27 +98,6 @@ export function mockClaude(opts) {
     profiles: async ids => Object.fromEntries([].concat(ids).map(id => [id, { id, name: '', avatarUrl: '', color: '#888', email: null, isMe: id === uid, guest: false }])),
   });
 
-  let mine = {};
-  const toPeers = list => list.map(v => Object.freeze({ peer: v.peer, by: v.by, isMe: v.by === uid, sameTab: v.peer === peerId, kind: 'viewer', guest: false, presence: Object.freeze(v.presence || {}), updatedAt: v.at }));
-  let last = [];
-  const room = Object.freeze({
-    async presence(patch) {
-      for (const [k, v] of Object.entries(patch)) { if (v === null) delete mine[k]; else mine[k] = v; }
-      await call('peerSet', { peer: peerId, by: uid, presence: mine });
-    },
-    peers: () => last,
-    onPeers(handler) {
-      return watch(async () => { const l = await call('peers'); return { sig: l.map(x => [x.peer, x.presence]), value: l }; }, l => { last = toPeers(l); handler({ peers: last, joined: last, left: [], updated: [] }); });
-    },
-    async emit() {},
-    on() { return () => {}; },
-    connected: () => true,
-    onConnection(h) { setTimeout(() => h(true), 0); return () => {}; },
-  });
-  call('peerSet', { peer: peerId, by: uid, presence: mine }).catch(() => {});
-  setInterval(() => call('peerSet', { peer: peerId, by: uid, presence: mine }).catch(() => {}), 15000);
-  window.addEventListener('pagehide', () => { call('peerDrop', { peer: peerId }).catch(() => {}); });
-
-  const caps = { db, user, room };
+  const caps = { db, user };
   window.claude = { use: async name => (opts.off ? null : caps[name] || null) };
 }

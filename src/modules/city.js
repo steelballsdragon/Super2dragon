@@ -3011,6 +3011,25 @@ Game.city = {
   isUpgrading: id => !!buildTimer(id),
   canUpgrade: id => canUpgradeNow(id),
   upgrade: id => startUpgrade(id),
+  // developer panel: sets a level directly, without cost, timer or toast. Others cap at the Furnace level.
+  setLevel: (id, L) => {
+    if (!Game.S || !B[id]) return false;
+    const cap = id === 'furnace' ? FMAX : lvl('furnace');
+    if (id !== 'furnace' && cap < (B[id].unlock ?? 1)) return false;
+    L = clamp(Math.floor(Number(L) || 0), 0, cap);
+    const was = lvl(id);
+    if (L <= was) return false;
+    if (buildTimer(id)) Game.timers.cancel(timerId(id));
+    const c = C();
+    c.levels[id] = L;
+    if (PRODUCERS[id] && was === 0) {
+      const n = Math.min(slots(L), idle());
+      if (n > 0) c.workers[id] = (c.workers[id] || 0) + n;
+    }
+    Game.emit('building:upgraded', { id, level: L });
+    View.requestDraw();
+    return true;
+  },
   _snowCount: () => View.v?.snow?.length ?? 0,
   upgradeCost: (id, level) => (B[id] ? upgradeCost(id, level ?? lvl(id) + 1) : null),
   focus: id => View.focus(id),

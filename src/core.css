@@ -1024,6 +1024,8 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 }
 .start-title span { color: var(--gold); display: block; }
 .start-tag { max-width: 32ch; color: var(--text-2); font-size: 15px; }
+.start-brand { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.start-dev { padding: 4px 10px; border: 1px solid var(--gold-3); border-radius: 999px; color: var(--gold); font-size: 13px; }
 .start-card {
   display: grid;
   gap: 10px;
@@ -1052,46 +1054,6 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
 .start-confirm { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--red-2); border-radius: var(--r); background: var(--panel-deep); }
 .start-confirm-t { color: var(--text-2); font-size: 14px; }
 .start-confirm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.start-online {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--r);
-  background: var(--chip-bg);
-  cursor: pointer;
-}
-.start-online input {
-  appearance: none;
-  -webkit-appearance: none;
-  flex: none;
-  position: relative;
-  width: 46px;
-  height: 26px;
-  margin: 0;
-  border-radius: 13px;
-  background: var(--panel-3);
-  border: 1px solid var(--line);
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.start-online input::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--text);
-  transition: transform 0.15s ease;
-}
-.start-online input:checked { background: var(--green-2); }
-.start-online input:checked::after { transform: translateX(20px); }
-.start-online-txt { display: grid; gap: 2px; min-width: 0; }
-.start-online-txt b { font: 16px/1.1 var(--font-display); letter-spacing: 0.02em; }
-.start-online-note { color: var(--muted); font-size: 13px; }
 .start-foot { text-align: center; color: var(--dim); font-size: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .start-snow, .start-dot.is-wait { animation: none; }
@@ -1103,7 +1065,6 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
   .start-title { font-size: clamp(38px, 11vh, 60px); }
   .start-mark { width: 60px; height: 60px; }
   .start-go { min-height: 46px; font-size: 18px; }
-  .start-online { padding: 9px 12px; }
 }
 .start-install { display: grid; gap: 6px; }
 .start-install .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
