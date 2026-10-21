@@ -232,10 +232,13 @@ Run on 2026-10-21 in this repository (`node tests/all.mjs`):
 
 | Suite | Result |
 |---|---|
-| conquest-engine | 42 of 42 passed |
+| conquest-engine | 47 of 47 passed |
 | conquest-demo | 5 of 5 passed |
-| conquest-ui | 15 of 15 passed |
-| smoke, cloud, dev (Last Furnace) | 20, 8 and 13 steps passed (the soak run was stopped before it finished) |
+| conquest-ui | 16 of 16 passed |
+| conquest-dev | 10 of 10 passed |
+| conquest-robust | 5 of 5 passed (two game days at 64x: at most 760 DOM nodes, a 10 MB page heap, the town still drawing in under 4 ms a frame) |
+
+All five suites together take about 3 minutes.
 
 The engine suite covers:
 - production, storage and upkeep, building and research prerequisites, training and healing, the market
@@ -247,6 +250,7 @@ The engine suite covers:
 - sacking and recovery, the Throne and Grand Exchange victories, rallies capturing fortresses
 - invalid and malicious commands, guild-mate and ally protection, double reward claims, developer gating
 - save tampering, determinism, save and load continuity, offline catch-up, and a speed check (one game day in under 20 seconds)
+- Free finish (refused too early, works in the last 10 minutes), crates (an hour of output once, refilled after 4 hours, never into full storage), the AI using both, goal progress and chapters, and the developer switches (only in developer mode, saved with the world)
 
 The demonstration campaign test:
 - An AI guild starts with 33% of the server's power.
