@@ -1105,3 +1105,6 @@ button.tile[aria-pressed="true"] { outline: 2px solid var(--ice); outline-offset
   .start-go { min-height: 46px; font-size: 18px; }
   .start-online { padding: 9px 12px; }
 }
+.start-install { display: grid; gap: 6px; }
+.start-install .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.start-install-note { color: var(--text-2); font-size: 13px; text-align: center; }

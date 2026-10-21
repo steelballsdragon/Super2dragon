@@ -221,3 +221,6 @@ __marimo__/
 
 # Last Furnace: dist/index.html is the standalone build that players open locally, so it is tracked
 !dist/
+
+# Node
+node_modules/

@@ -1,0 +1,49 @@
+# Builds Last Furnace, runs every test suite, and publishes dist/ to GitHub Pages from main.
+# One-time setup: repository Settings > Pages > Build and deployment > Source: GitHub Actions.
+name: Test and publish the game
+
+on:
+  push:
+    branches: [main, claude/last-furnace-game]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: game-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: node build.mjs
+      - name: Check the committed build matches the sources
+        run: git diff --exit-code -- index.html dist/
+      - run: node tests/all.mjs
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  publish:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

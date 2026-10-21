@@ -136,6 +136,7 @@ const ICONS = {
   check: '<path d="M5 12.5 10 17.5 19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
   lock: '<path d="M7.5 10.5V8a4.5 4.5 0 0 1 9 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path fill-rule="evenodd" d="M5.5 10.5h13a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Zm6.5 3.2a1.5 1.5 0 0 0-.8 2.8V18h1.6v-1.5a1.5 1.5 0 0 0-.8-2.8Z" fill="currentColor"/>',
   arrow_up: '<path d="M12 3.2 20.2 12H15v8.8H9V12H3.8Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>',
+  arrow_down: '<path d="M12 20.8 3.8 12H9V3.2h6V12h5.2Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>',
   plus: '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>',
   minus: '<path d="M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>',
   close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>',
@@ -1594,6 +1595,10 @@ Game.boot = (d = {}) => {
 // newer one from another device), then boots the newest save, or a new game. A live update of an open game
 // (hot reload with a state) skips it and keeps playing.
 const ONLINE_KEY = 'last-furnace-online';
+// installable web-app build (GitHub Pages): the browser's install offer is kept for the start screen's button
+let installOffer = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installOffer = e; Game.emit('install:ready', {}); });
+const standaloneApp = () => !!(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone);
 Game.onlineWanted = () => Game.storage.get(ONLINE_KEY) !== '0';
 function ago(ms) {
   const s = Math.max(0, (Date.now() - ms) / 1000);
@@ -1632,6 +1637,10 @@ Game.start = (d = {}) => {
           </div>
         </div>
       </div>
+      <div class="start-install" hidden>
+        <button type="button" class="btn blue wide" id="start-install">${Game.icon('arrow_down', 18)}<span>Install the game</span></button>
+        <p class="start-install-note"></p>
+      </div>
       <label class="start-online" for="start-online">
         <input type="checkbox" id="start-online">
         <span class="start-online-txt"><b>Play online</b><small class="start-online-note">Leaderboard, world chat and chiefs online</small></span>
@@ -1646,6 +1655,22 @@ Game.start = (d = {}) => {
   onl.checked = Game.onlineWanted();
   onl.addEventListener('change', () => { Game.storage.set(ONLINE_KEY, onl.checked ? '1' : '0'); Game.emit('online:pref', { on: onl.checked }); });
   try { Game.net?.check?.().then(r => { if (r?.note) setText($('.start-online-note'), r.note); }).catch(() => {}); } catch (e) { /* online module absent */ }
+  // install: the browser's own offer where there is one (Android, desktop Chrome), instructions on iPhone and iPad
+  const inst = $('.start-install'), instBtn = $('#start-install'), instNote = $('.start-install-note');
+  const showInstall = () => {
+    if (!window.LF_APP || standaloneApp()) return;
+    if (installOffer) { inst.hidden = false; instBtn.hidden = false; setText(instNote, 'Adds Last Furnace to your home screen. It also plays offline.'); }
+    else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) { inst.hidden = false; instBtn.hidden = true; setText(instNote, 'To install: tap Share, then Add to Home Screen.'); }
+  };
+  showInstall();
+  Game.on('install:ready', showInstall);
+  instBtn.addEventListener('click', async () => {
+    if (!installOffer) return;
+    const offer = installOffer;
+    installOffer = null;
+    try { await offer.prompt(); const r = await offer.userChoice; if (r?.outcome === 'accepted') inst.hidden = true; } catch (e) { /* the browser declined to show it */ }
+    if (!installOffer) instBtn.hidden = true;
+  });
 
   function summary(st) {
     if (!st) return '<p class="start-new-t">No city yet. Light the furnace and start from the beginning.</p>';
