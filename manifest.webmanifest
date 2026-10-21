@@ -1,0 +1,29 @@
+{
+  "name": "Last Furnace: Age of Conquest",
+  "short_name": "Age of Conquest",
+  "description": "Six hundred governors, ten guilds and one living world: build your city, raise armies, join a guild and take the Throne.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a1524",
+  "theme_color": "#0b1626",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
