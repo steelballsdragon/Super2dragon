@@ -9,9 +9,11 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const bump = useGame((s) => s.bump);
   const [llm, setLlm] = useState(loadLlmSettings);
   const [pause, setPause] = useState(w.settings.pauseOnEvents);
+  const [losses, setLosses] = useState(w.settings.supplyLosses !== false);
   const [every, setEvery] = useState(w.settings.autosaveMonths);
   const save = () => {
     w.settings.pauseOnEvents = pause;
+    w.settings.supplyLosses = losses;
     w.settings.autosaveMonths = Math.max(1, Math.min(24, every));
     saveLlmSettings(llm);
     bump();
@@ -34,6 +36,11 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             </span>
           </label>
           <p className="text-xs text-muted">The campaign is also saved whenever you leave or hide this tab.</p>
+          <label className="flex items-center justify-between gap-3">
+            <span>Our armies lose men to supply and terrain</span>
+            <input type="checkbox" className="h-4 w-4 accent-[#d9b46b]" checked={losses} onChange={(e) => setLosses(e.target.checked)} />
+          </label>
+          <p className="text-xs text-muted">Armies on friendly ground refill lost men from the manpower reserve either way. Turning losses off spares your armies (not the AI’s) from oversized stacks, harsh terrain and foraging in enemy land; battles still cost men.</p>
         </section>
         <section className="space-y-2">
           <div className="label">AI council (optional)</div>

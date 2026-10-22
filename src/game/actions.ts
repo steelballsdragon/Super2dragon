@@ -10,7 +10,7 @@ import { creditAvailable, loanRate, refreshLedgers, repayLoan, takeLoan } from '
 import { consortOf, ensureHeir, heirBlocker, household, rulerOf, setHeir, wedRuler } from './family';
 import { runSpyOp, spyOpBlocker, spyOpChance, SPY_OPS, type SpyOp } from './espionage';
 import { resolveEvent } from './events/engine';
-import { canRecruitIn, findPath, gatherPlan, orderMove, pathMonths, recruitCost, removeArmy, shipCost, supplyLimit, UNIT_TYPES } from './military';
+import { canRecruitIn, establishment, findPath, gatherPlan, orderMove, pathMonths, recruitCost, removeArmy, shipCost, supplyLimit, UNIT_TYPES } from './military';
 import { planExpedition, startExpedition, orderFleet, findSeaPath } from './naval';
 import { generateHeir, lawBlocker, lawReformCost } from './society';
 import {
@@ -356,8 +356,10 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
       const armies = a.armies.map((id) => w.armies[id]).filter((x) => x && x.owner === c && x.status !== 'embarked');
       if (armies.length < 2 || armies.some((x) => x.location !== armies[0].location)) return { ok: false, message: 'Armies must be in the same province.' };
       const main = armies[0];
+      const full = establishment(main);
       for (const o of armies.slice(1)) {
-        for (const u of UNIT_TYPES) main.units[u] += o.units[u];
+        const of = establishment(o);
+        for (const u of UNIT_TYPES) { main.units[u] += o.units[u]; full[u] += of[u]; }
         main.morale = Math.min(main.morale, o.morale);
         if (!main.general && o.general) main.general = o.general;
         removeArmy(w, o.id);
@@ -369,9 +371,14 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
       if (!army || army.owner !== c || army.status === 'embarked') return { ok: false, message: 'Cannot split.' };
       if (armyRegiments(army) < 2) return { ok: false, message: 'Too small to split.' };
       const half = { infantry: 0, cavalry: 0, artillery: 0, irregulars: 0 };
-      for (const u of UNIT_TYPES) { half[u] = Math.floor(army.units[u] / 2 * 10) / 10; army.units[u] -= half[u]; }
+      const full = establishment(army);
+      const halfFull = { infantry: 0, cavalry: 0, artillery: 0, irregulars: 0 };
+      for (const u of UNIT_TYPES) {
+        half[u] = Math.floor(army.units[u] / 2 * 10) / 10; army.units[u] -= half[u];
+        halfFull[u] = Math.max(half[u], Math.floor(full[u] / 2 * 10) / 10); full[u] = Math.max(army.units[u], full[u] - halfFull[u]);
+      }
       const id = newId(w, 'a');
-      w.armies[id] = { ...army, id, name: `${army.name} (detachment)`, units: half, general: undefined, path: [], status: 'idle' };
+      w.armies[id] = { ...army, id, name: `${army.name} (detachment)`, units: half, full: halfFull, general: undefined, path: [], status: 'idle' };
       forcesChanged(w);
       return { ok: true, message: 'Detachment formed.' };
     }

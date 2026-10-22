@@ -11,7 +11,7 @@ import { generateHeir, succeed } from '../society';
 import { grantTech } from '../tech';
 import {
   addOpinion, armyRegiments, chronicle, clamp, countryName, hasTreaty, newId, provinceName, provincesOf, touch, year,
-  forcesChanged,
+  forcesChanged, establishment
 } from '../state';
 import type { BuildingId, FactionId, LawCategory, Modifier, RulerTuple, TradeGoodId, TreatyType, WorldState } from '../types';
 
@@ -226,6 +226,7 @@ export function applyEffects(w: WorldState, c: string, effects: Effect[]): void 
         }
         for (const a of Object.values(w.armies)) {
           if (a.owner === c && e.provinces.includes(a.location)) {
+            establishment(a);
             for (const u of ['infantry', 'cavalry', 'artillery', 'irregulars'] as const) a.units[u] *= 0.5;
             const home = w.countries[c].capital;
             a.location = home; a.path = []; a.status = 'idle';

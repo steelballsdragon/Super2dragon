@@ -6,7 +6,7 @@ import { sizeFactor } from './construction';
 import { blockadedProvinces } from './naval';
 import { chance, gaussian } from './rng';
 import {
-  armiesOf, bonuses, chronicle, fleetsOf, clamp, countryName, def, newId, notify, provincesOf, treatiesOf, partner,
+  armiesOf, bonuses, chronicle, establishment, fleetsOf, clamp, countryName, def, newId, notify, provincesOf, treatiesOf, partner,
 } from './state';
 import { OUTPOST_DEFS, OUTPOST_HOST, PROVINCE_DEFS, TRADE_NODE_DEFS, isCoastal } from './static';
 import type { BuildingId, Ledger, Loan, TradeGoodId, WorldState } from './types';
@@ -355,6 +355,7 @@ function handleDeficit(w: WorldState, id: string): void {
     c.treasury = 0;
     for (const a of armiesOf(w, id)) {
       a.morale *= 0.85;
+      establishment(a);
       for (const u of ['infantry', 'cavalry', 'artillery', 'irregulars'] as const) a.units[u] *= 0.96;
     }
     c.stability = clamp(c.stability - 1, 0, 100);

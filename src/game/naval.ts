@@ -3,7 +3,7 @@ import { SHIPS } from '../data/buildings';
 import { REBELS } from './constants';
 import { randRange } from './rng';
 import {
-  armyRegiments, atWar, bonuses, chronicle, clamp, countryName, newId, notify, provinceName, sideOf, warBetween,
+  armyRegiments, atWar, bonuses, chronicle, clamp, countryName, establishment, newId, notify, provinceName, sideOf, warBetween,
   forcesChanged,
 } from './state';
 import { GEO, SEA_DEFS, coastalSeas, seaNeighbors, seaPoint } from './static';
@@ -238,7 +238,7 @@ function navalBattle(w: WorldState, sea: string, sideA: Fleet[], sideB: Fleet[])
   for (const f of losers) {
     for (const id of f.carrying) {
       const army: Army | undefined = w.armies[id];
-      if (army) for (const u of ['infantry', 'cavalry', 'artillery', 'irregulars'] as const) army.units[u] *= 0.5;
+      if (army) { establishment(army); for (const u of ['infantry', 'cavalry', 'artillery', 'irregulars'] as const) army.units[u] *= 0.5; }
     }
     const retreat = seaNeighbors(sea).find((s) => !Object.values(w.fleets).some((o) => o.location === s && atWar(w, o.owner, f.owner)));
     if (retreat) { f.location = retreat; f.path = []; }

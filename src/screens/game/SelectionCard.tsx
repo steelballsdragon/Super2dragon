@@ -3,8 +3,8 @@ import { Flag } from '../../art/Flag';
 import { BUILDING_BY_ID, SHIPS, UNITS } from '../../data/buildings';
 import { GOODS, REBELS, RELIGION_NAME, TERRAIN } from '../../game/constants';
 import { provinceOutput } from '../../game/economy';
-import { armyQuality, pathMonths, supplyLimit } from '../../game/military';
-import { armiesAt, armiesOf, armyRegiments, countryName, provinceName } from '../../game/state';
+import { armyQuality, establishment, pathMonths, supplyLimit } from '../../game/military';
+import { armiesAt, armiesOf, armyRegiments, countryName, friendly, provinceName } from '../../game/state';
 import { POLITIES, PROVINCE_DEFS, SEA_DEFS, coastalSeas, provincePoint, seaPoint } from '../../game/static';
 import { useGame } from '../../store/game';
 import { orderGather } from './gather';
@@ -64,6 +64,18 @@ function ArmyCard({ id }: { id: string }) {
         <div className="text-parchment-dim">General <span className="float-right text-parchment">{general?.alive ? `${general.name} (${general.mil})` : '—'}</span></div>
         <div className="text-parchment-dim">Quality <span className="tabular float-right text-parchment">{armyQuality(w, a.owner).toFixed(2)}</span></div>
       </div>
+      {(() => {
+        if (!mine) return null;
+        const full = establishment(a);
+        const fullRegs = full.infantry + full.cavalry + full.artillery + full.irregulars;
+        if (fullRegs <= 0 || regs >= fullRegs * 0.995) return null;
+        const p = w.provinces[a.location];
+        const holder = p?.controller ?? p?.owner;
+        const home = !!holder && friendly(w, me, holder);
+        const c = w.countries[me];
+        const why = !home ? 'refills once back on friendly ground' : c.manpower < 1 ? 'the manpower reserve is empty' : c.treasury <= 0 ? 'the treasury cannot pay for recruits' : 'refilling from the manpower reserve';
+        return <div className="mt-2 text-[12px] text-parchment-dim">At {Math.round((regs / fullRegs) * 100)}% of full strength ({Math.round(fullRegs * 1000).toLocaleString('en')} men) · {why}</div>;
+      })()}
       {dest ? <div className="mt-2 text-[12px] text-gold"><MapPin size={12} className="inline" /> Marching to {provinceName(dest)} · ~{Math.max(0.5, Math.round(pathMonths(w, a, a.path) * 10) / 10)} months</div> : null}
       <div className="mt-1 text-[11px] text-muted">Status: {a.status}{a.status === 'sieging' && w.provinces[a.location]?.siege ? ` · siege ${Math.round(w.provinces[a.location].siege!.progress)}%` : ''}</div>
       {mine ? (

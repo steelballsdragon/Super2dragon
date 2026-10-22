@@ -357,6 +357,8 @@ export interface Army {
   name: string;
   location: string;
   units: UnitCounts;
+  /** Established strength, the most it has held of each arm; losses are refilled toward it on friendly ground. */
+  full?: UnitCounts;
   morale: number; // 0..1
   experience: number; // 0..1
   general?: string;
@@ -550,5 +552,5 @@ export interface WorldState {
   decisions: PlayerDecision[];
   nextId: number;
   flags: Record<string, number | string | boolean>;
-  settings: { pauseOnEvents: boolean; autosaveMonths: number };
+  settings: { pauseOnEvents: boolean; autosaveMonths: number; /** False: the player's armies lose no men to supply and terrain. */ supplyLosses?: boolean };
 }

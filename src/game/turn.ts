@@ -7,7 +7,7 @@ import { processDiplomacy } from './diplomacy';
 import { monthlyEconomy, updatePrices } from './economy';
 import { processEspionage } from './espionage';
 import { processEvents } from './events/engine';
-import { applyAttrition, moveArmies, processRecruitment, resolveBattles, resolveRebellions, resolveSieges } from './military';
+import { applyAttrition, moveArmies, processRecruitment, reinforceArmies, resolveBattles, resolveRebellions, resolveSieges } from './military';
 import { blockadedProvinces, moveFleets, resolveNavalBattles } from './naval';
 import { processSociety } from './society';
 import { countryPopulation, totalRegiments, warsOf, notify, formatDate } from './state';
@@ -35,6 +35,7 @@ export function advanceMonth(w: WorldState): void {
   resolveBattles(w);
   resolveSieges(w, blockadedProvinces(w));
   applyAttrition(w);
+  reinforceArmies(w);
   resolveRebellions(w);
   updateWarScores(w);
   handleCongresses(w);

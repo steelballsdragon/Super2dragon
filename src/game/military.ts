@@ -6,7 +6,7 @@ import { REBELS, TERRAIN } from './constants';
 import { wageFactor } from './economy';
 import { chance, rand, randRange } from './rng';
 import {
-  armiesAt, armiesOf, armyRegiments, atWar, bonuses, chronicle, clamp, countryName, def, friendly, hasTreaty, hostile, month, newId, notify,
+  armiesAt, armiesOf, armyRegiments, atWar, establishment, bonuses, chronicle, clamp, countryName, def, friendly, hasTreaty, hostile, month, newId, notify,
   provinceName, provincesOf, sideOf, topOverlord, touch, warBetween, year,
   forcesChanged,
 } from './state';
@@ -289,6 +289,7 @@ function sideRegiments(armies: Army[]): number {
 }
 
 function applyLosses(a: Army, fraction: number): number {
+  if (!a.rebel) establishment(a); // remember full strength before the first loss
   let lost = 0;
   for (const u of UNIT_TYPES) {
     const f = Math.min(0.95, fraction * (u === 'irregulars' ? 1.25 : u === 'artillery' ? 0.7 : 1));
@@ -538,12 +539,50 @@ export function applyAttrition(w: WorldState): void {
     // in enemy land suffer from terrain, disease and foraging.
     const resting = !hostileLand && a.status !== 'moving' && a.status !== 'retreating';
     let loss = hostileLand ? Math.min(0.08, over * 0.025) + t.attrition + 0.004
-      : Math.min(0.03, over * 0.01) + (resting ? 0 : t.attrition * 0.5);
+      : Math.min(0.015, over * 0.005) + (resting ? 0 : t.attrition * 0.5);
     loss *= 1 - clamp(b.attrition ?? 0, 0, 0.6);
+    if (a.owner === w.playerId && w.settings.supplyLosses === false) loss = 0;
     if (loss > 0.0005) applyLosses(a, loss);
     const regen = hostileLand ? 0.06 : a.status === 'idle' ? 0.18 : 0.1;
     a.morale = clamp(a.morale + regen, 0, 1);
     if (armyRegiments(a) < 0.1) removeArmy(w, a.id);
+  }
+}
+
+export { establishment };
+
+/** Share of an army's shortfall made good each month on friendly ground. */
+export const REINFORCE_IDLE = 0.25;
+export const REINFORCE_MARCHING = 0.12;
+
+/** Monthly: armies on friendly ground refill lost men from the manpower reserve, at half the cost of
+ * raising them, spending at most 30% of the treasury a month. */
+export function reinforceArmies(w: WorldState): void {
+  const budget = new Map<string, number>();
+  const price = new Map<string, number>();
+  for (const a of Object.values(w.armies)) {
+    if (a.rebel || a.status === 'embarked' || a.status === 'retreating') continue;
+    const full = establishment(a);
+    const p = w.provinces[a.location];
+    const holder = p?.controller ?? p?.owner;
+    const c = w.countries[a.owner];
+    if (!holder || !c || c.manpower <= 0 || c.treasury <= 0 || !friendly(w, a.owner, holder)) continue;
+    if (!budget.has(a.owner)) budget.set(a.owner, c.treasury * 0.3);
+    const rate = a.status === 'idle' ? REINFORCE_IDLE : REINFORCE_MARCHING;
+    for (const u of UNIT_TYPES) {
+      const missing = full[u] - a.units[u];
+      if (missing <= 0.01) continue;
+      const key = `${a.owner}:${u}`;
+      if (!price.has(key)) price.set(key, recruitCost(w, a.owner, u, 1) * 0.5);
+      const each = price.get(key)!;
+      const men = UNITS[u].manpower;
+      const add = Math.min(missing, Math.max(0.1, missing * rate), c.manpower / men, budget.get(a.owner)! / Math.max(0.01, each));
+      if (add <= 0.001) continue;
+      a.units[u] += add;
+      c.manpower -= add * men;
+      c.treasury -= add * each;
+      budget.set(a.owner, budget.get(a.owner)! - add * each);
+    }
   }
 }
 

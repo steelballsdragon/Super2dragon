@@ -5,7 +5,7 @@ import { MONTHS, REBELS, RELIGION_GROUP, SUBJECT_TYPES } from './constants';
 import type { Bonuses } from './defs';
 import { POLITIES, PROVINCE_DEFS, neighbors as neighborsOf } from './static';
 import type {
-  Army, ChronicleEntry, CountryState, Fleet, GameNotification, LawCategory, PolityDef, Treaty, TreatyType, War, WorldState,
+  Army, ChronicleEntry, CountryState, Fleet, GameNotification, LawCategory, PolityDef, Treaty, TreatyType, UnitCounts, War, WorldState,
 } from './types';
 
 export function def(id: string): PolityDef {
@@ -283,6 +283,14 @@ export function countryPopulation(w: WorldState, c: string): number {
   let s = 0;
   for (const id of provincesOf(w, c)) s += w.provinces[id].pop;
   return s;
+}
+
+/** An army's established strength, the most it has held of each arm (created on first use, raised as it grows).
+ * Losses are refilled toward it on friendly ground. */
+export function establishment(a: Army): UnitCounts {
+  if (!a.full) a.full = { ...a.units };
+  for (const u of ['infantry', 'cavalry', 'artillery', 'irregulars'] as const) if (a.units[u] > a.full[u]) a.full[u] = a.units[u];
+  return a.full;
 }
 
 export function armyRegiments(a: Army): number {
