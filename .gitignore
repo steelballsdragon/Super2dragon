@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node / Vite
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+smoke-output/
+.vite/
