@@ -8,6 +8,7 @@ import { TECH_BY_ID, TECH_PROFILES } from '../data/technologies';
 import { appointCouncil, generateGeneral, makeCharacter, rulerTraits } from './characters';
 import { GOODS, REBELS, SCHEMA_VERSION, SUBJECT_TYPES } from './constants';
 import { calibrateRevenue, emptyLedger } from './economy';
+import { seedFamilies } from './family';
 import { maxManpower } from './military';
 import { randInt, seedRng } from './rng';
 import { addOpinion, chronicle, def, forcesChanged, newId, relKey } from './state';
@@ -176,7 +177,7 @@ export function createWorld(opts: NewGameOptions): WorldState {
       tariff: laws.economy === 'free_trade' ? 0.04 : laws.economy === 'mercantilism' ? 0.12 : 0.08,
       budget: { research: 1, espionage: 0.5, administration: 1 },
       stability: p.stability, legitimacy: p.legitimacy, prestige: p.prestige, corruption: p.corruption, warExhaustion: 0, manpower: 0,
-      rulerId: '', ministers: {}, techs, research: { tech: null, progress: 0 }, laws, factions: initialFactions(p, laws),
+      rulerId: '', family: [], ministers: {}, techs, research: { tech: null, progress: 0 }, laws, factions: initialFactions(p, laws),
       overlord: p.overlord, subjectType: p.subjectType, liberty: p.subjectType ? SUBJECT_TYPES[p.subjectType].liberty : 0,
       capital: p.capital, foodStock: 3, cycle: 0, spy: {}, counterIntel: 10, envoys: [], rivals: [...p.rivals], infamy: 0, claims: [],
       revenueMod: 1, modifiers: [], last: emptyLedger(), ai: { nextWarCheck: randInt(w, 6, 30), stance: 'consolidate', lastPeaceOffer: -99 },
@@ -273,8 +274,9 @@ export function createWorld(opts: NewGameOptions): WorldState {
   for (const [a, b, v] of START_RELATIONS) w.relations[relKey(a, b)] = v;
   for (const c of Object.values(w.countries)) if (c.overlord) addOpinion(w, c.id, c.overlord, 40);
 
-  // The player's royal council
+  // The player's royal council, and every ruling house's consort and children
   appointCouncil(w, opts.playerId);
+  seedFamilies(w);
 
   calibrateRevenue(w);
   chronicle(w, { text: 'The nineteenth century dawns. Bonaparte rules France as First Consul; the Second Coalition fights on; the Maratha chiefs, the Qing court and the young American republic face an uncertain age.', category: 'court', countries: [], importance: 3 });

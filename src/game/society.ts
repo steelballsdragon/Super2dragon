@@ -3,7 +3,8 @@ import { BUILDING_BY_ID } from '../data/buildings';
 import { TECH_BY_ID } from '../data/technologies';
 import { LAW_CATEGORY, lawOption } from '../data/laws';
 import { HISTORICAL_SUCCESSORS } from '../data/scenario';
-import { generateName, makeCharacter, rulerTraits } from './characters';
+import { deathChance, generateName, makeCharacter, rulerTraits } from './characters';
+import { addToFamily, ensureHeir, heirDeathChance, nextInLine, onSuccession, processHousehold } from './family';
 import { REBELS, RELIGION_GROUP, TERRAIN } from './constants';
 import { maxManpower, spawnRebels, chanceOfRevolt } from './military';
 import { chance, gaussian, pick, rand, randInt } from './rng';
@@ -205,11 +206,6 @@ function processPolitics(w: WorldState, country: CountryState): void {
 // Rulers, heirs and succession
 // ---------------------------------------------------------------------------
 
-function deathChance(age: number, health: number): number {
-  const base = 0.0004 * Math.exp((age - 40) / 9.5);
-  return Math.min(0.2, base * (1.6 - health / 100));
-}
-
 export function generateHeir(w: WorldState, c: string, adult = false): Character {
   const d = def(c);
   const female = rand(w) < 0.12;
@@ -217,7 +213,9 @@ export function generateHeir(w: WorldState, c: string, adult = false): Character
   const born = year(w) - (adult ? randInt(w, 18, 40) : randInt(w, 0, 14));
   const ruler = w.characters[w.countries[c].rulerId];
   const a = randInt(w, 1, 8), dp = randInt(w, 1, 8), m = randInt(w, 1, 8);
-  return makeCharacter(w, { country: c, role: 'heir', name, born, female, adm: a, dip: dp, mil: m, dynasty: ruler?.dynasty, traits: rulerTraits(a, dp, m) });
+  const heir = makeCharacter(w, { country: c, role: 'heir', name, born, female, adm: a, dip: dp, mil: m, dynasty: ruler?.dynasty, traits: rulerTraits(a, dp, m) });
+  addToFamily(w, c, heir);
+  return heir;
 }
 
 export function succeed(w: WorldState, c: string, cause: string): void {
@@ -225,7 +223,8 @@ export function succeed(w: WorldState, c: string, cause: string): void {
   const old = w.characters[country.rulerId];
   if (old) { old.alive = false; }
   const d = def(c);
-  const heir = country.heirId ? w.characters[country.heirId] : undefined;
+  const designated = country.heirId ? w.characters[country.heirId] : undefined;
+  const heir = designated?.alive ? designated : isRepublic(w, c) ? undefined : nextInLine(w, c);
   let newRuler: Character;
   if (isRepublic(w, c)) {
     const hist = HISTORICAL_SUCCESSORS[c]?.find((h) => !Object.values(w.characters).some((ch) => ch.name === h[0]));
@@ -241,8 +240,10 @@ export function succeed(w: WorldState, c: string, cause: string): void {
       country.modifiers.push({ id: 'regency', label: 'Regency Council', monthsLeft: (16 - age) * 12, stability: -0.05, unrest: 2 });
       country.legitimacy = clamp(country.legitimacy - 10, 0, 100);
     }
-    if (hasRulingHouse(w, c) && chance(w, 0.7)) country.heirId = generateHeir(w, c, chance(w, 0.3)).id;
+    onSuccession(w, c, heir);
+    if (!ensureHeir(w, c) && hasRulingHouse(w, c) && chance(w, 0.7)) country.heirId = generateHeir(w, c, chance(w, 0.3)).id;
   } else {
+    country.consortId = undefined;
     const n = generateName(w, d.cultureGroup, false) ?? 'New Council';
     const a = randInt(w, 1, 8), dp = randInt(w, 1, 8), m = randInt(w, 1, 8);
     newRuler = makeCharacter(w, { country: c, role: 'ruler', name: n, born: year(w) - randInt(w, 25, 55), adm: a, dip: dp, mil: m, traits: rulerTraits(a, dp, m), loyalty: 100 });
@@ -286,10 +287,12 @@ function processRulers(w: WorldState, country: CountryState): void {
     }
   }
   const heir = country.heirId ? w.characters[country.heirId] : undefined;
-  if (heir && heir.alive && rand(w) < deathChance(year(w) - heir.born, heir.health) * 0.6) {
+  if (heir && heir.alive && rand(w) < heirDeathChance(w, heir)) {
     heir.alive = false;
     country.heirId = undefined;
-    if (c === w.playerId) notify(w, `The heir, ${heir.name}, has died.`, 'warning');
+    country.family = country.family.filter((id) => id !== heir.id);
+    const next = ensureHeir(w, c);
+    if (c === w.playerId) notify(w, `The heir, ${heir.name}, has died.${next ? ` ${next.name} is now heir.` : ''}`, 'warning');
   }
   // Characters (generals, ministers) also age and die.
   if (month(w) === 6 && c === w.playerId) {
@@ -349,6 +352,7 @@ export function processSociety(w: WorldState): void {
     processUnrest(w, country, garrisons, rebelsAt);
     processPolitics(w, country);
     processRulers(w, country);
+    if (country.alive) processHousehold(w, country.id);
     processLawReform(w, country);
   }
 }

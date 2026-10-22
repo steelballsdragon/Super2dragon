@@ -3,6 +3,7 @@
 import { compressToBase64, compressToUTF16, decompressFromBase64, decompressFromUTF16 } from 'lz-string';
 import { SCHEMA_VERSION } from './constants';
 import { refreshLedgers } from './economy';
+import { seedFamilies } from './family';
 import { POLITIES } from './static';
 import { formatDate } from './state';
 import type { WorldState } from './types';
@@ -62,6 +63,12 @@ export const MIGRATIONS: Record<number, Migration> = {
     const countries = (s.countries ?? {}) as Record<string, Record<string, unknown>>;
     for (const c of Object.values(countries)) if (typeof c.revenueMod !== 'number') c.revenueMod = 1;
     return { ...s, schemaVersion: 2, countries };
+  },
+  // Royal households: filled in by seedFamilies once the save is loaded.
+  2: (s) => {
+    const countries = (s.countries ?? {}) as Record<string, Record<string, unknown>>;
+    for (const c of Object.values(countries)) if (!Array.isArray(c.family)) c.family = [];
+    return { ...s, schemaVersion: 3, countries };
   },
 };
 
@@ -165,6 +172,7 @@ export function deserialize(input: string): WorldState {
   const errors = validateWorld(migrated);
   if (errors.length) throw new Error(`Invalid save: ${errors.join(' ')}`);
   const w = migrated as unknown as WorldState;
+  seedFamilies(w);
   refreshLedgers(w);
   return w;
 }

@@ -277,6 +277,8 @@ export interface CountryState {
   rulerId: string;
   heirId?: string;
   consortId?: string;
+  /** Living princes and princesses of the ruling house, other than the sovereign. */
+  family: string[];
   ministers: Partial<Record<MinisterRole, string>>;
   techs: string[];
   research: { tech: string | null; progress: number };
@@ -328,7 +330,11 @@ export interface Character {
   name: string;
   dynasty?: string;
   country: string;
-  role: 'ruler' | 'heir' | 'consort' | 'minister' | 'general' | 'admiral';
+  role: 'ruler' | 'heir' | 'consort' | 'family' | 'minister' | 'general' | 'admiral';
+  /** The sovereign this character is a child of. */
+  parentId?: string;
+  /** Polity a consort was born in, when they married in from abroad. */
+  origin?: string;
   office?: MinisterRole;
   born: number;
   female: boolean;

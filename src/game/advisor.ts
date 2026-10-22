@@ -11,6 +11,7 @@ import { MINISTER_TITLES, PERSONALITIES } from './characters';
 import { buildBlocker } from './construction';
 import { evaluateProposal, maxEnvoys } from './diplomacy';
 import { creditAvailable, totalDebt } from './economy';
+import { consortOf, household, relationTo } from './family';
 import { SPY_OPS, type SpyOp } from './espionage';
 import { recruitCost } from './military';
 import { lawBlocker } from './society';
@@ -431,6 +432,8 @@ interface Intent {
   plan: (w: WorldState, c: string, t: string, pl: Planner, raw: string) => string;
 }
 
+const HEIR_TITLE_WORDS = new Set(['prince', 'princess', 'crown', 'grand', 'duke', 'duchess', 'archduke', 'archduchess', 'king', 'queen', 'lord', 'lady', 'the', 'son', 'daughter', 'heir', 'make', 'name']);
+
 const INTENTS: Intent[] = [
   {
     id: 'peace', title: 'Make peace', minister: 'foreign',
@@ -510,10 +513,32 @@ const INTENTS: Intent[] = [
     },
   },
   {
+    id: 'heir', title: 'Name an heir', minister: 'admin',
+    test: (t) => /\b(heir|heiress|successor|disinherit)\b/.test(t),
+    plan: (w, c, t, pl, raw) => {
+      const family = household(w, c);
+      if (!family.length) { pl.note('There is no prince or princess of the blood to name.'); return 'The royal house has no children yet.'; }
+      const words = new Set(`${t} ${raw}`.toLowerCase().split(/[^\p{L}\p{N}ʻ']+/u));
+      const score = (name: string) => name.toLowerCase().split(/[^\p{L}\p{N}ʻ']+/u).filter((x) => x.length > 2 && !HEIR_TITLE_WORDS.has(x) && words.has(x)).length;
+      const best = family.map((ch) => ({ ch, n: score(ch.name) })).filter((x) => x.n > 0).sort((a, b) => b.n - a.n)[0];
+      const byName = best?.ch;
+      const kin = (rel: string) => family.filter((ch) => relationTo(w, c, ch) === rel);
+      const wanted = /\bdaughter\b/.test(t) ? kin('Daughter') : /\bson\b/.test(t) ? kin('Son') : [];
+      const pick = byName ?? (/\byoungest\b/.test(t) ? wanted[wanted.length - 1] : wanted[0]);
+      if (!pick) { pl.note(`Name one of the family: ${family.map((ch) => ch.name).join(', ')}.`); return 'Whom shall we proclaim heir?'; }
+      pl.add({ type: 'court', kind: 'chooseHeir', character: pick.id });
+      return `${pick.name} would be proclaimed heir to the throne.`;
+    },
+  },
+  {
     id: 'marriage', title: 'Arrange a royal marriage', minister: 'foreign',
-    test: (t) => /\b(marriage|marry|wed|betroth)\b/.test(t),
+    test: (t) => /\b(marriage|marry|wed|wedding|betroth|wife|husband|bride|consort)\b/.test(t),
     plan: (w, c, t, pl, raw) => {
       const target = matchCountries(w, raw, c)[0];
+      if (!target && !consortOf(w, c)) {
+        pl.add({ type: 'court', kind: 'findConsort' });
+        return 'A match among our own nobility would see the sovereign wed without delay. To bind a foreign house, name it.';
+      }
       if (!target) { pl.note('Name the dynasty you wish to marry into.'); return 'With which house?'; }
       pl.add({ type: 'diplomacy', kind: 'marriage', target });
       return `A match with ${countryName(w, target)} would bind our houses.`;

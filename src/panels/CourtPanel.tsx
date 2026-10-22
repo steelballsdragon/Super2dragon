@@ -1,7 +1,8 @@
 import { Portrait } from '../art/Portrait';
 import { previewAction } from '../game/actions';
 import { age, MINISTER_TITLES, PERSONALITIES } from '../game/characters';
-import { def } from '../game/state';
+import { consortOf, consortOrigin, household, relationTo } from '../game/family';
+import { def, hasRulingHouse } from '../game/state';
 import type { Character, FactionId, MinisterRole } from '../game/types';
 import { useGame } from '../store/game';
 import { useWorld } from '../store/hooks';
@@ -17,20 +18,30 @@ export function CourtPanel() {
   const d = def(me);
   const ruler = w.characters[c.rulerId];
   const heir = c.heirId ? w.characters[c.heirId] : undefined;
-  const consort = c.consortId ? w.characters[c.consortId] : undefined;
-  const acts: { kind: 'festival' | 'anticorruption' | 'designateHeir'; label: string }[] = [
+  const consort = consortOf(w, me);
+  const family = household(w, me);
+  const dynastic = hasRulingHouse(w, me);
+  const acts: { kind: 'festival' | 'anticorruption' | 'designateHeir' | 'findConsort'; label: string }[] = [
     { kind: 'festival', label: 'Hold festivities' },
     { kind: 'anticorruption', label: 'Purge corrupt officials' },
-    ...(!heir?.alive ? [{ kind: 'designateHeir' as const, label: 'Designate an heir' }] : []),
+    ...(!heir?.alive && !family.length ? [{ kind: 'designateHeir' as const, label: 'Designate an heir' }] : []),
+    ...(dynastic && !consort ? [{ kind: 'findConsort' as const, label: 'Marry among our nobility' }] : []),
   ];
+  const nameHeir = (ch: Character) => {
+    const pv = previewAction(w, me, { type: 'court', kind: 'chooseHeir', character: ch.id });
+    if (!pv.valid) return;
+    if (!heir?.alive) { s.dispatch({ type: 'court', kind: 'chooseHeir', character: ch.id }); return; }
+    void s.askConfirm({ title: `Name ${ch.name} heir?`, body: `${heir.name} will be passed over. ${pv.consequences.slice(1).join(', ')}, stability −${pv.cost.stability}.`, confirmLabel: 'Proclaim the heir' }).then((ok) => { if (ok) s.dispatch({ type: 'court', kind: 'chooseHeir', character: ch.id }); });
+  };
   return (
     <div>
       <Section title="The ruling house">
         <div className="grid grid-cols-3 gap-2">
-          {[['Sovereign', ruler], ['Heir', heir], ['Consort', consort]].map(([label, ch]) => (
-            <Person key={label as string} label={label as string} ch={ch as Character | undefined} style={d.portrait} />
-          ))}
+          <Person label="Sovereign" ch={ruler} style={d.portrait} />
+          <Person label="Heir" ch={heir} style={d.portrait} sub={heir?.alive ? relationTo(w, me, heir) : undefined} />
+          <Person label="Consort" ch={consort} style={consort?.origin ? def(consort.origin).portrait : d.portrait} sub={consort ? consortOrigin(w, consort) : undefined} />
         </div>
+        {dynastic && !consort ? <p className="mt-2 text-[12px] text-muted">The sovereign is unmarried. Propose a royal marriage in Diplomacy to take a consort from a foreign house, or marry among our own nobility.</p> : null}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {acts.map((a) => {
             const pv = previewAction(w, me, { type: 'court', kind: a.kind });
@@ -42,6 +53,31 @@ export function CourtPanel() {
           })}
         </div>
       </Section>
+
+      {dynastic ? (
+        <Section title="The royal family">
+          {family.length ? (
+            <div className="space-y-1.5">
+              {family.map((ch) => {
+                const isHeir = ch.id === heir?.id;
+                const pv = isHeir ? null : previewAction(w, me, { type: 'court', kind: 'chooseHeir', character: ch.id });
+                return (
+                  <div key={ch.id} className={`card flex items-center gap-3 p-2 ${isHeir ? '!border-gold/60 bg-gold/5' : ''}`}>
+                    <Portrait style={d.portrait} seed={ch.portraitSeed} female={ch.female} age={age(w, ch)} size={42} />
+                    <div className="min-w-0 flex-1 text-[13px]">
+                      <div className="flex items-center gap-1.5 text-parchment">{ch.name}{isHeir ? <Badge>heir</Badge> : null}</div>
+                      <div className="text-[12px] text-parchment-dim">{relationTo(w, me, ch)} · {age(w, ch) < 1 ? 'infant' : `${age(w, ch)} yrs`}</div>
+                      <div className="text-[11px] text-muted">Adm {ch.adm} · Dip {ch.dip} · Mil {ch.mil}{ch.traits.length && age(w, ch) >= 16 ? ` · ${ch.traits.join(', ')}` : ''}</div>
+                    </div>
+                    {pv ? <button className="btn btn-ghost !min-h-8 shrink-0 !px-3 !py-1" disabled={!pv.valid} title={pv.valid ? pv.consequences.join(', ') : pv.errors.join(' ')} onClick={() => nameHeir(ch)}>Make heir</button> : null}
+                  </div>
+                );
+              })}
+            </div>
+          ) : <p className="text-[12px] italic text-muted">{consort ? 'No children yet. Sons and daughters will be born to the royal couple in time.' : 'No princes or princesses of the blood. A married sovereign will have children in time.'}</p>}
+          <p className="mt-2 text-[11px] text-muted">Any living son, daughter or kinsman can be named heir. Passing over a living heir costs legitimacy and angers the nobility.</p>
+        </Section>
+      ) : null}
 
       <Section title="The council of ministers">
         <div className="space-y-2">
@@ -89,7 +125,7 @@ export function CourtPanel() {
   );
 }
 
-function Person({ label, ch, style }: { label: string; ch?: Character; style: Parameters<typeof Portrait>[0]['style'] }) {
+function Person({ label, ch, style, sub }: { label: string; ch?: Character; style: Parameters<typeof Portrait>[0]['style']; sub?: string }) {
   const { w } = useWorld();
   return (
     <div className="card flex flex-col items-center p-2 text-center">
@@ -98,8 +134,8 @@ function Person({ label, ch, style }: { label: string; ch?: Character; style: Pa
         <>
           <Portrait style={style} seed={ch.portraitSeed} female={ch.female} age={age(w, ch)} size={58} />
           <div className="mt-1 text-[12px] leading-tight text-parchment">{ch.name}</div>
-          <div className="text-[11px] text-muted">{age(w, ch)} yrs</div>
-          {ch.traits[0] ? <Badge tone="muted">{ch.traits[0]}</Badge> : null}
+          <div className="text-[11px] text-muted">{age(w, ch)} yrs{sub ? ` · ${sub}` : ''}</div>
+          {ch.traits[0] && age(w, ch) >= 16 ? <Badge tone="muted">{ch.traits[0]}</Badge> : null}
         </>
       ) : <div className="py-6 text-[12px] italic text-muted">none</div>}
     </div>

@@ -50,6 +50,22 @@ export function generateName(w: WorldState, group: CultureGroup, female: boolean
   return `${given} ${pick(w, pool.s)}`;
 }
 
+/** Monthly chance of death at a given age and health. */
+export function deathChance(age: number, health: number): number {
+  const base = 0.0004 * Math.exp((age - 40) / 9.5);
+  return Math.min(0.2, base * (1.6 - health / 100));
+}
+
+/** A given name alone, as royal children are known, preferring one not already in use. */
+export function givenName(w: WorldState, group: CultureGroup, female: boolean, avoid?: Set<string>): string | null {
+  if (TITLED_GROUPS.includes(group)) return null;
+  const pool = NAME_POOLS[group];
+  if (!pool) return null;
+  const names = female ? pool.f : pool.m;
+  const fresh = avoid ? names.filter((n) => !avoid.has(n)) : names;
+  return pick(w, fresh.length ? fresh : names);
+}
+
 export function makeCharacter(w: WorldState, init: Partial<Character> & Pick<Character, 'country' | 'role'>): Character {
   const ch: Character = {
     id: newId(w, 'ch'),

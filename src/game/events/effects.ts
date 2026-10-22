@@ -5,6 +5,7 @@ import { LAW_CATEGORY, lawOption } from '../../data/laws';
 import { TECH_BY_ID } from '../../data/technologies';
 import { makeCharacter } from '../characters';
 import { GOODS } from '../constants';
+import { bearChild, canHaveChildren, celebrateMarriage, ensureHeir, resetHousehold } from '../family';
 import { spawnRebels } from '../military';
 import { generateHeir, succeed } from '../society';
 import { grantTech } from '../tech';
@@ -159,13 +160,15 @@ export function applyEffects(w: WorldState, c: string, effects: Effect[]): void 
         if (old) old.alive = false;
         const [name, born, adm, dip, mil, dynasty] = e.ruler;
         const r = makeCharacter(w, { country: c, role: 'ruler', name, born, adm, dip, mil, dynasty, loyalty: 100 });
+        resetHousehold(w, c);
         country.rulerId = r.id;
         touch(w);
         chronicle(w, { text: `${name} ${e.cause} in ${countryName(w, c)}.`, category: 'court', countries: [c], importance: 2 });
         break;
       }
       case 'newHeir':
-        if (!country.heirId || !w.characters[country.heirId]?.alive) country.heirId = generateHeir(w, c, e.adult).id;
+        if (!e.adult && canHaveChildren(w, c)) bearChild(w, c);
+        else if (!country.heirId || !w.characters[country.heirId]?.alive) country.heirId = (ensureHeir(w, c) ?? generateHeir(w, c, e.adult)).id;
         break;
       case 'building': {
         const p = w.provinces[e.province];
@@ -184,6 +187,7 @@ export function applyEffects(w: WorldState, c: string, effects: Effect[]): void 
       case 'treaty':
         if (!hasTreaty(w, e.type, c, e.target) && w.countries[e.target]?.alive) {
           w.treaties.push({ id: newId(w, 't'), type: e.type, a: c, b: e.target, start: w.turn, expires: e.months ? w.turn + e.months : undefined });
+          if (e.type === 'marriage') celebrateMarriage(w, c, e.target);
           touch(w);
         }
         break;

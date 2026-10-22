@@ -1,6 +1,6 @@
 import type { Religion, SubjectType, Terrain, TradeGoodId } from './types';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const START_YEAR = 1800;
 export const REBELS = 'rebels';
 

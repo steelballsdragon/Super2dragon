@@ -7,14 +7,15 @@ import { appointCouncil, generateGeneral, generateMinister, MINISTER_TITLES } fr
 import { buildBlocker, buildingQuote, cancelConstruction, startConstruction } from './construction';
 import { answerOffer, diploBlocker, DIPLO_LABELS, evaluateProposal, performDiplomacy, type DiploKind } from './diplomacy';
 import { creditAvailable, loanRate, refreshLedgers, repayLoan, takeLoan } from './economy';
+import { consortOf, ensureHeir, heirBlocker, household, rulerOf, setHeir, wedRuler } from './family';
 import { runSpyOp, spyOpBlocker, spyOpChance, SPY_OPS, type SpyOp } from './espionage';
 import { resolveEvent } from './events/engine';
 import { canRecruitIn, findPath, orderMove, pathMonths, recruitCost, removeArmy, shipCost, UNIT_TYPES } from './military';
 import { planExpedition, startExpedition, orderFleet, findSeaPath } from './naval';
 import { generateHeir, lawBlocker, lawReformCost } from './society';
 import {
-  addOpinion, armyRegiments, chronicle, clamp, countryName, def, newId, notify, provinceName, sideOf, touch,
-  forcesChanged,
+  addOpinion, armyRegiments, chronicle, clamp, countryName, def, hasRulingHouse, newId, notify, provinceName, sideOf, touch,
+  forcesChanged, year,
 } from './state';
 import { SEA_DEFS, coastalSeas } from './static';
 import { techBlocker, techCost } from './tech';
@@ -49,7 +50,7 @@ export type GameAction =
   | { type: 'spyOp'; target: string; op: SpyOp }
   | { type: 'answerOffer'; offer: string; accept: boolean }
   | { type: 'eventChoice'; event: string; option: string }
-  | { type: 'court'; kind: 'anticorruption' | 'festival' | 'appoint' | 'designateHeir' | 'newGeneral'; role?: MinisterRole; army?: string }
+  | { type: 'court'; kind: 'anticorruption' | 'festival' | 'appoint' | 'designateHeir' | 'newGeneral' | 'chooseHeir' | 'findConsort'; role?: MinisterRole; army?: string; character?: string }
   | { type: 'congress' };
 
 export interface ActionPreview {
@@ -226,7 +227,26 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
       }
       if (a.kind === 'appoint') return prev(`Appoint a new ${MINISTER_TITLES[a.role ?? 'finance']}`, { cost: { treasury: inc * 0.3 } });
       if (a.kind === 'newGeneral') return prev('Commission a new general', { cost: { treasury: inc * 0.5 } });
-      return prev('Designate an heir', { consequences: ['Legitimacy −3 (a contested choice)'] });
+      if (a.kind === 'chooseHeir') {
+        const ch = a.character ? w.characters[a.character] : undefined;
+        const label = `Name ${ch?.name ?? 'a new'} heir`;
+        const err = heirBlocker(w, c, a.character);
+        if (err) return invalid(label, err);
+        const current = country.heirId ? w.characters[country.heirId] : undefined;
+        if (!current?.alive) return prev(label, { consequences: [`${ch!.name} will succeed`] });
+        return prev(label, { cost: { stability: 2 }, consequences: [`${current.name} is passed over`, 'Legitimacy −5', 'Nobility loyalty −5'], risks: ['A disinherited heir makes enemies at court'] });
+      }
+      if (a.kind === 'findConsort') {
+        const r = rulerOf(w, c);
+        const label = 'Seek a consort among our own nobility';
+        if (!hasRulingHouse(w, c)) return invalid(label, 'Only a ruling house takes a royal consort.');
+        if (consortOf(w, c)) return invalid(label, `${r?.name ?? 'The sovereign'} is already married.`);
+        if (!r?.alive || year(w) - r.born < 16) return invalid(label, 'The sovereign is not yet of age to marry.');
+        if (country.treasury < inc) return invalid(label, `The wedding costs ${money(inc)}.`);
+        return prev(label, { cost: { treasury: inc }, consequences: ['The sovereign marries', 'Legitimacy +3', 'No foreign alliance (propose a royal marriage in Diplomacy for that)'] });
+      }
+      const next = household(w, c)[0];
+      return prev('Designate an heir', { consequences: [next ? `${next.name} is named heir` : 'A kinsman is named heir', 'Legitimacy −3 (a contested choice)'] });
     }
     case 'congress': {
       if (country.prestige < 40) return invalid('Convene a congress', 'Requires prestige of 40.');
@@ -428,8 +448,31 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
         if (a.army && w.armies[a.army]?.owner === c) w.armies[a.army].general = g.id;
         return { ok: true, message: `${g.name} receives a general's commission.` };
       }
+      if (a.kind === 'chooseHeir') {
+        const err = heirBlocker(w, c, a.character);
+        if (err) return { ok: false, message: err };
+        const current = country.heirId ? w.characters[country.heirId] : undefined;
+        if (current?.alive) {
+          country.legitimacy = clamp(country.legitimacy - 5, 0, 100);
+          country.stability = clamp(country.stability - 2, 0, 100);
+          country.factions.nobility.loyalty = clamp(country.factions.nobility.loyalty - 5, 0, 100);
+          current.loyalty = clamp(current.loyalty - 40, 0, 100);
+        }
+        setHeir(w, c, a.character!);
+        w.flags[`heirChosen_${c}`] = 1;
+        const ch = w.characters[a.character!];
+        chronicle(w, { text: `${ch.name} is proclaimed heir to the throne of ${countryName(w, c)}${current?.alive ? `, in place of ${current.name}` : ''}.`, category: 'court', countries: [c], importance: 1 });
+        return { ok: true, message: `${ch.name} is proclaimed heir.` };
+      }
+      if (a.kind === 'findConsort') {
+        const consort = wedRuler(w, c);
+        if (!consort) return { ok: false, message: 'There can be no wedding now.' };
+        country.treasury -= inc;
+        country.legitimacy = clamp(country.legitimacy + 3, 0, 100);
+        return { ok: true, message: `${rulerOf(w, c)!.name} weds ${consort.name}.` };
+      }
       if (country.heirId && w.characters[country.heirId]?.alive) return { ok: false, message: 'An heir is already designated.' };
-      country.heirId = generateHeir(w, c, true).id;
+      country.heirId = (ensureHeir(w, c) ?? generateHeir(w, c, true)).id;
       country.legitimacy = clamp(country.legitimacy - 3, 0, 100);
       return { ok: true, message: `${w.characters[country.heirId].name} is designated heir.` };
     }

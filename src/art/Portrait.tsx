@@ -53,11 +53,13 @@ export const Portrait = memo(function Portrait({ style, seed, female = false, ag
   const cloth2 = pickOf(r, CLOTH);
   const grey = age > 58 ? '#c9c4bb' : age > 48 && r() < 0.5 ? '#8c857a' : null;
   const hair = grey ?? (st === 'euro' || st === 'republic' || st === 'euro_female' || st === 'euro_mil' ? pickOf(r, HAIR_LIGHT) : pickOf(r, HAIR_DARK));
-  const beard = !female && (['ottoman', 'persian', 'arab', 'sikh', 'turban', 'joseon', 'himalayan'].includes(st) ? r() < 0.9 : ['rajput', 'steppe', 'qing', 'african', 'african_crown'].includes(st) ? r() < 0.35 : r() < 0.08);
-  const moustache = !female && (beard || ['rajput', 'steppe', 'qing', 'turban', 'persian'].includes(st) || r() < 0.12);
+  const child = age < 13;
+  const beard = !female && age >= 18 && (['ottoman', 'persian', 'arab', 'sikh', 'turban', 'joseon', 'himalayan'].includes(st) ? r() < 0.9 : ['rajput', 'steppe', 'qing', 'african', 'african_crown'].includes(st) ? r() < 0.35 : r() < 0.08);
+  const moustache = !female && age >= 16 && (beard || ['rajput', 'steppe', 'qing', 'turban', 'persian'].includes(st) || r() < 0.12);
   const bg = pickOf(r, [['#3b2a1c', '#1a120b'], ['#24323f', '#10151b'], ['#3a2a2a', '#140d0d'], ['#2e3a2a', '#11160f']]);
   const faceW = 15 + r() * 2.2;
-  const jaw = 19 + r() * 2;
+  const adultJaw = 19 + r() * 2;
+  const jaw = child ? faceW + 1.5 : adultJaw;
   return (
     <svg width={size} height={size * 1.2} viewBox="0 0 100 120" className={className} role="img" aria-label={title ?? 'portrait'}>
       {title ? <title>{title}</title> : null}
@@ -83,10 +85,11 @@ export const Portrait = memo(function Portrait({ style, seed, female = false, ag
       </defs>
       <ellipse cx="50" cy="60" rx="44" ry="55" fill={`url(#bg${uid})`} />
       <g clipPath={`url(#ov${uid})`}>
+        <g transform={child ? 'translate(50 120) scale(0.8) translate(-50 -120)' : undefined}>
         <Body st={st} uid={uid} cloth={cloth} cloth2={cloth2} skin={skin} r={r} />
+        <BackHair st={st} hair={hair} female={female} />
         {/* neck */}
         <path d={`M43 66 Q50 70 57 66 L58 80 Q50 84 42 80 Z`} fill={shade(skin, -0.12)} />
-        <BackHair st={st} hair={hair} female={female} />
         {/* head */}
         <ellipse cx="50" cy="52" rx={faceW} ry={jaw} fill={`url(#sk${uid})`} />
         <ellipse cx={50 - faceW - 0.5} cy="54" rx="2.4" ry="4" fill={shade(skin, -0.15)} />
@@ -97,6 +100,7 @@ export const Portrait = memo(function Portrait({ style, seed, female = false, ag
         {st === 'rajput' && moustache ? <path d="M43 62.5 q-4 0.5 -5 -3 M57 62.5 q4 0.5 5 -3" stroke={grey ?? hair} strokeWidth="1.6" fill="none" strokeLinecap="round" /> : null}
         <Headgear st={st} uid={uid} hair={hair} cloth={cloth} cloth2={cloth2} r={r} female={female} />
         {female ? <g fill="#f3e9d2"><circle cx={50 - faceW - 0.5} cy="60" r="1.2" /><circle cx={50 + faceW + 0.5} cy="60" r="1.2" /></g> : null}
+        </g>
       </g>
       {frame ? (
         <>
@@ -306,8 +310,38 @@ function Body({ st, uid, cloth, cloth2, skin, r }: { st: PortraitStyle; uid: str
   }
 }
 
+const VEILED: PortraitStyle[] = ['turban', 'rajput', 'sikh', 'himalayan', 'steppe', 'ottoman', 'persian'];
+
 function Headgear({ st, uid, hair, cloth, cloth2, r, female }: { st: PortraitStyle; uid: string; hair: string; cloth: string; cloth2: string; r: () => number; female: boolean }) {
   const gold = `url(#gd${uid})`;
+  if (female && VEILED.includes(st)) {
+    const veil = pickOf(r, ['#c8102e', '#e8a33a', '#efe6d2', '#d94f8a', '#3f6e8c', '#5b2a4a']);
+    return (
+      <g>
+        <path d="M29 56 Q26 22 50 19 Q74 22 71 56 Q74 86 82 120 L64 120 Q66 88 66 60 Q64 37 50 36 Q36 37 34 60 Q34 88 36 120 L18 120 Q26 86 29 56 Z" fill={veil} />
+        <path d="M31 50 Q34 30 50 27 Q66 30 69 50" stroke="#000" strokeOpacity="0.15" strokeWidth="1.2" fill="none" />
+        <path d="M30 60 Q31 34 50 31 Q69 34 70 60" stroke={shade(veil, 0.35)} strokeOpacity="0.6" strokeWidth="0.8" fill="none" strokeDasharray="1.5 1.5" />
+        <path d="M50 36 V39" stroke={gold} strokeWidth="0.8" />
+        <circle cx="50" cy="40" r="1.4" fill={gold} />
+      </g>
+    );
+  }
+  if (female && (st === 'joseon' || st === 'qing')) {
+    // Joseon women part the hair and pin it at the nape; Manchu women wear the broad liangbatou headdress.
+    return (
+      <g>
+        <path d="M33 50 Q31 28 50 26 Q69 28 67 50 Q64 36 50 35 Q36 36 33 50 Z" fill={hair} />
+        <path d="M50 27 V35" stroke={shade(hair, 0.25)} strokeWidth="0.8" />
+        {st === 'qing' ? (
+          <g>
+            <path d="M24 26 Q50 16 76 26 L74 31 Q50 23 26 31 Z" fill="#1d1d1d" />
+            <g fill={cloth2}>{[34, 42, 58, 66].map((x) => <circle key={x} cx={x} cy={26.5} r="2" />)}</g>
+            <circle cx="50" cy="24" r="2.6" fill="#c8102e" />
+          </g>
+        ) : <path d="M38 40 L62 40" stroke={gold} strokeWidth="1" />}
+      </g>
+    );
+  }
   switch (st) {
     case 'euro':
       return <path d="M34 48 Q34 30 50 29 Q66 30 66 48 Q62 38 50 37 Q38 38 34 48 Z" fill="#ece7dd" />;

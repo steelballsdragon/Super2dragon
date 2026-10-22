@@ -2,6 +2,7 @@
 // computed from conditions, and nothing fires on a fixed historical schedule.
 import { INSTITUTION_FACTOR } from '../../data/technologies';
 import { REBELS, RELIGION_GROUP } from '../constants';
+import { canHaveChildren } from '../family';
 import { borders, powerScore } from '../war';
 import { pick, weightedPick } from '../rng';
 import {
@@ -96,7 +97,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'heir_born', category: 'Royal Court', title: 'An Heir Is Born', art: 'palace', cooldown: 36,
-    chance: (w, c) => hasRulingHouse(w, c) && !heirOk(w, c) && !isInstitution(w, ruler(w, c)) && rulerAge(w, c) >= 18 && rulerAge(w, c) <= 52 ? 0.015 : 0,
+    chance: (w, c) => hasRulingHouse(w, c) && !heirOk(w, c) && !isInstitution(w, ruler(w, c)) && canHaveChildren(w, c) ? 0.015 : 0,
     text: (w, c) => `Bells ring across ${countryName(w, c)}: the royal house has an heir.`,
     options: [
       { id: 'celebrate', label: 'Proclaim public festivities', effects: (w, c) => [{ k: 'newHeir' }, { k: 'treasury', v: inc(w, c, 0.5) }, { k: 'legitimacy', v: 8 }], ai: always },

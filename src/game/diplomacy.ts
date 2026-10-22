@@ -1,5 +1,6 @@
 // Diplomacy: proposals and their acceptance, treaties, envoys, subjects and relations drift.
 import { SUBJECT_TYPES } from './constants';
+import { celebrateMarriage } from './family';
 import { chance } from './rng';
 import {
   addOpinion, alive, alliesOf, atWar, baseOpinion, bonuses, chronicle, clamp, countryName, def, hasRulingHouse, hasTreaty, newId, notify,
@@ -191,7 +192,7 @@ function applyAccepted(w: WorldState, from: string, to: string, kind: DiploKind)
       addOpinion(w, from, to, 25);
       w.countries[from].legitimacy = clamp(w.countries[from].legitimacy + 5, 0, 100);
       w.countries[to].legitimacy = clamp(w.countries[to].legitimacy + 5, 0, 100);
-      return `A royal marriage unites the houses of ${countryName(w, from)} and ${countryName(w, to)}.`;
+      return `A royal marriage unites the houses of ${countryName(w, from)} and ${countryName(w, to)}.${celebrateMarriage(w, from, to)}`;
     }
     case 'guarantee': addTreaty(w, 'guarantee', from, to); addOpinion(w, from, to, 20); return `We now guarantee the independence of ${countryName(w, to)}.`;
     case 'nap': addTreaty(w, 'nap', from, to, undefined, 120); addOpinion(w, from, to, 8); return `A ten-year non-aggression pact is signed with ${countryName(w, to)}.`;
