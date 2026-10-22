@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SCHEMA_VERSION } from '../src/game/constants';
-import { MemoryStorage, deleteSave, deserialize, exportCode, exportJson, listSaves, loadGame, migrate, saveGame, serialize, validateWorld } from '../src/game/save';
+import { MemoryStorage, autosaveId, deleteSave, deserialize, exportCode, exportJson, recoverOrphans, storePacked, packWorld, listSaves, loadGame, migrate, saveGame, serialize, validateWorld } from '../src/game/save';
 import { advanceMonths } from '../src/game/turn';
 import { world } from './helpers';
 
@@ -71,5 +71,27 @@ describe('saving and loading', () => {
     const raw = JSON.parse(serialize(w));
     raw.schemaVersion = SCHEMA_VERSION + 5;
     expect(() => deserialize(JSON.stringify(raw))).toThrow(/newer version/);
+  });
+
+  it('keeps a separate autosave for each campaign', () => {
+    const st = new MemoryStorage();
+    const a = world('sikh_misls', 1);
+    const b = world('sweden', 2);
+    saveGame(st, a, { autosave: true });
+    saveGame(st, b, { autosave: true });
+    const ids = listSaves(st).map((m) => m.id);
+    expect(ids).toEqual(expect.arrayContaining([autosaveId(a.campaign.id), autosaveId(b.campaign.id)]));
+    expect(loadGame(st, autosaveId(a.campaign.id)).playerId).toBe('sikh_misls');
+  });
+
+  it('recovers saves whose entry dropped out of the list', () => {
+    const st = new MemoryStorage();
+    const w = world('patiala', 3);
+    storePacked(st, w, packWorld(w), { id: 'lost', name: 'Mine' });
+    st.setItem('totw1800:index', '[]');
+    expect(listSaves(st)).toEqual([]);
+    expect(recoverOrphans(st)).toBe(1);
+    expect(listSaves(st)[0]).toMatchObject({ id: 'lost', countryId: 'patiala' });
+    expect(recoverOrphans(st)).toBe(0);
   });
 });

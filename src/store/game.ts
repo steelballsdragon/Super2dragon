@@ -6,11 +6,13 @@ import { applyAction, type ActionResult, type GameAction } from '../game/actions
 import { createWorld } from '../game/create';
 import { refreshLedgers } from '../game/economy';
 import {
-  defaultStorage, deleteSave, deserialize, exportJson, latestSave, listSaves, loadGame, packWorld, storePacked, type SaveMeta,
+  defaultStorage, deleteSave, deserialize, exportJson, listSaves, loadGame, MemoryStorage, packWorld, readPacked, recoverOrphans, storePacked,
+  unpackWorld, writeSlot, type SaveMeta,
 } from '../game/save';
 import { formatDate } from '../game/state';
 import { provincePoint } from '../game/static';
 import type { Difficulty, WorldState } from '../game/types';
+import { cloudDelete, cloudFetch, cloudSave, flushCloud, initCloud, type CloudMeta, type CloudStatus } from './cloud';
 import { simulate } from './sim';
 
 export type Screen = 'menu' | 'select' | 'game' | 'load' | 'atlas' | 'chronicles';
@@ -36,6 +38,11 @@ interface GameStore {
   busy: boolean;
   error: string | null;
   saves: SaveMeta[];
+  /** Saves in the player's private cloud area (claude.ai viewer only). */
+  cloudSaves: CloudMeta[];
+  cloud: CloudStatus;
+  /** False when the browser refuses storage and saves would vanish with the page. */
+  storageKept: boolean;
   // Selection
   selectedProvince: string | null;
   selectedCountry: string | null;
@@ -111,6 +118,9 @@ export const useGame = create<GameStore>((set, get) => ({
   busy: false,
   error: null,
   saves: listSaves(storage),
+  cloudSaves: [],
+  cloud: 'off',
+  storageKept: !(storage instanceof MemoryStorage),
   selectedProvince: null,
   selectedCountry: null,
   selectedArmy: null,
@@ -146,21 +156,39 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   continueGame: () => {
-    const latest = latestSave(storage);
+    const latest = allSaves(get())[0];
     return latest ? get().loadSave(latest.id) : false;
   },
 
   loadSave: (id) => {
-    try {
-      const world = loadGame(storage, id);
-      set({ world, rev: get().rev + 1, screen: 'game', speed: 0, selectedCountry: world.playerId, selectedProvince: null, selectedArmy: null, selectedFleet: null, pick: null, panel: null, error: null });
+    const open = (world: WorldState) => {
+      set({ world, rev: get().rev + 1, screen: 'game', speed: 0, busy: false, selectedCountry: world.playerId, selectedProvince: null, selectedArmy: null, selectedFleet: null, pick: null, panel: null, error: null });
       get().toast(`Loaded ${world.campaign.name} — ${formatDate(world.turn)}.`, 'success');
       const cap = world.countries[world.playerId]?.capital;
       if (cap) setTimeout(() => focusCapital(world, cap), 50);
+    };
+    const failed = (e: unknown) => {
+      set({ error: (e as Error).message, busy: false });
+      get().toast((e as Error).message, 'danger');
+    };
+    const local = get().saves.find((m) => m.id === id);
+    const remote = get().cloudSaves.find((m) => m.id === id);
+    // A copy played further on another device or browser wins over this browser's.
+    if (remote && (!local || remote.savedAt > local.savedAt || !readPacked(storage, id))) {
+      set({ busy: true });
+      cloudFetch(id).then(({ meta, packed }) => {
+        const world = unpackWorld(packed);
+        const { chunks: _c, gen: _g, stamp: _s, ...plain } = meta;
+        try { writeSlot(storage, plain, packed); set({ saves: listSaves(storage) }); } catch { /* still playable from memory */ }
+        open(world);
+      }).catch(failed);
+      return true;
+    }
+    try {
+      open(loadGame(storage, id));
       return true;
     } catch (e) {
-      set({ error: (e as Error).message });
-      get().toast((e as Error).message, 'danger');
+      failed(e);
       return false;
     }
   },
@@ -169,9 +197,12 @@ export const useGame = create<GameStore>((set, get) => ({
     const w = get().world;
     if (!w) return null;
     try {
-      const meta = storePacked(storage, w, packWorld(w), { name: name?.trim() || `${w.campaign.name} — ${formatDate(w.turn)}` });
+      const packed = packWorld(w);
+      const meta = storePacked(storage, w, packed, { name: name?.trim() || `${w.campaign.name} — ${formatDate(w.turn)}` });
       set({ saves: listSaves(storage) });
-      get().toast(`Saved “${meta.name}”.`, 'success');
+      void cloudSave(meta, packed, { now: true });
+      requestPersistence();
+      get().toast(`Saved “${meta.name}”${get().cloud === 'on' ? ' (also to your claude.ai account)' : ''}.`, 'success');
       return meta;
     } catch (e) {
       get().toast((e as Error).message, 'danger');
@@ -183,8 +214,10 @@ export const useGame = create<GameStore>((set, get) => ({
     const w = get().world;
     if (!w) return;
     try {
-      storePacked(storage, w, packWorld(w), { autosave: true });
+      const packed = packWorld(w);
+      const meta = storePacked(storage, w, packed, { autosave: true });
       set({ saves: listSaves(storage) });
+      void cloudSave(meta, packed);
     } catch (e) {
       get().toast(`Autosave failed: ${(e as Error).message}`, 'warning');
     }
@@ -192,10 +225,15 @@ export const useGame = create<GameStore>((set, get) => ({
 
   removeSave: (id) => {
     deleteSave(storage, id);
-    set({ saves: listSaves(storage) });
+    set({ saves: listSaves(storage), cloudSaves: get().cloudSaves.filter((m) => m.id !== id) });
+    void cloudDelete(id);
   },
 
-  refreshSaves: () => set({ saves: listSaves(storage) }),
+  refreshSaves: () => {
+    const found = recoverOrphans(storage);
+    set({ saves: listSaves(storage) });
+    if (found) get().toast(`Recovered ${found} save${found > 1 ? 's' : ''} that had dropped out of the list.`, 'success');
+  },
 
   exportCampaign: () => {
     const w = get().world;
@@ -258,7 +296,11 @@ export const useGame = create<GameStore>((set, get) => ({
       refreshLedgers(world);
       const patch: Partial<GameStore> = { world, busy: false, rev: get().rev + 1 };
       if (packed) {
-        try { storePacked(storage, world, packed, { autosave: true }); patch.saves = listSaves(storage); } catch (e) { get().toast(`Autosave failed: ${(e as Error).message}`, 'warning'); }
+        try {
+          const meta = storePacked(storage, world, packed, { autosave: true });
+          patch.saves = listSaves(storage);
+          void cloudSave(meta, packed);
+        } catch (e) { get().toast(`Autosave failed: ${(e as Error).message}`, 'warning'); }
       }
       if ((world.settings.pauseOnEvents && world.pendingEvents.length) || world.flags.gameOver) patch.speed = 0;
       // Selections may refer to armies destroyed this month.
@@ -300,13 +342,54 @@ function focusCapital(_world: WorldState, cap: string): void {
   useGame.getState().focusOn(x, y, 3);
 }
 
+/** Local and cloud saves together, newest first; a save in both places is listed once. */
+export type ListedSave = SaveMeta & { local: boolean; cloud: boolean };
+export function allSaves(s: Pick<GameStore, 'saves' | 'cloudSaves'>): ListedSave[] {
+  const out = new Map<string, ListedSave>();
+  for (const m of s.saves) out.set(m.id, { ...m, local: true, cloud: false });
+  for (const m of s.cloudSaves) {
+    const have = out.get(m.id);
+    const { chunks: _c, gen: _g, stamp: _s, ...plain } = m;
+    if (!have) out.set(m.id, { ...plain, local: false, cloud: true });
+    else out.set(m.id, have.savedAt >= m.savedAt ? { ...have, cloud: have.savedAt === m.savedAt } : { ...plain, local: false, cloud: true });
+  }
+  return [...out.values()].sort((a, b) => b.savedAt - a.savedAt);
+}
+
+/** Asks the browser not to evict this page's storage under pressure (best effort). */
+let persistenceAsked = false;
+function requestPersistence(): void {
+  if (persistenceAsked) return;
+  persistenceAsked = true;
+  try { void navigator.storage?.persist?.().catch(() => undefined); } catch { /* not offered */ }
+}
+
 // Persist the campaign when the tab is hidden or closed, so a refresh never loses progress.
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && useGame.getState().world && !useGame.getState().busy) useGame.getState().autosave();
+    if (document.visibilityState !== 'hidden') return;
+    if (useGame.getState().world && !useGame.getState().busy) useGame.getState().autosave();
+    void flushCloud();
+  });
+}
+
+// In the claude.ai viewer, connect the player's private cloud saves and back up any local saves it lacks.
+if (typeof window !== 'undefined') {
+  void initCloud({
+    status: (cloud) => useGame.setState({ cloud }),
+    list: (cloudSaves) => useGame.setState({ cloudSaves }),
+    error: (text) => useGame.getState().toast(text, 'warning'),
+  }).then(() => {
+    const s = useGame.getState();
+    if (s.cloud !== 'on') return;
+    for (const m of s.saves) {
+      const there = s.cloudSaves.find((c) => c.id === m.id);
+      const packed = there && there.savedAt >= m.savedAt ? null : readPacked(storage, m.id);
+      if (packed) void cloudSave(m, packed, { now: true });
+    }
   });
 }
 
 export function hasSaves(): boolean {
-  return listSaves(storage).length > 0;
+  return allSaves(useGame.getState()).length > 0;
 }

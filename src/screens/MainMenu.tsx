@@ -2,14 +2,14 @@ import { BookOpen, Crown, FolderOpen, Globe2, Play, ScrollText } from 'lucide-re
 import { useEffect, useState } from 'react';
 import { MenuScene } from '../art/MenuScene';
 import { CrownMark, Divider } from '../art/Ornaments';
-import { useGame } from '../store/game';
+import { allSaves, useGame } from '../store/game';
 import { timeAgo } from '../ui/format';
 
 export function MainMenu() {
-  const { setScreen, continueGame, saves, refreshSaves } = useGame();
+  const { setScreen, continueGame, saves, cloudSaves, cloud, storageKept, refreshSaves } = useGame();
   const [ready, setReady] = useState(false);
   useEffect(() => { refreshSaves(); const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, [refreshSaves]);
-  const latest = saves[0];
+  const latest = allSaves({ saves, cloudSaves })[0];
   const items = [
     { label: 'New Campaign', icon: Crown, onClick: () => setScreen('select'), primary: true },
     { label: 'Continue Game', icon: Play, onClick: () => continueGame(), disabled: !latest, hint: latest ? `${latest.countryName} · ${latest.date} · ${timeAgo(latest.savedAt)}` : 'No campaign saved yet' },
@@ -47,9 +47,12 @@ export function MainMenu() {
           ))}
         </nav>
 
+        {!storageKept && cloud !== 'on' ? (
+          <p className="panel-flat -mt-[2vh] mb-3 max-w-sm px-3 py-2 text-center text-[12px] text-gold">This browser is not keeping saves for this page. Before you leave, copy a save code from the game menu (Export campaign).</p>
+        ) : null}
         <footer className="flex flex-col items-center gap-1 text-center text-[11px] text-parchment-dim/80">
           <span className="flex items-center gap-1.5"><BookOpen size={12} /> 334 polities · 895 provinces · every continent · a council that heeds plain words</span>
-          <span>Original art and code. Plays entirely in your browser; no account or AI service required.</span>
+          <span>{cloud === 'on' ? 'Original art and code. Your saves are kept in this browser and privately in your claude.ai account.' : 'Original art and code. Plays entirely in your browser; no account or AI service required.'}</span>
         </footer>
       </div>
     </div>

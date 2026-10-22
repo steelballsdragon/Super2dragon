@@ -25,17 +25,23 @@ export interface KeyValueStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  /** Key enumeration, where the storage offers it (used to recover saves missing from the index). */
+  readonly length?: number;
+  key?(index: number): string | null;
 }
 
 const INDEX_KEY = 'totw1800:index';
 const SAVE_KEY = (id: string) => `totw1800:save:${id}`;
-export const AUTOSAVE_ID = 'autosave';
+/** Each campaign keeps its own autosave, so starting another never overwrites it. */
+export const autosaveId = (campaignId: string) => `autosave-${campaignId}`;
 
 export class MemoryStorage implements KeyValueStorage {
   private data = new Map<string, string>();
   getItem(k: string) { return this.data.get(k) ?? null; }
   setItem(k: string, v: string) { this.data.set(k, v); }
   removeItem(k: string) { this.data.delete(k); }
+  get length() { return this.data.size; }
+  key(i: number) { return [...this.data.keys()][i] ?? null; }
 }
 
 export function defaultStorage(): KeyValueStorage {
@@ -121,8 +127,8 @@ export function packWorld(w: WorldState): string {
 
 /** Writes an already-packed save produced by packWorld(). */
 export function storePacked(storage: KeyValueStorage, w: Pick<WorldState, 'playerId' | 'turn' | 'campaign'>, packed: string, opts: { id?: string; name?: string; autosave?: boolean } = {}): SaveMeta {
-  const id = opts.autosave ? AUTOSAVE_ID : opts.id ?? `s${Date.now().toString(36)}`;
-  const meta: SaveMeta = {
+  const id = opts.autosave ? autosaveId(w.campaign.id) : opts.id ?? `s${Date.now().toString(36)}`;
+  return writeSlot(storage, {
     id,
     name: opts.name ?? (opts.autosave ? `Autosave — ${w.campaign.name}` : w.campaign.name),
     countryId: w.playerId,
@@ -133,16 +139,51 @@ export function storePacked(storage: KeyValueStorage, w: Pick<WorldState, 'playe
     schemaVersion: SCHEMA_VERSION,
     autosave: !!opts.autosave,
     size: packed.length * 2,
-  };
+  }, packed);
+}
+
+/** Writes a packed save under a given index entry (for copies fetched from elsewhere). */
+export function writeSlot(storage: KeyValueStorage, meta: SaveMeta, packed: string): SaveMeta {
   try {
-    storage.setItem(SAVE_KEY(id), packed);
+    storage.setItem(SAVE_KEY(meta.id), packed);
   } catch (e) {
-    throw new Error(`Could not write the save (browser storage may be full): ${(e as Error).message}`);
+    throw new Error(`Could not write the save (browser storage may be full; delete old saves in Load Game): ${(e as Error).message}`);
   }
-  const list = listSaves(storage).filter((m) => m.id !== id);
+  const list = listSaves(storage).filter((m) => m.id !== meta.id);
   list.push(meta);
   writeIndex(storage, list);
   return meta;
+}
+
+export function readPacked(storage: KeyValueStorage, id: string): string | null {
+  return storage.getItem(SAVE_KEY(id));
+}
+
+/** Saves whose data is still in storage but whose index entry was lost are listed again. */
+export function recoverOrphans(storage: KeyValueStorage): number {
+  if (typeof storage.length !== 'number' || !storage.key) return 0;
+  const known = new Set(listSaves(storage).map((m) => m.id));
+  const prefix = SAVE_KEY('');
+  const orphans: string[] = [];
+  for (let i = 0; i < storage.length; i++) {
+    const k = storage.key(i);
+    if (k?.startsWith(prefix) && !known.has(k.slice(prefix.length))) orphans.push(k.slice(prefix.length));
+  }
+  let found = 0;
+  for (const id of orphans) {
+    try {
+      const packed = storage.getItem(SAVE_KEY(id))!;
+      const w = loadGame(storage, id);
+      writeSlot(storage, {
+        id, name: `Recovered: ${w.campaign.name}`, countryId: w.playerId, countryName: POLITIES[w.playerId]?.name ?? w.playerId,
+        date: formatDate(w.turn), turn: w.turn, savedAt: Date.now(), schemaVersion: SCHEMA_VERSION, autosave: id.startsWith('autosave'), size: packed.length * 2,
+      }, packed);
+      found++;
+    } catch {
+      // Unreadable data is left alone.
+    }
+  }
+  return found;
 }
 
 const CODE_PREFIX = 'TOTW1800:';
@@ -205,6 +246,10 @@ export function saveGame(storage: KeyValueStorage, w: WorldState, opts: { id?: s
 export function loadGame(storage: KeyValueStorage, id: string): WorldState {
   const packed = storage.getItem(SAVE_KEY(id));
   if (!packed) throw new Error('Save not found.');
+  return unpackWorld(packed);
+}
+
+export function unpackWorld(packed: string): WorldState {
   const json = decompressFromUTF16(packed);
   if (!json) throw new Error('The save data is corrupted.');
   return deserialize(json);

@@ -125,7 +125,7 @@ export function createWorld(opts: NewGameOptions): WorldState {
   const seed = opts.seed ?? Math.floor(Math.random() * 2 ** 31);
   const w: WorldState = {
     schemaVersion: SCHEMA_VERSION,
-    campaign: { id: `c${Date.now().toString(36)}`, name: opts.name ?? `${def(opts.playerId).short} 1800`, created: Date.now(), seed, difficulty: opts.difficulty ?? 'normal' },
+    campaign: { id: `c${Date.now().toString(36)}${seed.toString(36)}`, name: opts.name ?? `${def(opts.playerId).short} 1800`, created: Date.now(), seed, difficulty: opts.difficulty ?? 'normal' },
     rng: seedRng(seed),
     turn: 0,
     playerId: opts.playerId,
