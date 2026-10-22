@@ -129,7 +129,7 @@ function CountryView({ id, onBack }: { id: string; onBack: () => void }) {
               {cbs.map((x) => <option key={x.type} value={x.type}>{x.label} (reputation −{x.infamy}, stability −{x.stability})</option>)}
             </select>
             {declare.valid ? <p className="text-[12px] text-parchment-dim">{declare.consequences.join(' · ')} — {declare.risks.join(' ')}</p> : <p className="text-[12px] text-war">{declare.errors.join(' ')}</p>}
-            <button className="btn btn-war w-full" disabled={!declare.valid} onClick={() => { if (confirm(`Declare war on ${d.name}?`)) s.dispatch({ type: 'declareWar', target: id, cb }); }}><Swords size={14} /> Declare war</button>
+            <button className="btn btn-war w-full" disabled={!declare.valid} onClick={() => { void s.askConfirm({ title: `Declare war on ${d.name}?`, body: declare.valid ? `${declare.consequences.join(' · ')}. ${declare.risks.join(' ')}` : undefined, confirmLabel: 'Declare war', tone: 'war' }).then((ok) => { if (ok) s.dispatch({ type: 'declareWar', target: id, cb }); }); }}><Swords size={14} /> Declare war</button>
           </div>
         </Section>
       ) : null}

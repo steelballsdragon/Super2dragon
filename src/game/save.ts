@@ -1,6 +1,6 @@
 // Save and load: versioned schema, migrations, validation, compression, multiple slots,
 // autosave and JSON export/import.
-import { compressToUTF16, decompressFromUTF16 } from 'lz-string';
+import { compressToBase64, compressToUTF16, decompressFromBase64, decompressFromUTF16 } from 'lz-string';
 import { SCHEMA_VERSION } from './constants';
 import { refreshLedgers } from './economy';
 import { POLITIES } from './static';
@@ -138,7 +138,20 @@ export function storePacked(storage: KeyValueStorage, w: Pick<WorldState, 'playe
   return meta;
 }
 
-export function deserialize(json: string): WorldState {
+const CODE_PREFIX = 'TOTW1800:';
+
+/** A compact, copyable text form of a campaign (compressed export envelope). */
+export function exportCode(w: WorldState): string {
+  return CODE_PREFIX + compressToBase64(exportJson(w));
+}
+
+export function deserialize(input: string): WorldState {
+  let json = input.trim();
+  if (json.startsWith(CODE_PREFIX)) {
+    const unpacked = decompressFromBase64(json.slice(CODE_PREFIX.length).replace(/\s+/g, ''));
+    if (!unpacked) throw new Error('The save code is incomplete or damaged.');
+    json = unpacked;
+  }
   let raw: unknown;
   try {
     raw = JSON.parse(json);

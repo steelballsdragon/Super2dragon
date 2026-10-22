@@ -1,23 +1,23 @@
 import { ArrowLeft, Trash2, Upload } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Flag } from '../art/Flag';
 import { Divider } from '../art/Ornaments';
 import { POLITIES } from '../game/static';
 import { useGame } from '../store/game';
 import { timeAgo } from '../ui/format';
 import { Badge, Empty } from '../ui/kit';
+import { ImportDialog } from './game/TransferDialogs';
 
 export function LoadGame() {
-  const { saves, refreshSaves, loadSave, removeSave, setScreen, importCampaign, world } = useGame();
-  const file = useRef<HTMLInputElement>(null);
+  const { saves, refreshSaves, loadSave, removeSave, setScreen, world, askConfirm } = useGame();
+  const [importing, setImporting] = useState(false);
   useEffect(() => refreshSaves(), [refreshSaves]);
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-ink scroll-thin">
       <div className="mx-auto w-full max-w-3xl px-4 py-6">
         <div className="flex items-center gap-2">
           <button className="btn btn-quiet !px-2" onClick={() => setScreen(world ? 'game' : 'menu')}><ArrowLeft size={16} /> {world ? 'Back to the campaign' : 'Menu'}</button>
-          <button className="btn btn-ghost ml-auto" onClick={() => file.current?.click()}><Upload size={15} /> Import file</button>
-          <input ref={file} type="file" accept="application/json,.json" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (f) importCampaign(await f.text()); e.target.value = ''; }} />
+          <button className="btn btn-ghost ml-auto" onClick={() => setImporting(true)}><Upload size={15} /> Import</button>
         </div>
         <h1 className="title-gilt mt-6 text-center text-2xl">The Archive</h1>
         <div className="mx-auto mt-2 w-72"><Divider /></div>
@@ -34,12 +34,13 @@ export function LoadGame() {
                   <div className="text-[11px] text-muted">Saved {timeAgo(m.savedAt)} · {(m.size / 1024).toFixed(0)} KB · schema v{m.schemaVersion}</div>
                 </button>
                 <button className="btn btn-gold !min-h-9" onClick={() => loadSave(m.id)}>Load</button>
-                <button className="btn btn-quiet !min-h-9 !px-2 text-war" aria-label={`Delete ${m.name}`} onClick={() => { if (confirm(`Delete “${m.name}”? This cannot be undone.`)) removeSave(m.id); }}><Trash2 size={16} /></button>
+                <button className="btn btn-quiet !min-h-9 !px-2 text-war" aria-label={`Delete ${m.name}`} onClick={() => { void askConfirm({ title: `Delete “${m.name}”?`, body: 'This cannot be undone.', confirmLabel: 'Delete', tone: 'war' }).then((ok) => { if (ok) removeSave(m.id); }); }}><Trash2 size={16} /></button>
               </div>
             );
           }) : <Empty>No campaigns have been saved yet. Begin a new one from the menu, or import a file.</Empty>}
         </div>
       </div>
+      {importing ? <ImportDialog onClose={() => setImporting(false)} /> : null}
     </div>
   );
 }

@@ -72,7 +72,7 @@ function ArmyCard({ id }: { id: string }) {
           <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.dispatch({ type: 'splitArmy', army: a.id })} disabled={regs < 2}><Split size={14} /> Split</button>
           {others.length ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.dispatch({ type: 'mergeArmies', armies: [a.id, ...others.map((o) => o.id)] })}><Merge size={14} /> Merge ({others.length + 1})</button> : null}
           {!general?.alive ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.dispatch({ type: 'court', kind: 'newGeneral', army: a.id })}><Combine size={14} /> Appoint general</button> : null}
-          <button className="btn btn-quiet !min-h-8 !py-1 text-war" onClick={() => { if (confirm(`Disband ${a.name}?`)) { s.dispatch({ type: 'disband', army: a.id }); s.selectArmy(null); } }}>Disband</button>
+          <button className="btn btn-quiet !min-h-8 !py-1 text-war" onClick={() => { void s.askConfirm({ title: `Disband ${a.name}?`, body: 'Half of its men return to the manpower pool.', confirmLabel: 'Disband', tone: 'war' }).then((ok) => { if (ok) { s.dispatch({ type: 'disband', army: a.id }); s.selectArmy(null); } }); }}>Disband</button>
         </div>
       ) : null}
       {mine ? <p className="mt-1.5 text-[11px] text-muted">Tip: right-click a province to march there. Overseas destinations use transports from a nearby fleet.</p> : null}

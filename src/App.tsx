@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle2, Info, XOctagon } from 'lucide-react';
 import { Component, Suspense, lazy, type ReactNode } from 'react';
 import { MainMenu } from './screens/MainMenu';
 import { useGame } from './store/game';
+import { Modal } from './ui/kit';
 
 const CountrySelect = lazy(() => import('./screens/CountrySelect').then((m) => ({ default: m.CountrySelect })));
 const GameScreen = lazy(() => import('./screens/GameScreen').then((m) => ({ default: m.GameScreen })));
@@ -21,6 +22,7 @@ export function App() {
         {screen === 'atlas' ? <Atlas /> : null}
         {screen === 'chronicles' ? <Chronicles /> : null}
       </Suspense>
+      <ConfirmHost />
       <Toasts />
     </ErrorBoundary>
   );
@@ -34,6 +36,24 @@ function Loading() {
         <div className="mt-2 font-serif italic text-parchment-dim">The couriers are on the road…</div>
       </div>
     </div>
+  );
+}
+
+/** In-page replacement for window.confirm, which embedded viewers may block. */
+function ConfirmHost() {
+  const req = useGame((s) => s.confirmRequest);
+  const answer = useGame((s) => s.answerConfirm);
+  if (!req) return null;
+  return (
+    <Modal open onClose={() => answer(false)} title={req.title}>
+      <div className="space-y-4 p-5">
+        {req.body ? <p className="whitespace-pre-line text-sm text-parchment-dim">{req.body}</p> : null}
+        <div className="flex justify-end gap-2">
+          <button className="btn btn-quiet" onClick={() => answer(false)}>Cancel</button>
+          <button autoFocus className={`btn ${req.tone === 'war' ? 'btn-war' : 'btn-gold'}`} onClick={() => answer(true)}>{req.confirmLabel}</button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

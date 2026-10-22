@@ -37,7 +37,7 @@ export function LawsPanel() {
                     {pv && pv.valid ? <div className="text-[11px] text-parchment-dim">{money(pv.cost.treasury ?? 0)} · −{pv.cost.stability} stability · {pv.cost.months} months</div> : null}
                     {pv && !pv.valid ? <div className="text-[11px] text-war">{pv.errors.join(' ')}</div> : null}
                   </div>
-                  {pv ? <button className="btn btn-gold !min-h-8 shrink-0 !px-3 !py-1" disabled={!pv.valid} onClick={() => { if (confirm(`Begin the reform: ${o.name}?`)) s.dispatch({ type: 'enactLaw', category: cat.id as LawCategory, option: o.id }); }}>Enact</button> : <span className="text-[11px] text-gold">in force</span>}
+                  {pv ? <button className="btn btn-gold !min-h-8 shrink-0 !px-3 !py-1" disabled={!pv.valid} onClick={() => { void s.askConfirm({ title: `Begin the reform: ${o.name}?`, body: pv.valid ? `${money(pv.cost.treasury ?? 0)}, −${pv.cost.stability} stability, ${pv.cost.months} months.${shifts ? ` Factions: ${shifts}.` : ''}` : undefined, confirmLabel: 'Begin the reform' }).then((ok) => { if (ok) s.dispatch({ type: 'enactLaw', category: cat.id as LawCategory, option: o.id }); }); }}>Enact</button> : <span className="text-[11px] text-gold">in force</span>}
                 </div>
               );
             })}

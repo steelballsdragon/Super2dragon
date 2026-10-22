@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SCHEMA_VERSION } from '../src/game/constants';
-import { MemoryStorage, deleteSave, deserialize, exportJson, listSaves, loadGame, migrate, saveGame, serialize, validateWorld } from '../src/game/save';
+import { MemoryStorage, deleteSave, deserialize, exportCode, exportJson, listSaves, loadGame, migrate, saveGame, serialize, validateWorld } from '../src/game/save';
 import { advanceMonths } from '../src/game/turn';
 import { world } from './helpers';
 
@@ -36,6 +36,18 @@ describe('saving and loading', () => {
     const w = world('usa', 11);
     const back = deserialize(exportJson(w));
     expect(back.playerId).toBe('usa');
+  });
+
+  it('round-trips a copyable save code, even with line breaks pasted in', () => {
+    const w = world('sweden', 4);
+    advanceMonths(w, 2);
+    const code = exportCode(w);
+    expect(code.startsWith('TOTW1800:')).toBe(true);
+    const wrapped = code.replace(/(.{76})/g, '$1\n');
+    const back = deserialize(`  ${wrapped}\n`);
+    expect(back.turn).toBe(2);
+    expect(back.playerId).toBe('sweden');
+    expect(() => deserialize(code.slice(0, code.length / 2))).toThrow();
   });
 
   it('migrates older schemas', () => {

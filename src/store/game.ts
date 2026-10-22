@@ -21,6 +21,8 @@ export type PanelId =
 
 export interface Toast { id: number; text: string; kind: 'info' | 'success' | 'warning' | 'danger' }
 
+export interface ConfirmRequest { title: string; body?: string; confirmLabel: string; tone?: 'war' | 'gold'; resolve: (ok: boolean) => void }
+
 export type PickMode =
   | { kind: 'moveArmy'; army: string }
   | { kind: 'moveFleet'; fleet: string }
@@ -49,6 +51,10 @@ interface GameStore {
   toasts: Toast[];
   councilOrder: { text: string; t: number } | null;
   welcome: boolean;
+  confirmRequest: ConfirmRequest | null;
+  /** In-page confirmation (the hosted viewer refuses window.confirm). */
+  askConfirm(opts: Omit<ConfirmRequest, 'resolve'>): Promise<boolean>;
+  answerConfirm(ok: boolean): void;
 
   setScreen(s: Screen): void;
   newGame(opts: { playerId: string; difficulty: Difficulty; name?: string; seed?: number }): void;
@@ -118,6 +124,16 @@ export const useGame = create<GameStore>((set, get) => ({
   toasts: [],
   councilOrder: null,
   welcome: false,
+  confirmRequest: null,
+  askConfirm: (opts) => new Promise<boolean>((resolve) => {
+    get().confirmRequest?.resolve(false);
+    set({ confirmRequest: { ...opts, resolve } });
+  }),
+  answerConfirm: (ok) => {
+    const r = get().confirmRequest;
+    set({ confirmRequest: null });
+    r?.resolve(ok);
+  },
 
   setScreen: (screen) => set({ screen, error: null }),
 
