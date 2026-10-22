@@ -5,7 +5,7 @@ import { REBELS, RELIGION_GROUP } from '../constants';
 import { borders, powerScore } from '../war';
 import { pick, weightedPick } from '../rng';
 import {
-  armyRegiments, countryName, def, isAtWar, isMonarchy, isRepublic, month, opinion, provinceName, provincesOf, year, warsOf, hasTreaty, neighbourCountries,
+  armyRegiments, countryName, def, hasRulingHouse, isAtWar, isMonarchy, isRepublic, month, opinion, provinceName, provincesOf, year, warsOf, hasTreaty, neighbourCountries,
   armiesOf,
 } from '../state';
 import { PROVINCE_DEFS, neighbors } from '../static';
@@ -96,7 +96,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'heir_born', category: 'Royal Court', title: 'An Heir Is Born', art: 'palace', cooldown: 36,
-    chance: (w, c) => isMonarchy(w, c) && !heirOk(w, c) && !isInstitution(w, ruler(w, c)) && rulerAge(w, c) >= 18 && rulerAge(w, c) <= 52 ? 0.015 : 0,
+    chance: (w, c) => hasRulingHouse(w, c) && !heirOk(w, c) && !isInstitution(w, ruler(w, c)) && rulerAge(w, c) >= 18 && rulerAge(w, c) <= 52 ? 0.015 : 0,
     text: (w, c) => `Bells ring across ${countryName(w, c)}: the royal house has an heir.`,
     options: [
       { id: 'celebrate', label: 'Proclaim public festivities', effects: (w, c) => [{ k: 'newHeir' }, { k: 'treasury', v: inc(w, c, 0.5) }, { k: 'legitimacy', v: 8 }], ai: always },
@@ -105,9 +105,9 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'marriage_proposal', category: 'Royal Marriage', title: 'A Proposal of Marriage', art: 'marriage', cooldown: 60,
-    chance: (w, c) => isMonarchy(w, c) ? 0.006 : 0,
+    chance: (w, c) => hasRulingHouse(w, c) ? 0.006 : 0,
     setup: (w, c) => {
-      const cands = Object.values(w.countries).filter((o) => o.alive && o.id !== c && isMonarchy(w, o.id) && !hasTreaty(w, 'marriage', c, o.id) && opinion(w, c, o.id) > -10
+      const cands = Object.values(w.countries).filter((o) => o.alive && o.id !== c && hasRulingHouse(w, o.id) && !hasTreaty(w, 'marriage', c, o.id) && opinion(w, c, o.id) > -10
         && (borders(w, c, o.id) || powerScore(w, o.id) > 150) && RELIGION_GROUP[def(o.id).religion] === RELIGION_GROUP[def(c).religion]);
       const t = weightedPick(w, cands, (o) => 1 + powerScore(w, o.id) / 100);
       return t ? { target: t.id } : null;

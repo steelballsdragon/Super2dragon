@@ -8,7 +8,7 @@ import { REBELS, RELIGION_GROUP, TERRAIN } from './constants';
 import { maxManpower, spawnRebels, chanceOfRevolt } from './military';
 import { chance, gaussian, pick, rand, randInt } from './rng';
 import {
-  armiesAt, armyRegiments, bonuses, chronicle, clamp, countryName, def, isAtWar, isMonarchy, isRepublic, month, notify, provincesOf, touch, year,
+  armiesAt, armyRegiments, bonuses, chronicle, clamp, countryName, def, hasRulingHouse, isAtWar, isMonarchy, isRepublic, month, notify, provincesOf, touch, year,
 } from './state';
 import { PROVINCE_DEFS } from './static';
 import type { Character, CountryState, FactionId, LawCategory, WorldState } from './types';
@@ -241,7 +241,7 @@ export function succeed(w: WorldState, c: string, cause: string): void {
       country.modifiers.push({ id: 'regency', label: 'Regency Council', monthsLeft: (16 - age) * 12, stability: -0.05, unrest: 2 });
       country.legitimacy = clamp(country.legitimacy - 10, 0, 100);
     }
-    if (isMonarchy(w, c) && chance(w, 0.7)) country.heirId = generateHeir(w, c, chance(w, 0.3)).id;
+    if (hasRulingHouse(w, c) && chance(w, 0.7)) country.heirId = generateHeir(w, c, chance(w, 0.3)).id;
   } else {
     const n = generateName(w, d.cultureGroup, false) ?? 'New Council';
     const a = randInt(w, 1, 8), dp = randInt(w, 1, 8), m = randInt(w, 1, 8);

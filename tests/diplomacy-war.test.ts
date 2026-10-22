@@ -29,6 +29,17 @@ describe('diplomacy', () => {
     expect(friendly).toBeGreaterThan(hostile);
   });
 
+  it('lets realms led by a ruling house marry, but not republics or leaderless confederacies', () => {
+    const w = makePeaceful(world('sikh_misls'));
+    expect(diploBlocker(w, 'sikh_misls', 'patiala', 'marriage', 0)).toBeNull();
+    expect(diploBlocker(w, 'sikh_misls', 'usa', 'marriage', 0)).toMatch(/no ruling house/);
+    expect(diploBlocker(w, 'cherokee', 'patiala', 'marriage', 0)).toMatch(/not led by one/);
+    addOpinion(w, 'patiala', 'sikh_misls', 200);
+    const r = performDiplomacy(w, 'sikh_misls', 'patiala', 'marriage');
+    expect(r.ok).toBe(true);
+    expect(hasTreaty(w, 'marriage', 'sikh_misls', 'patiala')).toBe(true);
+  });
+
   it('forms a trade agreement when the other side accepts', () => {
     const w = makePeaceful(world());
     const [a, b] = pair(w);

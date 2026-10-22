@@ -2,7 +2,7 @@
 import { SUBJECT_TYPES } from './constants';
 import { chance } from './rng';
 import {
-  addOpinion, alive, alliesOf, atWar, baseOpinion, bonuses, chronicle, clamp, countryName, def, hasTreaty, isMonarchy, newId, notify,
+  addOpinion, alive, alliesOf, atWar, baseOpinion, bonuses, chronicle, clamp, countryName, def, hasRulingHouse, hasTreaty, newId, notify,
   opinion, touch, treatiesOf, warsOf, neighbourCountries,
 } from './state';
 import { provinceDistance } from './static';
@@ -154,7 +154,8 @@ export function diploBlocker(w: WorldState, from: string, to: string, kind: Dipl
     case 'alliance': if (hasTreaty(w, 'alliance', from, to)) return 'Already allied.'; break;
     case 'trade': if (hasTreaty(w, 'trade', from, to)) return 'A trade agreement already exists.'; break;
     case 'marriage':
-      if (!isMonarchy(w, from) || !isMonarchy(w, to)) return 'Royal marriages require two ruling dynasties.';
+      if (!hasRulingHouse(w, from)) return 'Marriages are made between ruling houses, and our realm is not led by one.';
+      if (!hasRulingHouse(w, to)) return `${countryName(w, to)} has no ruling house to marry into.`;
       if (hasTreaty(w, 'marriage', from, to)) return 'Our houses are already joined.';
       break;
     case 'guarantee': if (hasTreaty(w, 'guarantee', from, to)) return 'Already guaranteed.'; break;

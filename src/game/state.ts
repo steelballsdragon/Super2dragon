@@ -325,6 +325,14 @@ export function isMonarchy(w: WorldState, c: string): boolean {
   return g === 'absolute_monarchy' || g === 'constitutional_monarchy' || g === 'council_rule' && ['monarchy', 'feudal'].includes(POLITIES[c].polityType);
 }
 
+/** Led by a hereditary house that makes dynastic marriages: a monarchy, or a council or confederacy headed by a ruling family. */
+export function hasRulingHouse(w: WorldState, c: string): boolean {
+  if (isMonarchy(w, c)) return true;
+  const country = w.countries[c];
+  const g = country?.laws.government;
+  return (g === 'consensus' || g === 'council_rule') && !!w.characters[country.rulerId]?.dynasty;
+}
+
 export function isRepublic(w: WorldState, c: string): boolean {
   return w.countries[c]?.laws.government === 'republic';
 }
