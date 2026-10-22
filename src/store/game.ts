@@ -9,6 +9,7 @@ import {
   defaultStorage, deleteSave, deserialize, exportJson, latestSave, listSaves, loadGame, packWorld, storePacked, type SaveMeta,
 } from '../game/save';
 import { formatDate } from '../game/state';
+import { provincePoint } from '../game/static';
 import type { Difficulty, WorldState } from '../game/types';
 import { simulate } from './sim';
 
@@ -46,6 +47,8 @@ interface GameStore {
   bottomOpen: boolean;
   focus: { x: number; y: number; k?: number; t: number } | null;
   toasts: Toast[];
+  councilOrder: { text: string; t: number } | null;
+  welcome: boolean;
 
   setScreen(s: Screen): void;
   newGame(opts: { playerId: string; difficulty: Difficulty; name?: string; seed?: number }): void;
@@ -74,6 +77,7 @@ interface GameStore {
   setBottomOpen(v: boolean): void;
   focusOn(x: number, y: number, k?: number): void;
   toast(text: string, kind?: Toast['kind']): void;
+  sendToCouncil(text: string): void;
   dismissToast(id: number): void;
 }
 
@@ -112,12 +116,14 @@ export const useGame = create<GameStore>((set, get) => ({
   bottomOpen: readPref('bottomOpen', false),
   focus: null,
   toasts: [],
+  councilOrder: null,
+  welcome: false,
 
   setScreen: (screen) => set({ screen, error: null }),
 
   newGame: ({ playerId, difficulty, name, seed }) => {
     const world = createWorld({ playerId, difficulty, name, seed });
-    set({ world, rev: get().rev + 1, screen: 'game', speed: 0, selectedCountry: playerId, selectedProvince: null, selectedArmy: null, selectedFleet: null, pick: null, panel: 'overview' });
+    set({ world, rev: get().rev + 1, screen: 'game', speed: 0, selectedCountry: playerId, selectedProvince: null, selectedArmy: null, selectedFleet: null, pick: null, panel: null, welcome: true });
     get().autosave();
     const cap = world.countries[playerId]?.capital;
     if (cap) setTimeout(() => focusCapital(world, cap), 50);
@@ -269,14 +275,12 @@ export const useGame = create<GameStore>((set, get) => ({
     setTimeout(() => get().dismissToast(id), kind === 'danger' ? 7000 : 4200);
   },
   dismissToast: (id) => set({ toasts: get().toasts.filter((t) => t.id !== id) }),
+  sendToCouncil: (text) => set({ councilOrder: { text, t: Date.now() }, rightOpen: true }),
 }));
 
-function focusCapital(world: WorldState, cap: string): void {
-  void world;
-  import('../game/static').then(({ provincePoint }) => {
-    const [x, y] = provincePoint(cap);
-    useGame.getState().focusOn(x, y, 3);
-  });
+function focusCapital(_world: WorldState, cap: string): void {
+  const [x, y] = provincePoint(cap);
+  useGame.getState().focusOn(x, y, 3);
 }
 
 // Persist the campaign when the tab is hidden or closed, so a refresh never loses progress.

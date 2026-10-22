@@ -61,7 +61,7 @@ const topoPath = require.resolve('world-atlas/land-50m.json');
 let topology: any = JSON.parse(readFileSync(topoPath, 'utf8'));
 topology = presimplify(topology, sphericalTriangleArea);
 topology = simplify(topology, 2.2e-7);
-topology = filter(topology, filterWeight(topology, 2.5e-6, sphericalRingArea));
+topology = filter(topology, filterWeight(topology, 2.5e-6, sphericalRingArea as unknown as Parameters<typeof filterWeight>[2]));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const landFeature: any = feature(topology, topology.objects.land);
 // Drop Antarctica and far-southern specks.

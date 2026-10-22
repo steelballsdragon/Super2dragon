@@ -985,3 +985,26 @@ export function councilAdvice(w: WorldState, c: string): AdviceItem[] {
 export function buildingKeywords(): string[] {
   return BUILDINGS.map((b) => b.name.toLowerCase());
 }
+
+/**
+ * Builds a validated plan from actions proposed elsewhere (e.g. by a language model). Each action
+ * is previewed against the real state; nothing proposed can bypass the rules or spend money twice.
+ */
+export function planFromActions(
+  w: WorldState, c: string, input: string, opts: { title: string; minister: MinisterRole; reply: string; notes?: string[] },
+  actions: { action: GameAction; optional?: boolean }[],
+): CommandPlan {
+  const pl = new Planner(w, c);
+  for (const a of actions) pl.add(a.action, a.optional);
+  for (const n of opts.notes ?? []) pl.note(n);
+  const totals = { treasury: 0, stability: 0, prestige: 0, manpower: 0 };
+  for (const s of pl.steps) {
+    if (!s.preview.valid || s.optional) continue;
+    totals.treasury += s.preview.cost.treasury ?? 0;
+    totals.stability += s.preview.cost.stability ?? 0;
+    totals.prestige += s.preview.cost.prestige ?? 0;
+    totals.manpower += s.preview.cost.manpower ?? 0;
+  }
+  const m = ministerInfo(w, c, opts.minister);
+  return { input, understood: pl.steps.length > 0, intent: 'llm', title: opts.title, minister: opts.minister, speaker: m.name, reply: opts.reply, steps: pl.steps, notes: pl.notes, totals };
+}

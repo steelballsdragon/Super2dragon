@@ -16,7 +16,7 @@ import {
   addOpinion, armyRegiments, chronicle, clamp, countryName, def, newId, notify, provinceName, sideOf, touch,
   forcesChanged,
 } from './state';
-import { coastalSeas } from './static';
+import { SEA_DEFS, coastalSeas } from './static';
 import { techBlocker, techCost } from './tech';
 import {
   answerCallToArms, casusBelli, declareWar, declareWarBlocker, describeTerms, makePeace, peaceAcceptance, peaceBlocker, type CasusBelliType,
@@ -158,7 +158,7 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
       if (!f || f.owner !== c) return invalid('Move fleet', 'Not our fleet.');
       const path = findSeaPath(f.location, a.target);
       if (!path) return invalid('Move fleet', 'No sea route (frozen or landlocked).');
-      return prev(`Sail ${f.name} to the ${a.target.replace(/_/g, ' ')}`);
+      return prev(`Sail ${f.name} to the ${SEA_DEFS[a.target]?.name ?? a.target.replace(/_/g, ' ')}`);
     }
     case 'research': {
       const t = TECH_BY_ID[a.tech];
