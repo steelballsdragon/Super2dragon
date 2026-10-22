@@ -27,6 +27,8 @@ export interface WorldMapProps {
   onProvinceClick?: (id: string, e: { button: number; shift: boolean }) => void;
   onArmyClick?: (id: string) => void;
   onFleetClick?: (id: string) => void;
+  /** A tap on open sea, resolved to the nearest sea zone. */
+  onSeaClick?: (id: string) => void;
   renderTooltip?: (provinceId: string) => ReactNode;
   minimap?: boolean;
   className?: string;
@@ -150,7 +152,7 @@ export function WorldMap(props: WorldMapProps) {
 
   // Pointer gestures: drag to pan, pinch to zoom, tap to select.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const gesture = useRef({ moved: false, startX: 0, startY: 0, lastDist: 0, lastMidX: 0, lastMidY: 0, button: 0 });
+  const gesture = useRef({ moved: false, startX: 0, startY: 0, downClientX: 0, downClientY: 0, lastDist: 0, lastMidX: 0, lastMidY: 0, button: 0 });
 
   const local = (e: { clientX: number; clientY: number }) => {
     const r = wrapRef.current!.getBoundingClientRect();
@@ -163,7 +165,7 @@ export function WorldMap(props: WorldMapProps) {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const p = local(e);
     pointers.current.set(e.pointerId, p);
-    if (pointers.current.size === 1) gesture.current = { moved: false, startX: p.x, startY: p.y, lastDist: 0, lastMidX: 0, lastMidY: 0, button: e.button };
+    if (pointers.current.size === 1) gesture.current = { moved: false, startX: p.x, startY: p.y, downClientX: e.clientX, downClientY: e.clientY, lastDist: 0, lastMidX: 0, lastMidY: 0, button: e.button };
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()];
       gesture.current.lastDist = Math.hypot(a.x - b.x, a.y - b.y);
@@ -188,7 +190,8 @@ export function WorldMap(props: WorldMapProps) {
     const prev = pointers.current.get(e.pointerId)!;
     pointers.current.set(e.pointerId, p);
     if (pointers.current.size === 1) {
-      if (!gesture.current.moved && Math.hypot(p.x - gesture.current.startX, p.y - gesture.current.startY) < 5) return;
+      // A fingertip wobbles more than a mouse: allow it a little travel before a tap becomes a drag.
+      if (!gesture.current.moved && Math.hypot(p.x - gesture.current.startX, p.y - gesture.current.startY) < (e.pointerType === 'mouse' ? 5 : 12)) return;
       gesture.current.moved = true;
       setView({ ...view.current, x: view.current.x + p.x - prev.x, y: view.current.y + p.y - prev.y });
     } else if (pointers.current.size === 2) {
@@ -207,13 +210,28 @@ export function WorldMap(props: WorldMapProps) {
     const wasSingle = pointers.current.size === 1;
     pointers.current.delete(e.pointerId);
     if (!wasSingle || gesture.current.moved) return;
-    const el = document.elementFromPoint(e.clientX, e.clientY);
+    // Hit-test where the finger landed, not where it lifted after a wobble.
+    const { downClientX: cx, downClientY: cy } = gesture.current;
+    const el = document.elementFromPoint(cx, cy);
     const armyId = el?.closest?.('[data-army]')?.getAttribute('data-army');
     const fleetId = el?.closest?.('[data-fleet]')?.getAttribute('data-fleet');
-    if (armyId && props.onArmyClick && !picking) { props.onArmyClick(armyId); return; }
-    if (fleetId && props.onFleetClick && !picking) { props.onFleetClick(fleetId); return; }
+    // Markers stay tappable while choosing a destination: the screen decides what a tap on one means.
+    if (armyId && props.onArmyClick) { props.onArmyClick(armyId); return; }
+    if (fleetId && props.onFleetClick) { props.onFleetClick(fleetId); return; }
     const prov = el?.getAttribute?.('data-prov') ?? el?.closest?.('[data-prov-at]')?.getAttribute('data-prov-at');
-    if (prov && props.onProvinceClick) props.onProvinceClick(prov, { button: gesture.current.button, shift: e.shiftKey });
+    if (prov) { props.onProvinceClick?.(prov, { button: gesture.current.button, shift: e.shiftKey }); return; }
+    if (props.onSeaClick) {
+      const p = local({ clientX: cx, clientY: cy });
+      const v = view.current;
+      const mx = (p.x - v.x) / v.k, my = (p.y - v.y) / v.k;
+      let best: string | null = null, bestD = Infinity;
+      for (const id of Object.keys(SEA_DEFS)) {
+        const [sx, sy] = seaPoint(id);
+        const d = (sx - mx) ** 2 + (sy - my) ** 2;
+        if (d < bestD) { bestD = d; best = id; }
+      }
+      if (best) props.onSeaClick(best);
+    }
   };
 
   const onContextMenu = (e: React.MouseEvent) => {

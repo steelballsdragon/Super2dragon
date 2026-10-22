@@ -58,23 +58,23 @@ export function GameScreen() {
     const army = st.selectedArmy ? w.armies[st.selectedArmy] : undefined;
     if (st.pick?.kind === 'moveArmy' || (ev.button === 2 && army && army.owner === me)) {
       const id = st.pick?.kind === 'moveArmy' ? st.pick.army : army!.id;
-      st.setPick(null);
-      // March overland when possible; otherwise try a convoy. Report once, with the reason that matters.
+      // March overland when possible; otherwise try a convoy. Report once, with the reason that matters,
+      // and keep the order open so another place can be tapped (or the order cancelled).
       const march = previewAction(w, me, { type: 'moveArmy', army: id, target: pid });
-      if (march.valid) { st.dispatch({ type: 'moveArmy', army: id, target: pid }); return; }
+      if (march.valid) { st.setPick(null); st.dispatch({ type: 'moveArmy', army: id, target: pid }); return; }
       const from = w.armies[id]?.location;
       const overseas = from && isCoastal(from) && isCoastal(pid);
       const convoy = overseas ? previewAction(w, me, { type: 'expedition', army: id, target: pid }) : null;
-      if (convoy?.valid) { st.dispatch({ type: 'expedition', army: id, target: pid }); return; }
+      if (convoy?.valid) { st.setPick(null); st.dispatch({ type: 'expedition', army: id, target: pid }); return; }
+      if (!w.armies[id]) st.setPick(null);
       st.toast(convoy ? `${march.errors[0]} Nor can we ship them: ${convoy.errors[0]}` : march.errors.join(' '), 'warning');
       return;
     }
     if (st.pick?.kind === 'moveFleet') {
       // Fleets sail to the waters off the chosen coast.
       const sea = coastalSeas(pid)[0];
-      if (sea) st.dispatch({ type: 'moveFleet', fleet: st.pick.fleet, target: sea });
-      else st.toast('Choose a coastal province: the fleet will sail to the waters off it.', 'warning');
-      st.setPick(null);
+      if (sea) sailTo(st.pick.fleet, sea);
+      else st.toast('Choose a coastal province or a sea: the fleet will sail there.', 'warning');
       return;
     }
     st.selectProvince(pid);
@@ -82,6 +82,33 @@ export function GameScreen() {
     st.selectCountry(owner ?? null);
     st.selectArmy(null);
     st.selectFleet(null);
+  };
+
+  // While choosing a destination, a tap on a marker means "go there"; a tap on the army itself cancels.
+  const onArmyClick = (id: string) => {
+    const st = useGame.getState();
+    const loc = w.armies[id]?.location;
+    if (st.pick?.kind === 'moveArmy' && st.pick.army === id) { st.setPick(null); return; }
+    if (st.pick) { if (loc) onProvinceClick(loc, { button: 0 }); return; }
+    st.selectArmy(id);
+    st.selectProvince(loc ?? null);
+  };
+  const sailTo = (fleet: string, sea: string) => {
+    const st = useGame.getState();
+    st.setPick(null);
+    st.dispatch({ type: 'moveFleet', fleet, target: sea });
+  };
+  const onFleetClick = (id: string) => {
+    const st = useGame.getState();
+    const sea = w.fleets[id]?.location;
+    if (st.pick?.kind === 'moveFleet') { if (st.pick.fleet === id) st.setPick(null); else if (sea) sailTo(st.pick.fleet, sea); return; }
+    if (st.pick?.kind === 'moveArmy') { st.toast('Armies march on land: tap a province, or a coast overseas to ship them there.', 'info'); return; }
+    st.selectFleet(id);
+  };
+  const onSeaClick = (sea: string) => {
+    const st = useGame.getState();
+    if (st.pick?.kind === 'moveFleet') sailTo(st.pick.fleet, sea);
+    else if (st.pick?.kind === 'moveArmy') st.toast('Armies march on land: tap a province, or a coast overseas to ship them there.', 'info');
   };
 
   const viewer = s.layer === 'diplomacy' && s.selectedCountry ? s.selectedCountry : me;
@@ -106,14 +133,16 @@ export function GameScreen() {
             focus={s.focus}
             minimap
             onProvinceClick={onProvinceClick}
-            onArmyClick={(id) => { s.selectArmy(id); s.selectProvince(w.armies[id]?.location ?? null); }}
-            onFleetClick={(id) => s.selectFleet(id)}
+            onArmyClick={onArmyClick}
+            onFleetClick={onFleetClick}
+            onSeaClick={onSeaClick}
             renderTooltip={tooltip}
           />
           <MapToolbar />
           {s.pick ? (
-            <div className="pointer-events-none absolute left-1/2 top-14 z-20 -translate-x-1/2 rounded-full border border-gold/50 bg-ink/90 px-4 py-1.5 text-sm text-gold-bright shadow-lg">
-              {s.pick.kind === 'moveArmy' ? 'Choose a destination for the army' : 'Choose a coast for the fleet'} · Esc to cancel
+            <div className="absolute left-1/2 top-14 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-gold/50 bg-ink/90 py-1 pl-4 pr-1 text-[13px] text-gold-bright shadow-lg sm:text-sm" role="status">
+              <span>{s.pick.kind === 'moveArmy' ? 'Tap where the army should go' : 'Tap a sea or coast for the fleet'}<span className="text-parchment-dim [@media(pointer:coarse)]:hidden"> · Esc</span></span>
+              <button className="btn btn-ghost !min-h-8 rounded-full !px-3 !py-0.5 text-[11px]" onClick={() => s.setPick(null)}>Cancel</button>
             </div>
           ) : null}
           <SelectionCard />
