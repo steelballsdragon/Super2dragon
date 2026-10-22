@@ -130,10 +130,10 @@ export function canHaveChildren(w: WorldState, c: string): boolean {
   return !!mother(w, c);
 }
 
-export function bearChild(w: WorldState, c: string): Character {
+export function bearChild(w: WorldState, c: string, sex?: 'son' | 'daughter'): Character {
   const r = rulerOf(w, c)!;
   const other = consortOf(w, c) ?? r;
-  const female = rand(w) < 0.49;
+  const female = sex ? sex === 'daughter' : rand(w) < 0.49;
   // Avoid giving a child the name of a living parent or sibling.
   const taken = new Set([r.name, other.name, ...household(w, c).map((ch) => ch.name)]);
   const name = givenName(w, def(c).cultureGroup, female, taken) ?? `${female ? 'Daughter' : 'Son'} of ${r.name}`;

@@ -12,14 +12,15 @@ import {
 import { formatDate } from '../game/state';
 import { provincePoint } from '../game/static';
 import type { Difficulty, WorldState } from '../game/types';
-import { cloudDelete, cloudFetch, cloudSave, flushCloud, initCloud, type CloudMeta, type CloudStatus } from './cloud';
+import { cloudDelete, cloudFetch, cloudSave, flushCloud, initCloud, refreshCloudIndex, type CloudMeta, type CloudStatus } from './cloud';
+import { devNote, devResolvePendingEvents } from '../game/dev';
 import { simulate } from './sim';
 
 export type Screen = 'menu' | 'select' | 'game' | 'load' | 'atlas' | 'chronicles';
 export type MapLayer = 'political' | 'terrain' | 'economy' | 'trade' | 'diplomacy' | 'military' | 'population';
 export type PanelId =
   | 'overview' | 'court' | 'economy' | 'construction' | 'military' | 'diplomacy' | 'technology'
-  | 'espionage' | 'trade' | 'laws' | 'chronicles' | 'reports';
+  | 'espionage' | 'trade' | 'laws' | 'chronicles' | 'reports' | 'developer';
 
 export interface Toast { id: number; text: string; kind: 'info' | 'success' | 'warning' | 'danger' }
 
@@ -76,6 +77,8 @@ interface GameStore {
   quitToMenu(): void;
   dispatch(a: GameAction, opts?: { quiet?: boolean }): ActionResult;
   advance(): Promise<void>;
+  /** Developer time skip; `decide` lets the council answer the player's events on the way. */
+  devAdvance(months: number, decide: boolean): Promise<void>;
   setSpeed(s: 0 | 1 | 2 | 3): void;
   togglePause(): void;
   bump(): void;
@@ -314,6 +317,27 @@ export const useGame = create<GameStore>((set, get) => ({
     }
   },
 
+  devAdvance: async (months, decide) => {
+    let world = get().world;
+    if (!world || get().busy) return;
+    set({ busy: true, speed: 0 });
+    try {
+      let done = 0;
+      for (; done < months && !world.flags.gameOver; done++) {
+        world = (await simulate(world, 1, false)).world;
+        if (decide) devResolvePendingEvents(world);
+      }
+      devNote(world, `Skipped ${done} month${done === 1 ? '' : 's'}${decide ? ', the council deciding events' : ''}`);
+      refreshLedgers(world);
+      set({ world, busy: false, rev: get().rev + 1 });
+      get().autosave();
+      get().toast(`${done} month${done === 1 ? '' : 's'} have passed: it is now ${formatDate(world.turn)}.`, 'success');
+    } catch (e) {
+      set({ busy: false });
+      get().toast(`The time skip stopped: ${(e as Error).message}`, 'danger');
+    }
+  },
+
   setSpeed: (speed) => set({ speed }),
   togglePause: () => set({ speed: get().speed ? 0 : 1 }),
   bump: () => set({ rev: get().rev + 1 }),
@@ -356,6 +380,31 @@ export function allSaves(s: Pick<GameStore, 'saves' | 'cloudSaves'>): ListedSave
   return [...out.values()].sort((a, b) => b.savedAt - a.savedAt);
 }
 
+/** What this browser holds for the game, for the developer tools. */
+export function inspectStorage(): { kept: boolean; entries: { key: string; chars: number }[]; listed: string[] } {
+  const entries: { key: string; chars: number }[] = [];
+  const n = typeof storage.length === 'number' ? storage.length : 0;
+  for (let i = 0; i < n; i++) {
+    const key = storage.key?.(i);
+    if (key && key.startsWith('totw1800:')) entries.push({ key, chars: storage.getItem(key)?.length ?? 0 });
+  }
+  return { kept: !(storage instanceof MemoryStorage), entries: entries.sort((a, b) => a.key.localeCompare(b.key)), listed: listSaves(storage).map((m) => m.id) };
+}
+
+/** Sends every local save the cloud lacks or holds an older copy of. */
+export async function syncLocalToCloud(): Promise<number> {
+  const s = useGame.getState();
+  if (s.cloud !== 'on') return 0;
+  const cloud = await refreshCloudIndex();
+  let sent = 0;
+  for (const m of listSaves(storage)) {
+    const there = cloud.find((c) => c.id === m.id);
+    const packed = there && there.savedAt >= m.savedAt ? null : readPacked(storage, m.id);
+    if (packed) { sent++; await cloudSave(m, packed, { now: true }); }
+  }
+  return sent;
+}
+
 /** Asks the browser not to evict this page's storage under pressure (best effort). */
 let persistenceAsked = false;
 function requestPersistence(): void {
@@ -380,13 +429,9 @@ if (typeof window !== 'undefined') {
     list: (cloudSaves) => useGame.setState({ cloudSaves }),
     error: (text) => useGame.getState().toast(text, 'warning'),
   }).then(() => {
-    const s = useGame.getState();
-    if (s.cloud !== 'on') return;
-    for (const m of s.saves) {
-      const there = s.cloudSaves.find((c) => c.id === m.id);
-      const packed = there && there.savedAt >= m.savedAt ? null : readPacked(storage, m.id);
-      if (packed) void cloudSave(m, packed, { now: true });
-    }
+    recoverOrphans(storage);
+    useGame.setState({ saves: listSaves(storage) });
+    void syncLocalToCloud();
   });
 }
 

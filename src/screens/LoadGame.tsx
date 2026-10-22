@@ -6,6 +6,7 @@ import { POLITIES } from '../game/static';
 import { allSaves, useGame } from '../store/game';
 import { timeAgo } from '../ui/format';
 import { Badge, Empty } from '../ui/kit';
+import { StorageDiagnostics } from '../panels/StorageDiagnostics';
 import { ImportDialog } from './game/TransferDialogs';
 
 export function LoadGame() {
@@ -51,6 +52,10 @@ export function LoadGame() {
             );
           }) : <Empty>No campaigns have been saved yet. Begin a new one from the menu, or import a file.</Empty>}
         </div>
+        <details className="panel-flat mt-6 px-3 py-2">
+          <summary className="cursor-pointer text-[12px] text-parchment-dim">Missing a save? Storage details and recovery</summary>
+          <div className="mt-2"><StorageDiagnostics /></div>
+        </details>
       </div>
       {importing ? <ImportDialog onClose={() => setImporting(false)} /> : null}
     </div>

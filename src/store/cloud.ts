@@ -170,6 +170,16 @@ export function cloudDelete(id: string): Promise<void> {
   }).catch(fail);
 }
 
+/** Re-reads the cloud list (another device may have saved meanwhile). */
+export async function refreshCloudIndex(): Promise<CloudMeta[]> {
+  if (!cloudReady()) return [];
+  try {
+    index = await readIndex();
+    hooks?.list(index);
+  } catch (e) { fail(e); }
+  return index;
+}
+
 /** For tests: forget the connection. */
 export function resetCloud(): void {
   db = null; uid = null; hooks = null; index = [];

@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { ChroniclesPanel } from '../../panels/ChroniclesPanel';
 import { ConstructionPanel } from '../../panels/ConstructionPanel';
 import { CourtPanel } from '../../panels/CourtPanel';
+import { DeveloperPanel } from '../../panels/DeveloperPanel';
 import { DiplomacyPanel } from '../../panels/DiplomacyPanel';
 import { EconomyPanel } from '../../panels/EconomyPanel';
 import { EspionagePanel } from '../../panels/EspionagePanel';
@@ -17,7 +18,7 @@ import { PANELS } from './NavRail';
 const VIEWS: Record<PanelId, () => React.ReactElement> = {
   overview: OverviewPanel, court: CourtPanel, economy: EconomyPanel, construction: ConstructionPanel, military: MilitaryPanel,
   diplomacy: DiplomacyPanel, technology: TechnologyPanel, espionage: EspionagePanel, trade: TradePanel, laws: LawsPanel,
-  chronicles: ChroniclesPanel, reports: ReportsPanel,
+  chronicles: ChroniclesPanel, reports: ReportsPanel, developer: DeveloperPanel,
 };
 
 export function PanelHost() {

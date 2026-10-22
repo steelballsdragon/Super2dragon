@@ -1,4 +1,4 @@
-import { BookOpen, Coins, Crown, Eye, FlaskConical, Gavel, Hammer, Handshake, LayoutDashboard, LineChart, MoreHorizontal, Ship, Swords } from 'lucide-react';
+import { BookOpen, Coins, Crown, Eye, FlaskConical, Gavel, Hammer, Handshake, LayoutDashboard, LineChart, MoreHorizontal, Ship, Swords, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import type { PanelId } from '../../store/game';
 import { useGame } from '../../store/game';
@@ -16,6 +16,7 @@ export const PANELS: { id: PanelId; label: string; icon: typeof Crown }[] = [
   { id: 'laws', label: 'Laws & Reforms', icon: Gavel },
   { id: 'chronicles', label: 'Chronicles', icon: BookOpen },
   { id: 'reports', label: 'Reports', icon: LineChart },
+  { id: 'developer', label: 'Developer', icon: Wrench },
 ];
 
 export function NavRail() {
