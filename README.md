@@ -37,9 +37,11 @@ npm run build && npm run smoke
                      # end-to-end in headless Chromium: menu → realm → months → council →
                      # panels → map layers → fast play → save → reload → continue → atlas,
                      # desktop and phone viewports; fails on any page error
+npm run smoke:mobile # phone-sized touch test: taps, drag-to-pan, pinch-to-zoom, army orders,
+                     # the council drawer, panels, events, save, reload and continue
 ```
 
-The smoke test uses `playwright-core` with an installed Chromium. Point it at one with `CHROME_PATH=/path/to/chrome` if it is not at the default location; screenshots go to `smoke-output/`.
+The smoke tests use `playwright-core` with an installed Chromium. Point it at one with `CHROME_PATH=/path/to/chrome` if it is not at the default location; screenshots go to `smoke-output/`.
 
 Other scripts: `npm run typecheck`, and `npm run build:map`, which regenerates the map geometry (`src/data/generated/map.json`) from Natural Earth data and the province seeds.
 

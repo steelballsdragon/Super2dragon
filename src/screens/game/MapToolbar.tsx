@@ -19,7 +19,7 @@ const LAYERS: { id: MapLayer; label: string; icon: typeof Globe }[] = [
 export function MapToolbar() {
   const { w, me } = useWorld();
   const { layer, setLayer, selectedCountry } = useGame();
-  const [legend, setLegend] = useState(true);
+  const [legend, setLegend] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
   const viewer = layer === 'diplomacy' && selectedCountry ? selectedCountry : me;
   const lg = legendFor(layer, countryName(w, viewer));
   return (

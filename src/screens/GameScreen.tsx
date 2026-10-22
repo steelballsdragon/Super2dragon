@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { countryName } from '../game/state';
-import { coastalSeas } from '../game/static';
+import { previewAction } from '../game/actions';
+import { coastalSeas, isCoastal } from '../game/static';
 import { WorldMap } from '../map/WorldMap';
 import { useGame } from '../store/game';
 import { useWorld } from '../store/hooks';
@@ -57,14 +58,15 @@ export function GameScreen() {
     const army = st.selectedArmy ? w.armies[st.selectedArmy] : undefined;
     if (st.pick?.kind === 'moveArmy' || (ev.button === 2 && army && army.owner === me)) {
       const id = st.pick?.kind === 'moveArmy' ? st.pick.army : army!.id;
-      const r = st.dispatch({ type: 'moveArmy', army: id, target: pid }, { quiet: true });
-      if (!r.ok) {
-        // Overseas targets need a convoy.
-        const r2 = st.dispatch({ type: 'expedition', army: id, target: pid }, { quiet: true });
-        if (!r2.ok) st.toast(r.message, 'warning');
-        else st.toast(r2.message, 'success');
-      } else st.toast(r.message, 'success');
       st.setPick(null);
+      // March overland when possible; otherwise try a convoy. Report once, with the reason that matters.
+      const march = previewAction(w, me, { type: 'moveArmy', army: id, target: pid });
+      if (march.valid) { st.dispatch({ type: 'moveArmy', army: id, target: pid }); return; }
+      const from = w.armies[id]?.location;
+      const overseas = from && isCoastal(from) && isCoastal(pid);
+      const convoy = overseas ? previewAction(w, me, { type: 'expedition', army: id, target: pid }) : null;
+      if (convoy?.valid) { st.dispatch({ type: 'expedition', army: id, target: pid }); return; }
+      st.toast(convoy ? `${march.errors[0]} Nor can we ship them: ${convoy.errors[0]}` : march.errors.join(' '), 'warning');
       return;
     }
     if (st.pick?.kind === 'moveFleet') {

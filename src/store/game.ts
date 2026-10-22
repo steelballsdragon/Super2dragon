@@ -270,6 +270,7 @@ export const useGame = create<GameStore>((set, get) => ({
   setBottomOpen: (bottomOpen) => { writePref('bottomOpen', bottomOpen); set({ bottomOpen }); },
   focusOn: (x, y, k) => set({ focus: { x, y, k, t: Date.now() } }),
   toast: (text, kind = 'info') => {
+    if (get().toasts.some((t) => t.text === text)) return;
     const id = ++toastSeq;
     set({ toasts: [...get().toasts.slice(-4), { id, text, kind }] });
     setTimeout(() => get().dismissToast(id), kind === 'danger' ? 7000 : 4200);

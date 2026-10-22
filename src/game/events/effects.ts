@@ -76,7 +76,7 @@ export function describeEffect(w: WorldState, c: string, e: Effect): string | nu
     case 'law': return `Enact ${lawOption(e.category, e.option)?.name ?? e.option} (${LAW_CATEGORY[e.category].name})`;
     case 'armyMorale': return `Army morale ${sign(Math.round(e.v * 100))}%`;
     case 'claim': return `Claim on ${provinceName(e.province)}`;
-    case 'treaty': return `${cap(e.type)} with ${countryName(w, e.target)}`;
+    case 'treaty': return `${TREATY_NAMES[e.type] ?? cap(e.type)} with ${countryName(w, e.target)}`;
     case 'annex': return `Integrate ${countryName(w, e.target)} into our realm`;
     case 'independence': return 'Declare independence from our overlord';
     case 'returnControl': return `Hand ${e.provinces.map(provinceName).join(', ')} back to ${countryName(w, e.to)}`;
@@ -85,6 +85,11 @@ export function describeEffect(w: WorldState, c: string, e: Effect): string | nu
   }
   return null;
 }
+
+const TREATY_NAMES: Partial<Record<TreatyType, string>> = {
+  alliance: 'Alliance', trade: 'Trade agreement', marriage: 'Royal marriage', guarantee: 'Guarantee of independence',
+  nap: 'Non-aggression pact', truce: 'Truce', subsidy: 'Subsidy', access: 'Military access',
+};
 
 function modDesc(m: Modifier): string {
   const parts: string[] = [];

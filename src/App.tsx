@@ -42,11 +42,11 @@ function Toasts() {
   const dismiss = useGame((s) => s.dismissToast);
   return (
     <div className="pointer-events-none fixed inset-x-0 top-14 z-[60] flex flex-col items-center gap-2 px-3 sm:top-16" aria-live="polite">
-      {toasts.map((t) => {
+      {toasts.map((t, i) => {
         const Icon = t.kind === 'success' ? CheckCircle2 : t.kind === 'warning' ? AlertTriangle : t.kind === 'danger' ? XOctagon : Info;
         const color = t.kind === 'success' ? 'text-econ' : t.kind === 'warning' ? 'text-gold' : t.kind === 'danger' ? 'text-war' : 'text-diplo';
         return (
-          <button key={t.id} className="panel pointer-events-auto flex max-w-md items-start gap-2 px-3 py-2 text-left text-sm animate-rise" onClick={() => dismiss(t.id)}>
+          <button key={t.id} className={`panel pointer-events-auto max-w-md items-start gap-2 px-3 py-2 text-left text-[13px] animate-rise sm:text-sm ${i < toasts.length - 2 ? 'hidden sm:flex' : 'flex'}`} onClick={() => dismiss(t.id)}>
             <Icon size={16} className={`mt-0.5 shrink-0 ${color}`} />
             <span>{t.text}</span>
           </button>

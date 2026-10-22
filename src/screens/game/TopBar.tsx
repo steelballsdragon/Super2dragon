@@ -18,7 +18,7 @@ export function TopBar({ onOpenRight }: { onOpenRight: () => void }) {
   const unread = w.notifications.filter((n) => !n.read).length;
   const bal = c.last.balance;
   return (
-    <header className="relative z-30 flex h-12 shrink-0 items-center gap-1.5 border-b border-gold/25 bg-gradient-to-b from-navy-2 to-navy px-2 shadow-[0_4px_20px_rgba(0,0,0,0.4)] sm:h-14 sm:gap-3 sm:px-3">
+    <header className="relative z-40 flex h-12 shrink-0 items-center gap-1.5 border-b border-gold/25 bg-gradient-to-b from-navy-2 to-navy px-2 shadow-[0_4px_20px_rgba(0,0,0,0.4)] sm:h-14 sm:gap-3 sm:px-3">
       <button className="flex min-w-0 items-center gap-2" onClick={() => openPanel('overview')} title={d.name}>
         <Flag spec={d.flag} width={34} />
         <span className="hidden min-w-0 text-left md:block">

@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:map": "tsx scripts/build-map.ts",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:mobile": "node scripts/smoke-mobile.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",
