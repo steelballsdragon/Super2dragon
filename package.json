@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "description": "THRONES OF THE WORLD: 1800 — a grand-strategy browser game set on January 1, 1800.",
   "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

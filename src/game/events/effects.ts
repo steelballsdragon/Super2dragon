@@ -83,7 +83,7 @@ export function describeEffect(w: WorldState, c: string, e: Effect): string | nu
     case 'price': return `${GOODS[e.good].name} prices ×${e.mult}`;
     case 'flag': case 'chronicle': return null;
   }
-  void c;
+  return null;
 }
 
 function modDesc(m: Modifier): string {

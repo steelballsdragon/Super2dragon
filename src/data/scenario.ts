@@ -304,4 +304,6 @@ export const START_FLAGS: Record<string, number | string | boolean> = {
   irish_union_pending: true,
   nana_fadnavis: true,
   egypt_expedition: true,
+  // John Adams was inaugurated in March 1797 (34 months before the start).
+  usa_term_start: -34,
 };

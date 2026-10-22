@@ -77,6 +77,7 @@ async function run(viewport, label) {
     await box.fill('Build roads near the capital and also improve relations with the British');
     await box.press('Enter');
     await page.getByRole('button', { name: /Carry out/ }).waitFor({ timeout: 10000 });
+    await page.waitForTimeout(700);
     await shot(page, `${label}-council`);
     await page.getByRole('button', { name: /Carry out/ }).click();
     // Open several panels.

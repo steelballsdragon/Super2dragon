@@ -410,7 +410,6 @@ export function makePeace(w: WorldState, war: War, winnerSide: 'attackers' | 'de
     }
     for (const m of winners) w.countries[m].prestige = clamp(w.countries[m].prestige + 5, 0, 100);
   }
-  const sideA = separate ? [separate] : war.attackers.includes(war.attackerLeader) ? war.attackers : war.attackers;
   const leaving = separate ? [separate] : [...war.attackers, ...war.defenders];
   const opp = separate ? (war.attackers.includes(separate) ? war.defenders : war.attackers) : [];
   // Truces between the parties.
@@ -420,7 +419,6 @@ export function makePeace(w: WorldState, war: War, winnerSide: 'attackers' | 'de
   for (const [a, b] of pairs) {
     if (!hasTreaty(w, 'truce', a, b)) w.treaties.push({ id: newId(w, 't'), type: 'truce', a, b, start: w.turn, expires: w.turn + 60 });
   }
-  void sideA;
   if (separate) {
     war.attackers = war.attackers.filter((c) => c !== separate);
     war.defenders = war.defenders.filter((c) => c !== separate);
