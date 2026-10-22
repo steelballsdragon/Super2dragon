@@ -79,7 +79,7 @@ function ArmyCard({ id }: { id: string }) {
       })()}
       {voyageText(w, a) ? <div className="mt-2 text-[12px] text-diplo"><Ship size={12} className="inline" /> {voyageText(w, a)}</div> : null}
       {dest && !a.voyage ? <div className="mt-2 text-[12px] text-gold"><MapPin size={12} className="inline" /> Marching to {provinceName(dest)} · ~{Math.max(0.5, Math.round(pathMonths(w, a, a.path) * 10) / 10)} months</div> : null}
-      <div className="mt-1 text-[11px] text-muted">Status: {a.status}{a.status === 'sieging' && w.provinces[a.location]?.siege ? ` · siege ${Math.round(w.provinces[a.location].siege!.progress)}%` : ''}</div>
+      <div className="mt-1 text-[11px] text-muted">Status: {a.departAt !== undefined && a.departAt > w.turn ? `waiting ${a.departAt - w.turn} month${a.departAt - w.turn > 1 ? 's' : ''} to set out with the others` : a.status}{a.status === 'sieging' && w.provinces[a.location]?.siege ? ` · siege ${Math.round(w.provinces[a.location].siege!.progress)}%` : ''}</div>
       {mine ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           <button className="btn btn-gold !min-h-8 !py-1" onClick={() => s.setPick({ kind: 'moveArmy', army: a.id })}><Crosshair size={14} /> Move</button>

@@ -373,6 +373,8 @@ export interface Army {
   fleet?: string;
   rebel?: { against: string; cause: string };
   lastBattle?: number;
+  /** Holds the army until this month before it sets out (so that several arrive together). */
+  departAt?: number;
   /** A journey by sea in progress: march to `embark`, sail to `landAt`, then march on to `final`. */
   voyage?: { embark: string; landAt: string; final: string; fleet?: string; paid: boolean };
 }

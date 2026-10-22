@@ -10,9 +10,9 @@ import { creditAvailable, loanRate, refreshLedgers, repayLoan, takeLoan } from '
 import { consortBlocker, consortOf, ensureHeir, heirBlocker, household, rulerOf, setHeir, wedRuler } from './family';
 import { runSpyOp, spyOpBlocker, spyOpChance, SPY_OPS, type SpyOp } from './espionage';
 import { resolveEvent } from './events/engine';
-import { canRecruitIn, establishment, findPath, gatherPlan, orderMove, pathMonths, recruitCost, removeArmy, shipCost, supplyLimit, UNIT_TYPES } from './military';
+import { canEnter, canRecruitIn, establishment, findPath, orderMove, pathMonths, recruitCost, removeArmy, shipCost, supplyLimit, UNIT_TYPES } from './military';
 import { orderFleet, findSeaPath } from './naval';
-import { planVoyage, startVoyage } from './voyage';
+import { gatherPlan, planVoyage, startVoyage } from './voyage';
 import { generateHeir, lawBlocker, lawReformCost } from './society';
 import {
   addOpinion, armiesAt, armyRegiments, atWar, chronicle, clamp, countryName, def, newId, notify, provinceName, sideOf, touch,
@@ -23,7 +23,7 @@ import { techBlocker, techCost } from './tech';
 import {
   answerCallToArms, casusBelli, declareWar, declareWarBlocker, describeTerms, makePeace, peaceAcceptance, peaceBlocker, type CasusBelliType,
 } from './war';
-import type { BuildingId, LawCategory, MinisterRole, PeaceTerms, ShipType, UnitType, WorldState } from './types';
+import type { Army, BuildingId, LawCategory, MinisterRole, PeaceTerms, ShipType, UnitType, WorldState } from './types';
 
 export type GameAction =
   | { type: 'setTax'; value: number }
@@ -36,7 +36,7 @@ export type GameAction =
   | { type: 'recruit'; province: string; unit: UnitType; count: number }
   | { type: 'buildShips'; province: string; ship: ShipType; count: number }
   | { type: 'moveArmy'; army: string; target: string }
-  | { type: 'gatherArmies'; target: string }
+  | { type: 'gatherArmies'; target: string; together?: boolean }
   | { type: 'stopArmy'; army: string }
   | { type: 'mergeArmies'; armies: string[] }
   | { type: 'splitArmy'; army: string }
@@ -150,22 +150,36 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
     case 'gatherArmies': {
       const label = `Gather our armies at ${provinceName(a.target)}`;
       if (!w.provinces[a.target]) return invalid(label, 'Choose a province.');
-      const plan = gatherPlan(w, c, a.target);
-      if (!plan.going.length) {
-        return invalid(label, plan.there.length ? 'Every army that can march there is already there.' : plan.stuck.length ? 'None of our armies can reach it: neutral territory or the sea is in the way.' : 'We have no armies to gather.');
+      const holder = w.provinces[a.target].controller ?? w.provinces[a.target].owner;
+      if (!canEnter(w, c, a.target)) {
+        return invalid(label, `We may not set foot in ${provinceName(a.target)}: we are not at war with ${holder ? countryName(w, holder) : 'its people'} and have no military access. Declare war on them first (Diplomacy).`);
       }
-      const months = Math.max(...plan.going.map((g) => g.months));
-      const regiments = [...plan.going.map((g) => g.army), ...plan.there].reduce((n, x) => n + armyRegiments(x), 0);
+      const plan = gatherPlan(w, c, a.target);
+      if (!plan.going.length && !plan.sailing.length) {
+        return invalid(label, plan.there.length ? 'Every army that can get there is already there.' : plan.stuck.length ? `None of our armies can get there, by land or by sea: ${plan.stuck[0].why}` : 'We have no armies to gather.');
+      }
+      const hire = plan.sailing.reduce((n, s) => n + s.plan.cost, 0);
+      if (hire > country.treasury) return invalid(label, `Hiring ships for the armies going by sea costs ${money(hire)}.`);
+      const months = Math.max(0, ...plan.going.map((g) => g.months), ...plan.sailing.map((s) => s.plan.months.total));
+      const moving = [...plan.going.map((g) => g.army), ...plan.sailing.map((s) => s.army)];
+      const regiments = [...moving, ...plan.there].reduce((n, x) => n + armyRegiments(x), 0);
       const supply = supplyLimit(w, a.target, c);
-      const sieges = plan.going.filter((g) => g.army.status === 'sieging').length;
+      const sieges = moving.filter((x) => x.status === 'sieging').length;
+      const dangers = [...new Set(plan.sailing.flatMap((s) => s.plan.dangers))];
+      const foes = holder && atWar(w, c, holder) ? armiesAt(w, a.target).filter((x) => atWar(w, c, x.owner) || x.owner === holder).reduce((n, x) => n + armyRegiments(x), 0) : 0;
+      const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
       return prev(label, {
-        cost: { months: Math.max(0.5, Math.round(months * 10) / 10) },
+        cost: { treasury: hire, months: Math.max(0.5, Math.round(months * 10) / 10) },
         consequences: [
-          `${plan.going.length} ${plan.going.length === 1 ? 'army marches' : 'armies march'}${plan.there.length ? `, joining ${plan.there.length} already there` : ''} (${Math.round(regiments)} regiments in all)`,
+          ...(plan.going.length ? [`${n(plan.going.length, 'army marches', 'armies march')} by land`] : []),
+          ...(plan.sailing.length ? [`${n(plan.sailing.length, 'army goes', 'armies go')} by sea (${plan.sailing.map((s) => s.army.name).join(', ')})${hire ? `, hiring ships for ${money(hire)}` : ' in our own ships'}`] : []),
+          `${Math.round(regiments)} regiments in all${plan.there.length ? `, with ${plan.there.length} already there` : ''}`,
           `The last arrives in about ${Math.max(1, Math.round(months))} month${Math.round(months) > 1 ? 's' : ''}`,
         ],
         risks: [
-          ...(plan.stuck.length ? [`${plan.stuck.length} cannot reach it and stay where ${plan.stuck.length === 1 ? 'it is' : 'they are'}: ${plan.stuck.map((x) => x.name).join(', ')}`] : []),
+          ...(holder && atWar(w, c, holder) ? [`${provinceName(a.target)} is held by ${countryName(w, holder)}: our armies arrive to fight${foes ? ` (${Math.round(foes * 1000).toLocaleString('en')} enemy soldiers there)` : ''}, ${a.together ? 'all together' : 'one by one as they come'}`] : []),
+          ...(dangers.length ? [`Enemy warships lie on the sea routes (${dangers.map((s) => SEA_DEFS[s]?.name ?? s).join(', ')}): a beaten convoy loses half its men`] : []),
+          ...(plan.stuck.length ? [`${plan.stuck.length} cannot get there and stay where ${plan.stuck.length === 1 ? 'it is' : 'they are'}: ${plan.stuck.map((x) => x.army.name).join(', ')}`] : []),
           ...(sieges ? [`${sieges} will abandon ${sieges === 1 ? 'its siege' : 'their sieges'}`] : []),
           ...(regiments > supply ? [`${provinceName(a.target)} can feed about ${Math.round(supply)} regiments: a larger host suffers attrition there`] : []),
           'Our frontiers are left without field armies',
@@ -354,21 +368,31 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
     case 'moveArmy': {
       const army = w.armies[a.army];
       army.voyage = undefined;
+      army.departAt = undefined;
       return orderMove(w, army, a.target) ? { ok: true, message: `${pv.summary} (${pv.cost.months} months).` } : { ok: false, message: 'No route.' };
     }
     case 'gatherArmies': {
       const plan = gatherPlan(w, c, a.target);
-      const sent = plan.going.filter((g) => { g.army.voyage = undefined; return orderMove(w, g.army, a.target); });
-      const months = Math.max(1, Math.round(Math.max(...plan.going.map((g) => g.months))));
+      // Arriving together: nearer armies wait, so that all reach the target about the same month.
+      const last = Math.max(0, ...plan.going.map((g) => g.months), ...plan.sailing.map((s) => s.plan.months.total));
+      const hold = (army: Army, months: number) => {
+        const lead = Math.floor(last - months);
+        army.departAt = a.together && lead >= 1 ? w.turn + lead : undefined;
+      };
+      const marched = plan.going.filter((g) => { g.army.voyage = undefined; hold(g.army, g.months); return orderMove(w, g.army, a.target); }).length;
+      const sailed = plan.sailing.filter((s) => { hold(s.army, s.plan.months.total); return typeof startVoyage(w, s.army, a.target) !== 'string'; }).length;
+      const months = Math.max(1, Math.round(pv.cost.months ?? 1));
+      const parts = [marched ? `${marched} ${marched === 1 ? 'army marches' : 'armies march'}` : '', sailed ? `${sailed} ${sailed === 1 ? 'army takes' : 'armies take'} ship` : ''].filter(Boolean).join(' and ');
+      const left = plan.stuck.length + (plan.sailing.length - sailed);
       return {
-        ok: sent.length > 0,
-        message: `${sent.length} ${sent.length === 1 ? 'army marches' : 'armies march'} to ${provinceName(a.target)}; the last arrives in about ${months} month${months > 1 ? 's' : ''}.${plan.stuck.length ? ` ${plan.stuck.length} cannot reach it.` : ''} Once there, Merge on an army's card combines them.`,
+        ok: marched + sailed > 0,
+        message: `${parts} for ${provinceName(a.target)}; ${a.together ? 'all should arrive together' : 'the last arrives'} in about ${months} month${months > 1 ? 's' : ''}.${left ? ` ${left} cannot get there.` : ''} Once there, Merge on an army's card combines them.`,
       };
     }
     case 'stopArmy': {
       const army = w.armies[a.army];
       if (!army || army.owner !== c) return { ok: false, message: 'Not our army.' };
-      army.path = []; army.voyage = undefined; if (army.status === 'moving') army.status = 'idle';
+      army.path = []; army.voyage = undefined; army.departAt = undefined; if (army.status === 'moving') army.status = 'idle';
       return { ok: true, message: 'Halted.' };
     }
     case 'mergeArmies': {

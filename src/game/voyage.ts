@@ -3,7 +3,7 @@
 import { SHIPS } from '../data/buildings';
 import { canEnter, findPath, orderMove, pathMonths } from './military';
 import { bestSeaPath, fleetCapacity, fleetSpeed, fleetStrength, seaPathLength } from './naval';
-import { armyRegiments, atWar, forcesChanged, newId, notify, provinceName } from './state';
+import { armiesOf, armyRegiments, atWar, forcesChanged, newId, notify, provinceName } from './state';
 import { PROVINCE_IDS, coastalSeas, isCoastal, provinceDistance } from './static';
 import type { Army, Fleet, WorldState } from './types';
 
@@ -112,7 +112,7 @@ export function startVoyage(w: WorldState, a: Army, target: string): VoyagePlan 
   country.treasury -= plan.cost;
   a.voyage = { embark: plan.embark, landAt: plan.landAt, final: plan.final, fleet: plan.fleet?.id, paid: plan.cost > 0 };
   if (plan.toPort.length) orderMove(w, a, plan.embark);
-  else board(w, a);
+  else if (a.departAt === undefined || a.departAt <= w.turn) board(w, a);
   return plan;
 }
 
@@ -168,7 +168,12 @@ export function processVoyages(w: WorldState): void {
   for (const a of Object.values(w.armies)) {
     const v = a.voyage;
     if (!v || a.status === 'embarked') continue;
-    if (a.location === v.embark && !a.path.length && a.status !== 'retreating') { board(w, a); continue; }
+    if (a.location === v.embark && !a.path.length && a.status !== 'retreating') {
+      if (a.departAt !== undefined && a.departAt > w.turn) continue; // waiting to sail with the others
+      a.departAt = undefined;
+      board(w, a);
+      continue;
+    }
     if (a.location === v.landAt) {
       a.voyage = undefined;
       if (v.final !== v.landAt && !orderMove(w, a, v.final) && a.owner === w.playerId) notify(w, `${a.name} landed at ${provinceName(v.landAt)} but finds no road on to ${provinceName(v.final)}.`, 'warning');
@@ -177,6 +182,31 @@ export function processVoyages(w: WorldState): void {
     // Knocked off course (a battle at the port, or put ashore elsewhere): the voyage is over.
     if (!a.path.length && a.status !== 'moving') a.voyage = undefined;
   }
+}
+
+/** How a realm's armies would converge on one province: by road, by sea, already there, or not at all. */
+export interface GatherPlan {
+  going: { army: Army; months: number }[];
+  sailing: { army: Army; plan: VoyagePlan }[];
+  there: Army[];
+  stuck: { army: Army; why: string }[];
+}
+
+export function gatherPlan(w: WorldState, c: string, target: string): GatherPlan {
+  const plan: GatherPlan = { going: [], sailing: [], there: [], stuck: [] };
+  for (const a of armiesOf(w, c)) {
+    if (a.rebel || a.status === 'embarked' || a.status === 'retreating') continue;
+    if (a.location === target) { plan.there.push(a); continue; }
+    const path = findPath(w, c, a.location, target);
+    const land = path ? pathMonths(w, a, path) : Infinity;
+    // Look at the sea when there is no road, or the road is long enough that ships may be far quicker.
+    const sea = !path || land > 4 ? planVoyage(w, a, target) : null;
+    const voyage = sea && typeof sea === 'object' ? sea : null;
+    if (path && (!voyage || voyage.months.total + 1 >= land * 0.6)) plan.going.push({ army: a, months: land });
+    else if (voyage) plan.sailing.push({ army: a, plan: voyage });
+    else plan.stuck.push({ army: a, why: typeof sea === 'string' ? sea : 'no route' });
+  }
+  return plan;
 }
 
 /** What an army is doing at sea, for display. */
