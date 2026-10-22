@@ -138,7 +138,7 @@ export function computeTrade(w: WorldState, blockaded?: Set<string>): TradeResul
   }
   // Merchant marine and national trade bonuses.
   const merchant: Record<string, number> = {};
-  for (const f of Object.values(w.fleets)) merchant[f.owner] = (merchant[f.owner] ?? 0) + f.ships.frigate + f.ships.transport;
+  for (const f of Object.values(w.fleets)) if (!f.chartered) merchant[f.owner] = (merchant[f.owner] ?? 0) + f.ships.frigate + f.ships.transport;
   const nodes: TradeResult['nodes'] = {};
   const inflow: Record<string, number> = {};
   const income: Record<string, number> = {};
@@ -199,6 +199,7 @@ export function navyUpkeep(w: WorldState, c: string): number {
   const inflation = 1 + (w.countries[c]?.inflation ?? 0) / 100;
   let s = 0;
   for (const f of fleetsOf(w, c)) {
+    if (f.chartered) continue; // paid for when hired
     s += f.ships.line * SHIPS.line.upkeep + f.ships.frigate * SHIPS.frigate.upkeep + f.ships.transport * SHIPS.transport.upkeep;
   }
   return s * (0.25 + 0.75 * wf) * inflation;

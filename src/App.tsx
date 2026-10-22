@@ -43,6 +43,21 @@ function Loading() {
 function ConfirmHost() {
   const req = useGame((s) => s.confirmRequest);
   const answer = useGame((s) => s.answerConfirm);
+  const choice = useGame((s) => s.choiceRequest);
+  const choose = useGame((s) => s.answerChoice);
+  if (choice) {
+    return (
+      <Modal open onClose={() => choose(null)} title={choice.title}>
+        <div className="space-y-4 p-5">
+          {choice.body ? <p className="whitespace-pre-line text-sm text-parchment-dim">{choice.body}</p> : null}
+          <div className="flex flex-wrap justify-end gap-2">
+            <button className="btn btn-quiet" onClick={() => choose(null)}>Cancel</button>
+            {choice.choices.map((c) => <button key={c.id} className={`btn ${c.primary ? 'btn-gold' : 'btn-ghost'}`} onClick={() => choose(c.id)}>{c.label}</button>)}
+          </div>
+        </div>
+      </Modal>
+    );
+  }
   if (!req) return null;
   return (
     <Modal open onClose={() => answer(false)} title={req.title}>

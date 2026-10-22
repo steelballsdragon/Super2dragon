@@ -14,6 +14,7 @@ import { countryPopulation, totalRegiments, warsOf, notify, formatDate } from '.
 import { processResearch, researchPoints } from './tech';
 import { emptyTerms, makePeace, updateWarScores } from './war';
 import type { WorldState } from './types';
+import { processVoyages } from './voyage';
 
 export function advanceMonth(w: WorldState): void {
   monthlyEconomy(w);
@@ -31,6 +32,7 @@ export function advanceMonth(w: WorldState): void {
 
   moveArmies(w);
   moveFleets(w);
+  processVoyages(w);
   resolveNavalBattles(w);
   resolveBattles(w);
   resolveSieges(w, blockadedProvinces(w));

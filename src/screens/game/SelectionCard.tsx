@@ -6,6 +6,7 @@ import { provinceOutput } from '../../game/economy';
 import { armyQuality, establishment, pathMonths, supplyLimit } from '../../game/military';
 import { armiesAt, armiesOf, armyRegiments, countryName, friendly, provinceName } from '../../game/state';
 import { POLITIES, PROVINCE_DEFS, SEA_DEFS, coastalSeas, provincePoint, seaPoint } from '../../game/static';
+import { voyageText } from '../../game/voyage';
 import { useGame } from '../../store/game';
 import { orderGather } from './gather';
 import { useWorld } from '../../store/hooks';
@@ -76,11 +77,13 @@ function ArmyCard({ id }: { id: string }) {
         const why = !home ? 'refills once back on friendly ground' : c.manpower < 1 ? 'the manpower reserve is empty' : c.treasury <= 0 ? 'the treasury cannot pay for recruits' : 'refilling from the manpower reserve';
         return <div className="mt-2 text-[12px] text-parchment-dim">At {Math.round((regs / fullRegs) * 100)}% of full strength ({Math.round(fullRegs * 1000).toLocaleString('en')} men) · {why}</div>;
       })()}
-      {dest ? <div className="mt-2 text-[12px] text-gold"><MapPin size={12} className="inline" /> Marching to {provinceName(dest)} · ~{Math.max(0.5, Math.round(pathMonths(w, a, a.path) * 10) / 10)} months</div> : null}
+      {voyageText(w, a) ? <div className="mt-2 text-[12px] text-diplo"><Ship size={12} className="inline" /> {voyageText(w, a)}</div> : null}
+      {dest && !a.voyage ? <div className="mt-2 text-[12px] text-gold"><MapPin size={12} className="inline" /> Marching to {provinceName(dest)} · ~{Math.max(0.5, Math.round(pathMonths(w, a, a.path) * 10) / 10)} months</div> : null}
       <div className="mt-1 text-[11px] text-muted">Status: {a.status}{a.status === 'sieging' && w.provinces[a.location]?.siege ? ` · siege ${Math.round(w.provinces[a.location].siege!.progress)}%` : ''}</div>
       {mine ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           <button className="btn btn-gold !min-h-8 !py-1" onClick={() => s.setPick({ kind: 'moveArmy', army: a.id })}><Crosshair size={14} /> Move</button>
+          <button className="btn btn-ghost !min-h-8 !py-1" disabled={a.status === 'embarked'} onClick={() => s.setPick({ kind: 'voyage', army: a.id })}><Ship size={14} /> Sail</button>
           {a.path.length ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.dispatch({ type: 'stopArmy', army: a.id })}><Ban size={14} /> Halt</button> : null}
           <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.dispatch({ type: 'splitArmy', army: a.id })} disabled={regs < 2}><Split size={14} /> Split</button>
           {others.length ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.dispatch({ type: 'mergeArmies', armies: [a.id, ...others.map((o) => o.id)] })}><Merge size={14} /> Merge ({others.length + 1})</button> : null}
@@ -88,7 +91,7 @@ function ArmyCard({ id }: { id: string }) {
           <button className="btn btn-quiet !min-h-8 !py-1 text-war" onClick={() => { void s.askConfirm({ title: `Disband ${a.name}?`, body: 'Half of its men return to the manpower pool.', confirmLabel: 'Disband', tone: 'war' }).then((ok) => { if (ok) { s.dispatch({ type: 'disband', army: a.id }); s.selectArmy(null); } }); }}>Disband</button>
         </div>
       ) : null}
-      {mine ? <p className="mt-1.5 text-[11px] text-muted">Tip: right-click a province to march there. Overseas destinations use transports from a nearby fleet.</p> : null}
+      {mine ? <p className="mt-1.5 text-[11px] text-muted">Tip: right-click a province to march there. Armies take ship by themselves when the sea is the way, or use Sail to go by sea.</p> : null}
     </div>
   );
 }
@@ -115,7 +118,8 @@ function FleetCard({ id }: { id: string }) {
         ))}
       </div>
       <div className="mt-2 text-[12px] text-parchment-dim">Morale {Math.round(f.morale * 100)}% · {f.carrying.length ? `carrying ${f.carrying.length} army` : f.mission}{f.path.length ? ` · sailing to ${SEA_DEFS[f.path[f.path.length - 1]]?.name}` : ''}</div>
-      {mine ? (
+      {f.chartered ? <div className="mt-2 text-[12px] text-muted">Merchant ships hired for this voyage. They take no orders and are dismissed once the troops are ashore.</div> : null}
+      {mine && !f.chartered ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           <button className="btn btn-gold !min-h-8 !py-1" onClick={() => s.setPick({ kind: 'moveFleet', fleet: f.id })}><Ship size={14} /> Sail to a coast</button>
           <select className="input !w-auto !py-1 text-xs" value="" onChange={(e) => e.target.value && s.dispatch({ type: 'moveFleet', fleet: f.id, target: e.target.value })} aria-label="Sail to sea zone">

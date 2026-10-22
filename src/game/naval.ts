@@ -3,7 +3,7 @@ import { SHIPS } from '../data/buildings';
 import { REBELS } from './constants';
 import { randRange } from './rng';
 import {
-  armyRegiments, atWar, bonuses, chronicle, clamp, countryName, establishment, newId, notify, provinceName, sideOf, warBetween,
+  armyRegiments, atWar, bonuses, chronicle, clamp, countryName, establishment, friendly, newId, notify, provinceName, sideOf, warBetween,
   forcesChanged,
 } from './state';
 import { GEO, SEA_DEFS, coastalSeas, seaNeighbors, seaPoint } from './static';
@@ -132,18 +132,38 @@ export function moveFleets(w: WorldState): void {
         f.progress = 0;
         f.location = next;
         f.path.shift();
-        if (Object.values(w.fleets).some((o) => o.location === next && atWar(w, o.owner, f.owner) && fleetStrength(w, o) > 2)) { f.path = []; break; }
+        if (Object.values(w.fleets).some((o) => o.location === next && atWar(w, o.owner, f.owner) && fleetStrength(w, o) > 2)) {
+          // Warships stop to fight; a convoy keeps its course and must get past them.
+          if (!f.carrying.length) f.path = [];
+          break;
+        }
       } else {
         f.progress += budget;
         budget = 0;
       }
     }
-    if (!f.path.length && f.carrying.length && f.landingTarget) land(w, f);
+    if (!f.path.length && f.carrying.length && f.landingTarget) {
+      // Land only off the destination; a convoy driven off course sets sail for it again.
+      const seas = coastalSeas(f.landingTarget);
+      if (seas.includes(f.location)) land(w, f);
+      else f.path = bestSeaPath(f.location, seas) ?? [];
+      if (!f.path.length && f.carrying.length) land(w, f, provincesOnSea(f.location).find((p) => w.provinces[p].owner === f.owner) ?? f.landingTarget);
+    }
   }
 }
 
-function land(w: WorldState, f: Fleet): void {
-  const target = f.landingTarget!;
+/** The shortest sea route from a sea zone to any of several. */
+export function bestSeaPath(from: string, seas: string[]): string[] | null {
+  let best: string[] | null = null;
+  for (const s of seas) {
+    const p = findSeaPath(from, s);
+    if (p && (!best || seaPathLength(from, p) < seaPathLength(from, best))) best = p;
+  }
+  return best;
+}
+
+function land(w: WorldState, f: Fleet, at?: string): void {
+  const target = at ?? f.landingTarget!;
   for (const id of f.carrying) {
     const a = w.armies[id];
     if (!a) continue;
@@ -157,6 +177,7 @@ function land(w: WorldState, f: Fleet): void {
   f.carrying = [];
   f.landingTarget = undefined;
   f.mission = 'idle';
+  if (f.chartered) { delete w.fleets[f.id]; forcesChanged(w); }
 }
 
 /** Validate and start an overseas expedition. Returns an error message or null. */
@@ -242,6 +263,16 @@ function navalBattle(w: WorldState, sea: string, sideA: Fleet[], sideB: Fleet[])
     }
     const retreat = seaNeighbors(sea).find((s) => !Object.values(w.fleets).some((o) => o.location === s && atWar(w, o.owner, f.owner)));
     if (retreat) { f.location = retreat; f.path = []; }
+    if (f.carrying.length) {
+      // A beaten convoy puts its troops ashore on the nearest friendly coast instead of trying again.
+      const haven = provincesOnSea(f.location).find((p) => { const h = w.provinces[p].controller ?? w.provinces[p].owner; return !!h && friendly(w, f.owner, h); });
+      if (haven) {
+        f.landingTarget = haven;
+        f.path = [];
+        for (const id of f.carrying) { const army = w.armies[id]; if (army) army.voyage = undefined; }
+        if (f.owner === w.playerId) notify(w, `Our convoy was beaten off at sea and puts the army ashore at ${provinceName(haven)}.`, 'danger');
+      }
+    }
   }
   const aOwner = sideA[0].owner, bOwner = sideB[0].owner;
   const war = warBetween(w, aOwner, bOwner);

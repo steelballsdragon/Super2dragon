@@ -494,9 +494,10 @@ for (const [prov, best] of bestPort) {
     p.seas.sort((a, b) => (a === best.sea ? -1 : b === best.sea ? 1 : 0));
   }
 }
-// Island markers: attach to the sea zone they sit in.
+// Island markers (no outline data): attach to the sea zone they sit in. Provinces without a
+// coastline stay landlocked.
 for (const [id, p] of Object.entries(provinces)) {
-  if (p.marker || !p.seas.length) {
+  if (p.marker) {
     const i = seaDelaunay.find(p.lx, p.ly);
     p.coastal = true;
     p.port ??= [p.lx, p.ly];

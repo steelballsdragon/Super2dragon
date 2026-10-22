@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { countryName } from '../game/state';
-import { previewAction } from '../game/actions';
-import { coastalSeas, isCoastal } from '../game/static';
+import { coastalSeas } from '../game/static';
 import { WorldMap } from '../map/WorldMap';
 import { useGame } from '../store/game';
 import { orderGather } from './game/gather';
+import { orderArmyTo, orderVoyage } from './game/orders';
 import { useWorld } from '../store/hooks';
 import { BottomPanel } from './game/BottomPanel';
 import { EventCard } from './game/EventCard';
@@ -20,7 +20,7 @@ import { Welcome } from './game/Welcome';
 
 const DELAYS = [0, 1700, 850, 260];
 
-const LAND_ONLY = 'Armies march on land: tap a province, or a coast overseas to ship them there.';
+const LAND_ONLY = 'Tap a province: armies take ship by themselves when the sea is the way there.';
 
 export function GameScreen() {
   const { w, rev, me } = useWorld();
@@ -60,19 +60,11 @@ export function GameScreen() {
     const st = useGame.getState();
     const army = st.selectedArmy ? w.armies[st.selectedArmy] : undefined;
     if (st.pick?.kind === 'moveArmy' || (ev.button === 2 && army && army.owner === me)) {
-      const id = st.pick?.kind === 'moveArmy' ? st.pick.army : army!.id;
-      // March overland when possible; otherwise try a convoy. Report once, with the reason that matters,
-      // and keep the order open so another place can be tapped (or the order cancelled).
-      const march = previewAction(w, me, { type: 'moveArmy', army: id, target: pid });
-      if (march.valid) { st.setPick(null); st.dispatch({ type: 'moveArmy', army: id, target: pid }); return; }
-      const from = w.armies[id]?.location;
-      const overseas = from && isCoastal(from) && isCoastal(pid);
-      const convoy = overseas ? previewAction(w, me, { type: 'expedition', army: id, target: pid }) : null;
-      if (convoy?.valid) { st.setPick(null); st.dispatch({ type: 'expedition', army: id, target: pid }); return; }
-      if (!w.armies[id]) st.setPick(null);
-      st.toast(convoy ? `${march.errors[0]} Nor can we ship them: ${convoy.errors[0]}` : march.errors.join(' '), 'warning');
+      // March, or go by sea when there is no road or the sea is far quicker. A refusal keeps the order open.
+      orderArmyTo(st.pick?.kind === 'moveArmy' ? st.pick.army : army!.id, pid);
       return;
     }
+    if (st.pick?.kind === 'voyage') { orderVoyage(st.pick.army, pid); return; }
     if (st.pick?.kind === 'gather') { orderGather(pid); return; }
     if (st.pick?.kind === 'moveFleet') {
       // Fleets sail to the waters off the chosen coast.
@@ -92,7 +84,7 @@ export function GameScreen() {
   const onArmyClick = (id: string) => {
     const st = useGame.getState();
     const loc = w.armies[id]?.location;
-    if (st.pick?.kind === 'moveArmy' && st.pick.army === id) { st.setPick(null); return; }
+    if ((st.pick?.kind === 'moveArmy' || st.pick?.kind === 'voyage') && st.pick.army === id) { st.setPick(null); return; }
     if (st.pick) { if (loc) onProvinceClick(loc, { button: 0 }); return; }
     st.selectArmy(id);
     st.selectProvince(loc ?? null);
@@ -145,7 +137,7 @@ export function GameScreen() {
           <MapToolbar />
           {s.pick ? (
             <div className="absolute left-1/2 top-14 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-gold/50 bg-ink/90 py-1 pl-4 pr-1 text-[13px] text-gold-bright shadow-lg sm:text-sm" role="status">
-              <span>{s.pick.kind === 'moveArmy' ? 'Tap where the army should go' : s.pick.kind === 'gather' ? 'Tap where all armies should gather' : 'Tap a sea or coast for the fleet'}<span className="text-parchment-dim [@media(pointer:coarse)]:hidden"> · Esc</span></span>
+              <span>{s.pick.kind === 'moveArmy' ? 'Tap where the army should go' : s.pick.kind === 'voyage' ? 'Tap where the army should sail to' : s.pick.kind === 'gather' ? 'Tap where all armies should gather' : 'Tap a sea or coast for the fleet'}<span className="text-parchment-dim [@media(pointer:coarse)]:hidden"> · Esc</span></span>
               <button className="btn btn-ghost !min-h-8 rounded-full !px-3 !py-0.5 text-[11px]" onClick={() => s.setPick(null)}>Cancel</button>
             </div>
           ) : null}

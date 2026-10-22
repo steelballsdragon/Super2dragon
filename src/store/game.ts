@@ -26,10 +26,13 @@ export interface Toast { id: number; text: string; kind: 'info' | 'success' | 'w
 
 export interface ConfirmRequest { title: string; body?: string; confirmLabel: string; tone?: 'war' | 'gold'; resolve: (ok: boolean) => void }
 
+export interface ChoiceRequest { title: string; body?: string; choices: { id: string; label: string; primary?: boolean }[]; resolve: (id: string | null) => void }
+
 export type PickMode =
   | { kind: 'moveArmy'; army: string }
   | { kind: 'moveFleet'; fleet: string }
   | { kind: 'gather' }
+  | { kind: 'voyage'; army: string }
   | null;
 
 interface GameStore {
@@ -61,6 +64,10 @@ interface GameStore {
   councilOrder: { text: string; t: number } | null;
   welcome: boolean;
   confirmRequest: ConfirmRequest | null;
+  choiceRequest: ChoiceRequest | null;
+  /** In-page choice between several answers; resolves null when dismissed. */
+  askChoice(opts: Omit<ChoiceRequest, 'resolve'>): Promise<string | null>;
+  answerChoice(id: string | null): void;
   /** In-page confirmation (the hosted viewer refuses window.confirm). */
   askConfirm(opts: Omit<ConfirmRequest, 'resolve'>): Promise<boolean>;
   answerConfirm(ok: boolean): void;
@@ -139,6 +146,16 @@ export const useGame = create<GameStore>((set, get) => ({
   councilOrder: null,
   welcome: false,
   confirmRequest: null,
+  choiceRequest: null,
+  askChoice: (opts) => new Promise<string | null>((resolve) => {
+    get().choiceRequest?.resolve(null);
+    set({ choiceRequest: { ...opts, resolve } });
+  }),
+  answerChoice: (id) => {
+    const r = get().choiceRequest;
+    set({ choiceRequest: null });
+    r?.resolve(id);
+  },
   askConfirm: (opts) => new Promise<boolean>((resolve) => {
     get().confirmRequest?.resolve(false);
     set({ confirmRequest: { ...opts, resolve } });

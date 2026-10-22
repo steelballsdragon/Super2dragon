@@ -11,10 +11,11 @@ import { consortOf, ensureHeir, heirBlocker, household, rulerOf, setHeir, wedRul
 import { runSpyOp, spyOpBlocker, spyOpChance, SPY_OPS, type SpyOp } from './espionage';
 import { resolveEvent } from './events/engine';
 import { canRecruitIn, establishment, findPath, gatherPlan, orderMove, pathMonths, recruitCost, removeArmy, shipCost, supplyLimit, UNIT_TYPES } from './military';
-import { planExpedition, startExpedition, orderFleet, findSeaPath } from './naval';
+import { orderFleet, findSeaPath } from './naval';
+import { planVoyage, startVoyage } from './voyage';
 import { generateHeir, lawBlocker, lawReformCost } from './society';
 import {
-  addOpinion, armyRegiments, chronicle, clamp, countryName, def, hasRulingHouse, newId, notify, provinceName, sideOf, touch,
+  addOpinion, armiesAt, armyRegiments, atWar, chronicle, clamp, countryName, def, hasRulingHouse, newId, notify, provinceName, sideOf, touch,
   forcesChanged, year,
 } from './state';
 import { SEA_DEFS, coastalSeas } from './static';
@@ -175,10 +176,29 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
     case 'expedition': {
       const army = w.armies[a.army];
       if (!army || army.owner !== c) return invalid('Overseas expedition', 'Not our army.');
-      const label = `Ship ${army.name} to ${provinceName(a.target)}`;
-      const plan = planExpedition(w, army, a.target);
+      const label = `Send ${army.name} by sea to ${provinceName(a.target)}`;
+      const plan = planVoyage(w, army, a.target);
       if (typeof plan === 'string') return invalid(label, plan);
-      return prev(label, { cost: { months: plan.months }, risks: ['Enemy fleets may intercept the convoy: a lost sea battle costs half the army'] });
+      if (plan.cost > country.treasury) return invalid(label, `Hiring ships costs ${money(plan.cost)}.`);
+      const m = (x: number) => `${Math.max(1, Math.round(x))} month${Math.round(x) > 1 ? 's' : ''}`;
+      return prev(label, {
+        cost: { treasury: plan.cost, months: Math.max(1, Math.round(plan.months.total)) },
+        consequences: [
+          plan.toPort.length ? `March to the port of ${provinceName(plan.embark)} (about ${m(plan.months.march)})` : `Board ship at ${provinceName(plan.embark)}`,
+          `${plan.fleet ? `Our ${plan.fleet.name} sails` : 'Hired merchant transports sail'} to ${provinceName(plan.landAt)} (about ${m(plan.months.sail)})`,
+          ...(plan.landAt !== plan.final ? [`March inland to ${provinceName(plan.final)} (about ${m(plan.months.inland)})`] : []),
+        ],
+        risks: [
+          ...(() => {
+            const held = w.provinces[plan.landAt].controller ?? w.provinces[plan.landAt].owner;
+            if (!held || !atWar(w, c, held)) return [];
+            const foes = armiesAt(w, plan.landAt).filter((x) => x.owner === held || atWar(w, c, x.owner)).reduce((n, x) => n + armyRegiments(x), 0);
+            return [`${provinceName(plan.landAt)} is held by ${countryName(w, held)}: the troops come ashore to fight${foes ? ` (${Math.round(foes * 1000).toLocaleString('en')} enemy soldiers there)` : ''}`];
+          })(),
+          ...(plan.dangers.length ? [`Enemy warships lie on the route (${plan.dangers.map((s) => SEA_DEFS[s]?.name ?? s).join(', ')}): a beaten convoy loses half its men`] : []),
+          'Landing costs the army some morale',
+        ],
+      });
     }
     case 'moveFleet': {
       const f = w.fleets[a.fleet];
@@ -335,11 +355,12 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
     }
     case 'moveArmy': {
       const army = w.armies[a.army];
+      army.voyage = undefined;
       return orderMove(w, army, a.target) ? { ok: true, message: `${pv.summary} (${pv.cost.months} months).` } : { ok: false, message: 'No route.' };
     }
     case 'gatherArmies': {
       const plan = gatherPlan(w, c, a.target);
-      const sent = plan.going.filter((g) => orderMove(w, g.army, a.target));
+      const sent = plan.going.filter((g) => { g.army.voyage = undefined; return orderMove(w, g.army, a.target); });
       const months = Math.max(1, Math.round(Math.max(...plan.going.map((g) => g.months))));
       return {
         ok: sent.length > 0,
@@ -349,7 +370,7 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
     case 'stopArmy': {
       const army = w.armies[a.army];
       if (!army || army.owner !== c) return { ok: false, message: 'Not our army.' };
-      army.path = []; if (army.status === 'moving') army.status = 'idle';
+      army.path = []; army.voyage = undefined; if (army.status === 'moving') army.status = 'idle';
       return { ok: true, message: 'Halted.' };
     }
     case 'mergeArmies': {
@@ -378,7 +399,7 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
         halfFull[u] = Math.max(half[u], Math.floor(full[u] / 2 * 10) / 10); full[u] = Math.max(army.units[u], full[u] - halfFull[u]);
       }
       const id = newId(w, 'a');
-      w.armies[id] = { ...army, id, name: `${army.name} (detachment)`, units: half, full: halfFull, general: undefined, path: [], status: 'idle' };
+      w.armies[id] = { ...army, id, name: `${army.name} (detachment)`, units: half, full: halfFull, general: undefined, path: [], status: 'idle', voyage: undefined };
       forcesChanged(w);
       return { ok: true, message: 'Detachment formed.' };
     }
@@ -390,8 +411,10 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
       return { ok: true, message: 'Army disbanded; half its men return to the manpower pool.' };
     }
     case 'expedition': {
-      const err = startExpedition(w, w.armies[a.army], a.target);
-      return err ? { ok: false, message: err } : { ok: true, message: `${pv.summary}: about ${pv.cost.months} months at sea.` };
+      const plan = startVoyage(w, w.armies[a.army], a.target);
+      if (typeof plan === 'string') return { ok: false, message: plan };
+      const total = pv.cost.months ?? 1;
+      return { ok: true, message: `${w.armies[a.army].name} ${plan.toPort.length ? `marches to ${provinceName(plan.embark)} to take ship` : 'takes ship'} for ${provinceName(plan.final)}: about ${total} month${total === 1 ? '' : 's'} in all.` };
     }
     case 'moveFleet': return orderFleet(w, w.fleets[a.fleet], a.target) ? { ok: true, message: pv.summary } : { ok: false, message: 'No route.' };
     case 'research': country.research.tech = a.tech; return { ok: true, message: pv.summary };

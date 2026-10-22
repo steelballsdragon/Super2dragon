@@ -368,6 +368,8 @@ export interface Army {
   fleet?: string;
   rebel?: { against: string; cause: string };
   lastBattle?: number;
+  /** A journey by sea in progress: march to `embark`, sail to `landAt`, then march on to `final`. */
+  voyage?: { embark: string; landAt: string; final: string; fleet?: string; paid: boolean };
 }
 
 export interface Fleet {
@@ -383,6 +385,8 @@ export interface Fleet {
   mission: 'idle' | 'patrol' | 'blockade' | 'transport';
   carrying: string[];
   landingTarget?: string;
+  /** Merchant shipping hired for one voyage: paid in advance, unarmed, dismissed on landing. */
+  chartered?: boolean;
 }
 
 export type WarGoal =
