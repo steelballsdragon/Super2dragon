@@ -186,7 +186,7 @@ function provinceIndex(): { key: string; id: string }[] {
 export function matchProvince(text: string): string | null {
   const t = normalize(text);
   // Look first after a locative preposition, then anywhere.
-  const loc = t.match(/\b(?:in|near|at|around|by|outside|close to|next to|throughout)\s+(.+)$/);
+  const loc = t.match(/\b(?:in|near|at|around|by|outside|close to|next to|throughout|to|towards|into|on)\s+(.+)$/);
   for (const scope of [loc?.[1], t]) {
     if (!scope) continue;
     for (const { key, id } of provinceIndex()) if (findPhrase(scope, key) >= 0) return id;
@@ -435,6 +435,18 @@ interface Intent {
 const HEIR_TITLE_WORDS = new Set(['prince', 'princess', 'crown', 'grand', 'duke', 'duchess', 'archduke', 'archduchess', 'king', 'queen', 'lord', 'lady', 'the', 'son', 'daughter', 'heir', 'make', 'name']);
 
 const INTENTS: Intent[] = [
+  {
+    id: 'gather', title: 'Gather the armies', minister: 'military',
+    test: (t) => /\b(gather|assemble|concentrate|mass|muster|rally|unite|combine)\b.*\b(army|armies|troops|forces|regiments|soldiers)\b/.test(t)
+      || /\b(move|send|march|bring|order)\b.*\b(all|every|whole)\b.*\b(army|armies|troops|forces|regiments|soldiers)\b/.test(t),
+    plan: (w, c, t, pl, raw) => {
+      const named = matchProvince(raw);
+      const place = named ?? w.countries[c].capital;
+      if (!named) pl.note(`No place was named, so the armies gather at the capital, ${provinceName(place)}.`);
+      pl.add({ type: 'gatherArmies', target: place });
+      return `Every army that can march will converge on ${provinceName(place)}.`;
+    },
+  },
   {
     id: 'peace', title: 'Make peace', minister: 'foreign',
     test: (t) => /\b(make|sue for|seek|negotiate|propose|offer|sign|conclude) (a )?(white )?peace\b|\bend (the|this|our) wars?\b|\barmistice\b|\bceasefire\b|\bpeace (with|treaty)\b/.test(t),

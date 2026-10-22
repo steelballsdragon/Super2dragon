@@ -10,7 +10,7 @@ import { creditAvailable, loanRate, refreshLedgers, repayLoan, takeLoan } from '
 import { consortOf, ensureHeir, heirBlocker, household, rulerOf, setHeir, wedRuler } from './family';
 import { runSpyOp, spyOpBlocker, spyOpChance, SPY_OPS, type SpyOp } from './espionage';
 import { resolveEvent } from './events/engine';
-import { canRecruitIn, findPath, orderMove, pathMonths, recruitCost, removeArmy, shipCost, UNIT_TYPES } from './military';
+import { canRecruitIn, findPath, gatherPlan, orderMove, pathMonths, recruitCost, removeArmy, shipCost, supplyLimit, UNIT_TYPES } from './military';
 import { planExpedition, startExpedition, orderFleet, findSeaPath } from './naval';
 import { generateHeir, lawBlocker, lawReformCost } from './society';
 import {
@@ -35,6 +35,7 @@ export type GameAction =
   | { type: 'recruit'; province: string; unit: UnitType; count: number }
   | { type: 'buildShips'; province: string; ship: ShipType; count: number }
   | { type: 'moveArmy'; army: string; target: string }
+  | { type: 'gatherArmies'; target: string }
   | { type: 'stopArmy'; army: string }
   | { type: 'mergeArmies'; armies: string[] }
   | { type: 'splitArmy'; army: string }
@@ -144,6 +145,31 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
       const path = findPath(w, c, army.location, a.target);
       if (!path) return invalid(label, 'No land route: neutral territory blocks the way (or it lies overseas).');
       return prev(label, { cost: { months: Math.max(0.5, Math.round(pathMonths(w, army, path) * 10) / 10) } });
+    }
+    case 'gatherArmies': {
+      const label = `Gather our armies at ${provinceName(a.target)}`;
+      if (!w.provinces[a.target]) return invalid(label, 'Choose a province.');
+      const plan = gatherPlan(w, c, a.target);
+      if (!plan.going.length) {
+        return invalid(label, plan.there.length ? 'Every army that can march there is already there.' : plan.stuck.length ? 'None of our armies can reach it: neutral territory or the sea is in the way.' : 'We have no armies to gather.');
+      }
+      const months = Math.max(...plan.going.map((g) => g.months));
+      const regiments = [...plan.going.map((g) => g.army), ...plan.there].reduce((n, x) => n + armyRegiments(x), 0);
+      const supply = supplyLimit(w, a.target, c);
+      const sieges = plan.going.filter((g) => g.army.status === 'sieging').length;
+      return prev(label, {
+        cost: { months: Math.max(0.5, Math.round(months * 10) / 10) },
+        consequences: [
+          `${plan.going.length} ${plan.going.length === 1 ? 'army marches' : 'armies march'}${plan.there.length ? `, joining ${plan.there.length} already there` : ''} (${Math.round(regiments)} regiments in all)`,
+          `The last arrives in about ${Math.max(1, Math.round(months))} month${Math.round(months) > 1 ? 's' : ''}`,
+        ],
+        risks: [
+          ...(plan.stuck.length ? [`${plan.stuck.length} cannot reach it and stay where ${plan.stuck.length === 1 ? 'it is' : 'they are'}: ${plan.stuck.map((x) => x.name).join(', ')}`] : []),
+          ...(sieges ? [`${sieges} will abandon ${sieges === 1 ? 'its siege' : 'their sieges'}`] : []),
+          ...(regiments > supply ? [`${provinceName(a.target)} can feed about ${Math.round(supply)} regiments: a larger host suffers attrition there`] : []),
+          'Our frontiers are left without field armies',
+        ],
+      });
     }
     case 'stopArmy': case 'mergeArmies': case 'splitArmy': case 'disband': return prev(a.type === 'disband' ? 'Disband army' : 'Reorganise army');
     case 'expedition': {
@@ -310,6 +336,15 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
     case 'moveArmy': {
       const army = w.armies[a.army];
       return orderMove(w, army, a.target) ? { ok: true, message: `${pv.summary} (${pv.cost.months} months).` } : { ok: false, message: 'No route.' };
+    }
+    case 'gatherArmies': {
+      const plan = gatherPlan(w, c, a.target);
+      const sent = plan.going.filter((g) => orderMove(w, g.army, a.target));
+      const months = Math.max(1, Math.round(Math.max(...plan.going.map((g) => g.months))));
+      return {
+        ok: sent.length > 0,
+        message: `${sent.length} ${sent.length === 1 ? 'army marches' : 'armies march'} to ${provinceName(a.target)}; the last arrives in about ${months} month${months > 1 ? 's' : ''}.${plan.stuck.length ? ` ${plan.stuck.length} cannot reach it.` : ''} Once there, Merge on an army's card combines them.`,
+      };
     }
     case 'stopArmy': {
       const army = w.armies[a.army];

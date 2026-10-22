@@ -4,6 +4,7 @@ import { previewAction } from '../game/actions';
 import { coastalSeas, isCoastal } from '../game/static';
 import { WorldMap } from '../map/WorldMap';
 import { useGame } from '../store/game';
+import { orderGather } from './game/gather';
 import { useWorld } from '../store/hooks';
 import { BottomPanel } from './game/BottomPanel';
 import { EventCard } from './game/EventCard';
@@ -18,6 +19,8 @@ import { GameOver } from './game/GameOver';
 import { Welcome } from './game/Welcome';
 
 const DELAYS = [0, 1700, 850, 260];
+
+const LAND_ONLY = 'Armies march on land: tap a province, or a coast overseas to ship them there.';
 
 export function GameScreen() {
   const { w, rev, me } = useWorld();
@@ -70,6 +73,7 @@ export function GameScreen() {
       st.toast(convoy ? `${march.errors[0]} Nor can we ship them: ${convoy.errors[0]}` : march.errors.join(' '), 'warning');
       return;
     }
+    if (st.pick?.kind === 'gather') { orderGather(pid); return; }
     if (st.pick?.kind === 'moveFleet') {
       // Fleets sail to the waters off the chosen coast.
       const sea = coastalSeas(pid)[0];
@@ -102,13 +106,13 @@ export function GameScreen() {
     const st = useGame.getState();
     const sea = w.fleets[id]?.location;
     if (st.pick?.kind === 'moveFleet') { if (st.pick.fleet === id) st.setPick(null); else if (sea) sailTo(st.pick.fleet, sea); return; }
-    if (st.pick?.kind === 'moveArmy') { st.toast('Armies march on land: tap a province, or a coast overseas to ship them there.', 'info'); return; }
+    if (st.pick) { st.toast(LAND_ONLY, 'info'); return; }
     st.selectFleet(id);
   };
   const onSeaClick = (sea: string) => {
     const st = useGame.getState();
     if (st.pick?.kind === 'moveFleet') sailTo(st.pick.fleet, sea);
-    else if (st.pick?.kind === 'moveArmy') st.toast('Armies march on land: tap a province, or a coast overseas to ship them there.', 'info');
+    else if (st.pick) st.toast(LAND_ONLY, 'info');
   };
 
   const viewer = s.layer === 'diplomacy' && s.selectedCountry ? s.selectedCountry : me;
@@ -141,7 +145,7 @@ export function GameScreen() {
           <MapToolbar />
           {s.pick ? (
             <div className="absolute left-1/2 top-14 z-20 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-gold/50 bg-ink/90 py-1 pl-4 pr-1 text-[13px] text-gold-bright shadow-lg sm:text-sm" role="status">
-              <span>{s.pick.kind === 'moveArmy' ? 'Tap where the army should go' : 'Tap a sea or coast for the fleet'}<span className="text-parchment-dim [@media(pointer:coarse)]:hidden"> · Esc</span></span>
+              <span>{s.pick.kind === 'moveArmy' ? 'Tap where the army should go' : s.pick.kind === 'gather' ? 'Tap where all armies should gather' : 'Tap a sea or coast for the fleet'}<span className="text-parchment-dim [@media(pointer:coarse)]:hidden"> · Esc</span></span>
               <button className="btn btn-ghost !min-h-8 rounded-full !px-3 !py-0.5 text-[11px]" onClick={() => s.setPick(null)}>Cancel</button>
             </div>
           ) : null}

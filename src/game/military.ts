@@ -6,7 +6,7 @@ import { REBELS, TERRAIN } from './constants';
 import { wageFactor } from './economy';
 import { chance, rand, randRange } from './rng';
 import {
-  armiesAt, armyRegiments, atWar, bonuses, chronicle, clamp, countryName, def, friendly, hasTreaty, hostile, month, newId, notify,
+  armiesAt, armiesOf, armyRegiments, atWar, bonuses, chronicle, clamp, countryName, def, friendly, hasTreaty, hostile, month, newId, notify,
   provinceName, provincesOf, sideOf, topOverlord, touch, warBetween, year,
   forcesChanged,
 } from './state';
@@ -498,6 +498,20 @@ function captureProvince(w: WorldState, pid: string, controller: string, by: str
 // ---------------------------------------------------------------------------
 // Supply, attrition and morale
 // ---------------------------------------------------------------------------
+
+/** Which of a realm's armies can march to one province, which are already there, and which cannot reach it. */
+export interface GatherPlan { going: { army: Army; months: number }[]; there: Army[]; stuck: Army[] }
+export function gatherPlan(w: WorldState, c: string, target: string): GatherPlan {
+  const plan: GatherPlan = { going: [], there: [], stuck: [] };
+  for (const a of armiesOf(w, c)) {
+    if (a.rebel || a.status === 'embarked' || a.status === 'retreating') continue;
+    if (a.location === target) { plan.there.push(a); continue; }
+    const path = findPath(w, c, a.location, target);
+    if (path) plan.going.push({ army: a, months: pathMonths(w, a, path) });
+    else plan.stuck.push(a);
+  }
+  return plan;
+}
 
 export function supplyLimit(w: WorldState, pid: string, c: string): number {
   const p = w.provinces[pid];

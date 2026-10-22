@@ -1,4 +1,4 @@
-import { Crosshair, Swords } from 'lucide-react';
+import { Combine, Crosshair, Swords } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { SHIPS, UNITS } from '../data/buildings';
 import { previewAction } from '../game/actions';
@@ -8,6 +8,7 @@ import { SEA_DEFS, coastalSeas, provincePoint } from '../game/static';
 import type { ShipType, UnitType } from '../game/types';
 import { useGame } from '../store/game';
 import { useWorld } from '../store/hooks';
+import { orderGather } from '../screens/game/gather';
 import { men, money, monthsText } from '../ui/format';
 import { Empty, Meter, Section, Stat, Tabs } from '../ui/kit';
 
@@ -42,7 +43,16 @@ function Armies() {
   const s = useGame();
   const armies = armiesOf(w, me);
   if (!armies.length) return <Empty>We have no armies in the field.</Empty>;
+  const capital = w.countries[me].capital;
   return (
+    <>
+    {armies.length > 1 ? (
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <button className="btn btn-gold !min-h-8 !py-1" onClick={() => { s.openPanel(null); s.selectArmy(null); s.setPick({ kind: 'gather' }); }}><Combine size={14} /> Gather all armies…</button>
+        <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => orderGather(capital)}>At the capital</button>
+        <span className="w-full text-[11px] text-muted">Every army that can march goes to one place you tap on the map.</span>
+      </div>
+    ) : null}
     <ul className="space-y-1.5">
       {armies.map((a) => {
         const g = a.general ? w.characters[a.general] : undefined;
@@ -60,6 +70,7 @@ function Armies() {
         );
       })}
     </ul>
+    </>
   );
 }
 

@@ -4,9 +4,10 @@ import { BUILDING_BY_ID, SHIPS, UNITS } from '../../data/buildings';
 import { GOODS, REBELS, RELIGION_NAME, TERRAIN } from '../../game/constants';
 import { provinceOutput } from '../../game/economy';
 import { armyQuality, pathMonths, supplyLimit } from '../../game/military';
-import { armiesAt, armyRegiments, countryName, provinceName } from '../../game/state';
+import { armiesAt, armiesOf, armyRegiments, countryName, provinceName } from '../../game/state';
 import { POLITIES, PROVINCE_DEFS, SEA_DEFS, coastalSeas, provincePoint, seaPoint } from '../../game/static';
 import { useGame } from '../../store/game';
+import { orderGather } from './gather';
 import { useWorld } from '../../store/hooks';
 import { money, people } from '../../ui/format';
 import { Meter } from '../../ui/kit';
@@ -154,6 +155,7 @@ function ProvinceCard({ pid }: { pid: string }) {
         {mine ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.openPanel('military')}><Swords size={14} /> Raise troops</button> : null}
         {mine && coastalSeas(pid).length && (p.buildings.port ?? 0) ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.openPanel('military')}><Anchor size={14} /> Build ships</button> : null}
         {p.owner && p.owner !== me ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => { s.selectCountry(p.owner); s.openPanel('diplomacy'); }}>Diplomacy with {owner?.short}</button> : null}
+        {armiesOf(w, me).length ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => orderGather(pid)}><Combine size={14} /> Gather armies here</button> : null}
         <button className="btn btn-quiet !min-h-8 !py-1" onClick={() => { const [x, y] = provincePoint(pid); s.focusOn(x, y, 6); }}>Zoom</button>
       </div>
     </div>

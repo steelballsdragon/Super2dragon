@@ -29,6 +29,7 @@ export interface ConfirmRequest { title: string; body?: string; confirmLabel: st
 export type PickMode =
   | { kind: 'moveArmy'; army: string }
   | { kind: 'moveFleet'; fleet: string }
+  | { kind: 'gather' }
   | null;
 
 interface GameStore {
