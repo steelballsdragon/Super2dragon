@@ -52,7 +52,7 @@ Other scripts: `npm run typecheck`, and `npm run build:map`, which regenerates t
 - **Layers**: political, terrain, economy, trade routes, diplomacy, military and population, each with a legend and hover tooltips. A minimap sits in the corner.
 - **The royal council** (right-hand panel): type an order such as “Modernise the army”, “Build textile mills near Lahore”, “Seek a defensive alliance with Persia”, “Improve relations with the British”, “Reduce corruption”, “Prepare a defensive campaign” or “Reform the tax system”. The responsible minister answers in character and proposes concrete steps, each showing its cost, time, chance and risks. Nothing happens until you tick the steps you want and choose *Carry out*. Ministers also volunteer counsel when something needs attention.
 - **Government** (left rail): Overview, Royal Court, Economy, Construction, Military, Diplomacy, Technology, Espionage, Trade, Laws & Reforms, Chronicles and Reports. On phones these sit in a bottom bar with a *More* sheet.
-- **Saving**: the campaign autosaves every few months and whenever the tab is hidden or closed, so a refresh never loses progress. The menu (☰) offers named saves, loading, JSON export and import, and settings.
+- **Saving**: the campaign autosaves every few months and whenever the tab is hidden or closed, so a refresh never loses progress. The menu (☰) offers named saves, loading, export and import (a copyable save code or a JSON file), and settings.
 
 ## What is in the game
 
