@@ -13,9 +13,10 @@ import { resolveEvent } from './events/engine';
 import { canEnter, canRecruitIn, establishment, findPath, orderMove, pathMonths, recruitCost, removeArmy, shipCost, supplyLimit, UNIT_TYPES } from './military';
 import { orderFleet, findSeaPath } from './naval';
 import { gatherPlan, planVoyage, startVoyage } from './voyage';
+import { executeGarrisons, foreignNeighbours, garrisonOf, onFrontier, planGarrisons } from './garrison';
 import { generateHeir, lawBlocker, lawReformCost } from './society';
 import {
-  addOpinion, armiesAt, armyRegiments, atWar, chronicle, clamp, countryName, def, newId, notify, provinceName, sideOf, touch,
+  addOpinion, armiesAt, armyRegiments, atWar, chronicle, clamp, countryName, def, newId, notify, provinceName, provincesOf, sideOf, touch,
   forcesChanged,
 } from './state';
 import { SEA_DEFS, coastalSeas } from './static';
@@ -23,7 +24,7 @@ import { techBlocker, techCost } from './tech';
 import {
   answerCallToArms, casusBelli, declareWar, declareWarBlocker, describeTerms, makePeace, peaceAcceptance, peaceBlocker, type CasusBelliType,
 } from './war';
-import type { Army, BuildingId, LawCategory, MinisterRole, PeaceTerms, ShipType, UnitType, WorldState } from './types';
+import type { Army, BuildingId, LawCategory, MinisterRole, PeaceTerms, ShipType, UnitCounts, UnitType, WorldState } from './types';
 
 export type GameAction =
   | { type: 'setTax'; value: number }
@@ -37,6 +38,7 @@ export type GameAction =
   | { type: 'buildShips'; province: string; ship: ShipType; count: number }
   | { type: 'moveArmy'; army: string; target: string }
   | { type: 'gatherArmies'; target: string; together?: boolean }
+  | { type: 'garrison'; province?: string }
   | { type: 'stopArmy'; army: string }
   | { type: 'mergeArmies'; armies: string[] }
   | { type: 'splitArmy'; army: string }
@@ -156,7 +158,7 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
       }
       const plan = gatherPlan(w, c, a.target);
       if (!plan.going.length && !plan.sailing.length) {
-        return invalid(label, plan.there.length ? 'Every army that can get there is already there.' : plan.stuck.length ? `None of our armies can get there, by land or by sea: ${plan.stuck[0].why}` : 'We have no armies to gather.');
+        return invalid(label, plan.there.length ? 'Every army that can get there is already there.' : plan.stuck.length ? `None of our armies can get there, by land or by sea: ${plan.stuck[0].why}` : plan.posted.length ? 'Our only armies are border garrisons, which hold their posts. Move one from its card to send it.' : 'We have no armies to gather.');
       }
       const hire = plan.sailing.reduce((n, s) => n + s.plan.cost, 0);
       if (hire > country.treasury) return invalid(label, `Hiring ships for the armies going by sea costs ${money(hire)}.`);
@@ -174,6 +176,7 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
           ...(plan.going.length ? [`${n(plan.going.length, 'army marches', 'armies march')} by land`] : []),
           ...(plan.sailing.length ? [`${n(plan.sailing.length, 'army goes', 'armies go')} by sea (${plan.sailing.map((s) => s.army.name).join(', ')})${hire ? `, hiring ships for ${money(hire)}` : ' in our own ships'}`] : []),
           `${Math.round(regiments)} regiments in all${plan.there.length ? `, with ${plan.there.length} already there` : ''}`,
+          ...(plan.posted.length ? [`${n(plan.posted.length, 'border garrison stays', 'border garrisons stay')} at ${plan.posted.length === 1 ? 'its post' : 'their posts'}`] : []),
           `The last arrives in about ${Math.max(1, Math.round(months))} month${Math.round(months) > 1 ? 's' : ''}`,
         ],
         risks: [
@@ -183,6 +186,36 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
           ...(sieges ? [`${sieges} will abandon ${sieges === 1 ? 'its siege' : 'their sieges'}`] : []),
           ...(regiments > supply ? [`${provinceName(a.target)} can feed about ${Math.round(supply)} regiments: a larger host suffers attrition there`] : []),
           'Our frontiers are left without field armies',
+        ],
+      });
+    }
+    case 'garrison': {
+      const label = a.province ? `Post a garrison at ${provinceName(a.province)}` : 'Garrison our land borders';
+      if (a.province && !w.provinces[a.province]) return invalid(label, 'Choose a province.');
+      const sites = a.province ? [a.province] : provincesOf(w, c).filter((p) => foreignNeighbours(w, c, p).length && !garrisonOf(w, c, p));
+      if (!sites.length) return invalid(label, 'Every province on our land borders already has a garrison.');
+      const plan = planGarrisons(w, c, sites);
+      if (!plan.orders.length) {
+        const why = plan.skipped[0]?.why ?? 'nothing to do';
+        return invalid(label, why === 'already garrisoned' ? `${provinceName(sites[0])} already has a garrison.` : why.charAt(0).toUpperCase() + why.slice(1) + '.');
+      }
+      const months = Math.max(...plan.orders.map((o) => o.months));
+      const built = plan.orders.filter((o) => o.barracks).length;
+      const names = plan.orders.map((o) => provinceName(o.pid));
+      const mix = (u: UnitCounts) => UNIT_TYPES.filter((k) => u[k]).map((k) => `${u[k]} ${UNITS[k].name.toLowerCase()}`).join(', ');
+      return prev(label, {
+        cost: { treasury: plan.cost, manpower: plan.regiments, months },
+        consequences: [
+          a.province
+            ? `${plan.regiments} regiments enlisted (${mix(plan.orders[0].units)}), ready in ${months} month${months > 1 ? 's' : ''}`
+            : `${plan.orders.length} provinces garrisoned: ${names.slice(0, 8).join(', ')}${names.length > 8 ? ` and ${names.length - 8} more` : ''}; ${plan.regiments} regiments in all, ready within ${months} month${months > 1 ? 's' : ''}`,
+          built ? `Barracks built${a.province ? '' : ` in ${built} of them`} (recruits there train a month sooner)` : `Barracks already stand${a.province ? ' there' : ''}`,
+          'A garrison holds its post: Gather leaves it be, and it goes back after a battle. Moving it yourself ends the posting',
+        ],
+        risks: [
+          `Upkeep about ${money(plan.upkeep)} a month`,
+          ...(a.province && !onFrontier(w, c, a.province) ? [`${provinceName(a.province)} lies inside our borders, away from any coast`] : []),
+          ...(plan.skipped.length && !a.province ? [`${plan.skipped.length} more cannot be garrisoned now (${plan.skipped[0].why})`] : []),
         ],
       });
     }
@@ -369,7 +402,10 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
       const army = w.armies[a.army];
       army.voyage = undefined;
       army.departAt = undefined;
-      return orderMove(w, army, a.target) ? { ok: true, message: `${pv.summary} (${pv.cost.months} months).` } : { ok: false, message: 'No route.' };
+      if (!orderMove(w, army, a.target)) return { ok: false, message: 'No route.' };
+      const post = army.garrison && army.garrison !== a.target ? army.garrison : undefined;
+      if (post) army.garrison = undefined;
+      return { ok: true, message: `${pv.summary} (${pv.cost.months} months).${post ? ` It leaves its post at ${provinceName(post)}.` : ''}` };
     }
     case 'gatherArmies': {
       const plan = gatherPlan(w, c, a.target);
@@ -389,6 +425,16 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
         message: `${parts} for ${provinceName(a.target)}; ${a.together ? 'all should arrive together' : 'the last arrives'} in about ${months} month${months > 1 ? 's' : ''}.${left ? ` ${left} cannot get there.` : ''} Once there, Merge on an army's card combines them.`,
       };
     }
+    case 'garrison': {
+      const sites = a.province ? [a.province] : provincesOf(w, c).filter((p) => foreignNeighbours(w, c, p).length && !garrisonOf(w, c, p));
+      const plan = planGarrisons(w, c, sites);
+      executeGarrisons(w, c, plan);
+      const months = Math.max(1, ...plan.orders.map((o) => o.months));
+      return {
+        ok: plan.orders.length > 0,
+        message: `${a.province ? `A garrison of ${plan.regiments} regiments is enlisting at ${provinceName(a.province)}` : `Garrisons are enlisting in ${plan.orders.length} border provinces (${plan.regiments} regiments)`}: ready in ${months} month${months > 1 ? 's' : ''}.`,
+      };
+    }
     case 'stopArmy': {
       const army = w.armies[a.army];
       if (!army || army.owner !== c) return { ok: false, message: 'Not our army.' };
@@ -400,6 +446,8 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
       if (armies.length < 2 || armies.some((x) => x.location !== armies[0].location)) return { ok: false, message: 'Armies must be in the same province.' };
       const main = armies[0];
       const full = establishment(main);
+      // Only garrison troops of the same post make a garrison; anything else merged in makes a field army.
+      if (armies.some((x) => x.garrison !== main.garrison)) main.garrison = undefined;
       for (const o of armies.slice(1)) {
         const of = establishment(o);
         for (const u of UNIT_TYPES) { main.units[u] += o.units[u]; full[u] += of[u]; }
@@ -435,6 +483,7 @@ function execute(w: WorldState, c: string, a: GameAction, pv: ActionPreview): Ac
     case 'expedition': {
       const plan = startVoyage(w, w.armies[a.army], a.target);
       if (typeof plan === 'string') return { ok: false, message: plan };
+      w.armies[a.army].garrison = undefined;
       const total = pv.cost.months ?? 1;
       return { ok: true, message: `${w.armies[a.army].name} ${plan.toPort.length ? `marches to ${provinceName(plan.embark)} to take ship` : 'takes ship'} for ${provinceName(plan.final)}: about ${total} month${total === 1 ? '' : 's'} in all.` };
     }

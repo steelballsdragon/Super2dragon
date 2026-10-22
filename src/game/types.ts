@@ -377,6 +377,8 @@ export interface Army {
   departAt?: number;
   /** A journey by sea in progress: march to `embark`, sail to `landAt`, then march on to `final`. */
   voyage?: { embark: string; landAt: string; final: string; fleet?: string; paid: boolean };
+  /** A border garrison: the province it holds. It stays there when armies are gathered and returns after a battle. */
+  garrison?: string;
 }
 
 export interface Fleet {
@@ -448,6 +450,8 @@ export interface RecruitItem {
   unit: UnitType | ShipType;
   count: number;
   monthsLeft: number;
+  /** Raised for the province's border garrison. */
+  garrison?: boolean;
 }
 
 export interface EventInstance {
@@ -563,5 +567,7 @@ export interface WorldState {
   decisions: PlayerDecision[];
   nextId: number;
   flags: Record<string, number | string | boolean>;
-  settings: { pauseOnEvents: boolean; autosaveMonths: number; /** False: the player's armies lose no men to supply and terrain. */ supplyLosses?: boolean };
+  settings: { pauseOnEvents: boolean; autosaveMonths: number; /** False: the player's armies lose no men to supply and terrain. */ supplyLosses?: boolean;
+    /** False: land won in war is not garrisoned by itself. */ autoGarrison?: boolean;
+    /** Regiments raised for each new border garrison. */ garrisonSize?: number };
 }

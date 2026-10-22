@@ -1,4 +1,4 @@
-import { Combine, Crosshair, Swords } from 'lucide-react';
+import { Combine, Crosshair, Shield, Swords } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { SHIPS, UNITS } from '../data/buildings';
 import { previewAction } from '../game/actions';
@@ -9,6 +9,7 @@ import type { ShipType, UnitType } from '../game/types';
 import { useGame } from '../store/game';
 import { useWorld } from '../store/hooks';
 import { orderGather } from '../screens/game/gather';
+import { orderGarrison } from '../screens/game/garrisonOrder';
 import { men, money, monthsText } from '../ui/format';
 import { Empty, Meter, Section, Stat, Tabs } from '../ui/kit';
 
@@ -42,27 +43,38 @@ function Armies() {
   const { w, me } = useWorld();
   const s = useGame();
   const armies = armiesOf(w, me);
-  if (!armies.length) return <Empty>We have no armies in the field.</Empty>;
   const capital = w.countries[me].capital;
+  const posted = armies.filter((a) => a.garrison).length;
+  const garrisons = (
+    <div className="mb-3 flex flex-wrap items-center gap-2">
+      <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => orderGarrison()}><Shield size={14} /> Garrison our land borders…</button>
+      <span className="w-full text-[11px] text-muted">
+        {posted ? `${posted} border garrison${posted > 1 ? 's' : ''} at ${posted > 1 ? 'their posts' : 'its post'}. ` : ''}
+        {w.settings.autoGarrison === false ? 'Land won in war is not garrisoned by itself (Settings).' : 'Land won in war gets barracks and a garrison by itself (Settings).'}
+      </span>
+    </div>
+  );
+  if (!armies.length) return <>{garrisons}<Empty>We have no armies in the field.</Empty></>;
   return (
     <>
     {armies.length > 1 ? (
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button className="btn btn-gold !min-h-8 !py-1" onClick={() => { s.openPanel(null); s.selectArmy(null); s.setPick({ kind: 'gather' }); }}><Combine size={14} /> Gather all armies…</button>
         <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => orderGather(capital)}>At the capital</button>
-        <span className="w-full text-[11px] text-muted">Every army that can march goes to one place you tap on the map.</span>
+        <span className="w-full text-[11px] text-muted">Every army that can march goes to one place you tap on the map{posted ? '; border garrisons hold their posts' : ''}.</span>
       </div>
     ) : null}
+    {garrisons}
     <ul className="space-y-1.5">
       {armies.map((a) => {
         const g = a.general ? w.characters[a.general] : undefined;
         return (
           <li key={a.id}>
             <button className={`card flex w-full items-center gap-2 px-2.5 py-2 text-left text-[13px] hover:border-gold/50 ${s.selectedArmy === a.id ? '!border-gold' : ''}`} onClick={() => { s.selectArmy(a.id); s.selectProvince(a.location); const [x, y] = provincePoint(a.location); s.focusOn(x, y, 4); }}>
-              <Swords size={15} className="text-gold" />
+              {a.garrison ? <Shield size={15} className="text-gold" /> : <Swords size={15} className="text-gold" />}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-parchment">{a.name}</span>
-                <span className="block truncate text-[11px] text-muted">{provinceName(a.location)} · {a.status}{a.path.length ? ` → ${provinceName(a.path[a.path.length - 1])}` : ''}{g?.alive ? ` · ${g.name}` : ''}</span>
+                <span className="block truncate text-[11px] text-muted">{provinceName(a.location)} · {a.garrison ? (a.location === a.garrison && !a.path.length ? 'holding its post' : `returning to its post at ${provinceName(a.garrison)}`) : a.status}{a.path.length ? ` → ${provinceName(a.path[a.path.length - 1])}` : ''}{g?.alive ? ` · ${g.name}` : ''}</span>
               </span>
               <span className="tabular text-right"><span className="block text-parchment">{men(armyRegiments(a))}</span><span className="block text-[11px] text-muted">morale {Math.round(a.morale * 100)}%</span></span>
             </button>

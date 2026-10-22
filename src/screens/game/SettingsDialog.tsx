@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LLM_MODEL, loadLlmSettings, saveLlmSettings } from '../../advisor/llm';
+import { DEFAULT_GARRISON } from '../../game/garrison';
 import { useGame } from '../../store/game';
 import { useWorld } from '../../store/hooks';
 import { Modal } from '../../ui/kit';
@@ -11,9 +12,13 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const [pause, setPause] = useState(w.settings.pauseOnEvents);
   const [losses, setLosses] = useState(w.settings.supplyLosses !== false);
   const [every, setEvery] = useState(w.settings.autosaveMonths);
+  const [garrison, setGarrison] = useState(w.settings.autoGarrison !== false);
+  const [garrisonSize, setGarrisonSize] = useState(w.settings.garrisonSize ?? DEFAULT_GARRISON);
   const save = () => {
     w.settings.pauseOnEvents = pause;
     w.settings.supplyLosses = losses;
+    w.settings.autoGarrison = garrison;
+    w.settings.garrisonSize = Math.max(1, Math.min(30, Math.round(garrisonSize) || DEFAULT_GARRISON));
     w.settings.autosaveMonths = Math.max(1, Math.min(24, every));
     saveLlmSettings(llm);
     bump();
@@ -41,6 +46,15 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             <input type="checkbox" className="h-4 w-4 accent-[#d9b46b]" checked={losses} onChange={(e) => setLosses(e.target.checked)} />
           </label>
           <p className="text-xs text-muted">Armies on friendly ground refill lost men from the manpower reserve either way. Turning losses off spares your armies (not the AI’s) from oversized stacks, harsh terrain and foraging in enemy land; battles still cost men.</p>
+          <label className="flex items-center justify-between gap-3">
+            <span>Garrison land won in war</span>
+            <input type="checkbox" className="h-4 w-4 accent-[#d9b46b]" checked={garrison} onChange={(e) => setGarrison(e.target.checked)} />
+          </label>
+          <label className="flex items-center justify-between gap-3">
+            <span>Regiments in each garrison</span>
+            <input type="number" min={1} max={30} className="input !w-20 !py-1" value={garrisonSize} onChange={(e) => setGarrisonSize(Number(e.target.value) || 1)} />
+          </label>
+          <p className="text-xs text-muted">When a peace gives us provinces on the frontier (bordering another realm, or on the coast), barracks are built there and a garrison is raised from the treasury and manpower, up to eight at a time. A garrison left inside the new border marches up to it instead. Garrisons stay put when you gather your armies and return to their posts after a battle.</p>
         </section>
         <section className="space-y-2">
           <div className="label">AI council (optional)</div>

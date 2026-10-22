@@ -436,6 +436,20 @@ const HEIR_TITLE_WORDS = new Set(['prince', 'princess', 'crown', 'grand', 'duke'
 
 const INTENTS: Intent[] = [
   {
+    id: 'garrison', title: 'Garrison the borders', minister: 'military',
+    test: (t) => /\bgarrison(s|ed)?\b/.test(t) || /\b(guard|protect|secure|defend|hold)\b.*\b(border|borders|frontier|frontiers|conquests?)\b/.test(t),
+    plan: (w, c, t, pl, raw) => {
+      const named = matchProvince(raw);
+      if (named && w.provinces[named]?.owner === c) {
+        pl.add({ type: 'garrison', province: named });
+        return `Barracks and a standing garrison for ${provinceName(named)}.`;
+      }
+      if (named) pl.note(`${provinceName(named)} is not ours to garrison, so the order covers our own land borders.`);
+      pl.add({ type: 'garrison' });
+      return 'Every province on our land borders without a garrison gets barracks and troops of its own.';
+    },
+  },
+  {
     id: 'gather', title: 'Gather the armies', minister: 'military',
     test: (t) => /\b(gather|assemble|concentrate|mass|muster|rally|unite|combine)\b.*\b(army|armies|troops|forces|regiments|soldiers)\b/.test(t)
       || /\b(move|send|march|bring|order)\b.*\b(all|every|whole)\b.*\b(army|armies|troops|forces|regiments|soldiers)\b/.test(t),

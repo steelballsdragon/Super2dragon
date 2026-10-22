@@ -2,6 +2,7 @@
 import { BUILDING_BY_ID, SHIPS, UNITS } from '../data/buildings';
 import { lawOption } from '../data/laws';
 import { generateGeneral, makeCharacter } from './characters';
+import { musterGarrison } from './garrison';
 import { REBELS, TERRAIN } from './constants';
 import { wageFactor } from './economy';
 import { chance, rand, randRange } from './rng';
@@ -66,16 +67,15 @@ export function processRecruitment(w: WorldState): void {
     if (!w.countries[r.country]?.alive) continue;
     if (r.kind === 'unit') {
       const unit = r.unit as UnitType;
-      let army = armiesAt(w, r.province).find((a) => a.owner === r.country && a.status !== 'retreating' && !a.rebel);
+      let army = r.garrison ? musterGarrison(w, r.country, r.province) : armiesAt(w, r.province).find((a) => a.owner === r.country && a.status !== 'retreating' && !a.rebel && !a.garrison);
       if (!army) {
         army = { id: newId(w, 'a'), owner: r.country, name: `${provinceName(r.province)} Regiments`, location: r.province, units: { infantry: 0, cavalry: 0, artillery: 0, irregulars: 0 }, morale: 0.6, experience: 0, path: [], progress: 0, status: 'idle' };
         w.armies[army.id] = army;
-  forcesChanged(w);
         forcesChanged(w);
       }
       army.units[unit] += r.count;
       army.morale = Math.min(army.morale, 0.85);
-      if (r.country === w.playerId) notify(w, `${r.count} regiment${r.count > 1 ? 's' : ''} of ${UNITS[unit].name.toLowerCase()} raised in ${provinceName(r.province)}.`, 'success');
+      if (r.country === w.playerId) notify(w, `${r.count} regiment${r.count > 1 ? 's' : ''} of ${UNITS[unit].name.toLowerCase()} raised in ${provinceName(r.province)}${r.garrison ? ' for its garrison' : ''}.`, 'success');
     } else {
       const ship = r.unit as ShipType;
       addShips(w, r.country, r.province, ship, r.count);

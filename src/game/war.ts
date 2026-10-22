@@ -1,6 +1,7 @@
 // War declaration, alliances called to arms, war score and peace treaties.
 import { SUBJECT_TYPES, REBELS } from './constants';
 import { firstHeld } from './create';
+import { garrisonConquests } from './garrison';
 import { armyPower } from './military';
 import { fleetStrength } from './naval';
 import {
@@ -432,6 +433,7 @@ export function makePeace(w: WorldState, war: War, winnerSide: 'attackers' | 'de
   }
   for (const c of leaving) if (w.countries[c]) w.countries[c].warExhaustion = clamp(w.countries[c].warExhaustion - 15, 0, 100);
   sendArmiesHome(w);
+  if (transferred.length) garrisonConquests(w, w.playerId, transferred);
   touch(w);
   const desc = winnerSide === 'white' ? 'a white peace' : `${countryName(w, winnerLeader)}'s favour${transferred.length ? `; ${transferred.map(provinceName).join(', ')} change hands` : ''}`;
   chronicle(w, { text: `${separate ? `${countryName(w, separate)} makes a separate peace in the ${war.name}` : `The ${war.name} ends`} with ${desc}.`, category: 'peace', countries: leaving, importance: transferred.length ? 3 : 2 });

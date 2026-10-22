@@ -1,4 +1,4 @@
-import { Anchor, Ban, Combine, Crosshair, Hammer, MapPin, Merge, Ship, Split, Swords, X } from 'lucide-react';
+import { Anchor, Ban, Combine, Crosshair, Hammer, MapPin, Merge, Ship, Shield, Split, Swords, X } from 'lucide-react';
 import { Flag } from '../../art/Flag';
 import { BUILDING_BY_ID, SHIPS, UNITS } from '../../data/buildings';
 import { GOODS, REBELS, RELIGION_NAME, TERRAIN } from '../../game/constants';
@@ -9,6 +9,8 @@ import { POLITIES, PROVINCE_DEFS, SEA_DEFS, coastalSeas, provincePoint, seaPoint
 import { voyageText } from '../../game/voyage';
 import { useGame } from '../../store/game';
 import { orderGather } from './gather';
+import { orderGarrison } from './garrisonOrder';
+import { garrisonOf } from '../../game/garrison';
 import { useWorld } from '../../store/hooks';
 import { money, people } from '../../ui/format';
 import { Meter } from '../../ui/kit';
@@ -77,6 +79,7 @@ function ArmyCard({ id }: { id: string }) {
         const why = !home ? 'refills once back on friendly ground' : c.manpower < 1 ? 'the manpower reserve is empty' : c.treasury <= 0 ? 'the treasury cannot pay for recruits' : 'refilling from the manpower reserve';
         return <div className="mt-2 text-[12px] text-parchment-dim">At {Math.round((regs / fullRegs) * 100)}% of full strength ({Math.round(fullRegs * 1000).toLocaleString('en')} men) · {why}</div>;
       })()}
+      {a.garrison ? <div className="mt-2 text-[12px] text-gold"><Shield size={12} className="inline" /> Border garrison of {provinceName(a.garrison)}{a.location !== a.garrison ? ' · returning to its post' : ''}. It stays put when the armies gather{mine ? '; moving it yourself ends the posting' : ''}.</div> : null}
       {voyageText(w, a) ? <div className="mt-2 text-[12px] text-diplo"><Ship size={12} className="inline" /> {voyageText(w, a)}</div> : null}
       {dest && !a.voyage ? <div className="mt-2 text-[12px] text-gold"><MapPin size={12} className="inline" /> Marching to {provinceName(dest)} · ~{Math.max(0.5, Math.round(pathMonths(w, a, a.path) * 10) / 10)} months</div> : null}
       <div className="mt-1 text-[11px] text-muted">Status: {a.departAt !== undefined && a.departAt > w.turn ? `waiting ${a.departAt - w.turn} month${a.departAt - w.turn > 1 ? 's' : ''} to set out with the others` : a.status}{a.status === 'sieging' && w.provinces[a.location]?.siege ? ` · siege ${Math.round(w.provinces[a.location].siege!.progress)}%` : ''}</div>
@@ -143,6 +146,8 @@ function ProvinceCard({ pid }: { pid: string }) {
   const here = armiesAt(w, pid);
   const buildings = Object.entries(p.buildings).filter(([, v]) => v) as [string, number][];
   const projects = w.construction.filter((k) => k.province === pid);
+  const guard = mine ? garrisonOf(w, me, pid) : undefined;
+  const enlisting = mine ? w.recruitment.filter((r) => r.province === pid && r.garrison && r.country === me) : [];
   return (
     <div>
       <div className="flex items-center gap-2 pr-6">
@@ -161,6 +166,15 @@ function ProvinceCard({ pid }: { pid: string }) {
       <div className="mt-2 text-[12px] text-parchment-dim">{p.culture} · {RELIGION_NAME[p.religion]}{p.devastation > 5 ? ` · devastation ${Math.round(p.devastation)}%` : ''}{p.controller && p.controller !== p.owner ? ` · occupied by ${p.controller === REBELS ? 'rebels' : countryName(w, p.controller)}` : ''}</div>
       {buildings.length ? <div className="mt-1.5 flex flex-wrap gap-1">{buildings.map(([b, l]) => <span key={b} className="chip text-parchment-dim">{BUILDING_BY_ID[b as keyof typeof BUILDING_BY_ID]?.name}{l > 1 ? ` ×${l}` : ''}</span>)}</div> : null}
       {projects.length ? <div className="mt-1.5 text-[12px] text-gold"><Hammer size={12} className="inline" /> {projects.map((k) => `${BUILDING_BY_ID[k.building].name} ${Math.round((k.progress / k.total) * 100)}%`).join(', ')}</div> : null}
+      {guard || enlisting.length ? (
+        <div className="mt-1.5 text-[12px] text-gold"><Shield size={12} className="inline" /> {(() => {
+          const due = Math.max(0, ...enlisting.map((r) => r.monthsLeft));
+          const coming = enlisting.reduce((n, r) => n + r.count, 0);
+          const when = `ready in ${due} month${due > 1 ? 's' : ''}`;
+          if (!guard) return `A garrison of ${coming} regiments is enlisting, ${when}`;
+          return `Held by ${guard.name} (${Math.round(armyRegiments(guard))} regiments)${coming ? ` · ${coming} more ${when}` : ''}`;
+        })()}</div>
+      ) : null}
       {here.length ? (
         <div className="mt-1.5 flex flex-wrap gap-1">
           {here.map((a) => <button key={a.id} className="chip hover:border-gold" onClick={() => s.selectArmy(a.id)}><Swords size={11} />{a.name} · {Math.round(armyRegiments(a))}</button>)}
@@ -169,6 +183,7 @@ function ProvinceCard({ pid }: { pid: string }) {
       <div className="mt-2 flex flex-wrap gap-1.5">
         {mine ? <button className="btn btn-gold !min-h-8 !py-1" onClick={() => s.openPanel('construction')}><Hammer size={14} /> Build here</button> : null}
         {mine ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.openPanel('military')}><Swords size={14} /> Raise troops</button> : null}
+        {mine && !guard && !enlisting.length ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => orderGarrison(pid)}><Shield size={14} /> Post a garrison</button> : null}
         {mine && coastalSeas(pid).length && (p.buildings.port ?? 0) ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => s.openPanel('military')}><Anchor size={14} /> Build ships</button> : null}
         {p.owner && p.owner !== me ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => { s.selectCountry(p.owner); s.openPanel('diplomacy'); }}>Diplomacy with {owner?.short}</button> : null}
         {armiesOf(w, me).length ? <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => orderGather(pid)}><Combine size={14} /> Gather armies here</button> : null}

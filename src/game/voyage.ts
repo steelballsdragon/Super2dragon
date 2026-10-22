@@ -190,12 +190,15 @@ export interface GatherPlan {
   sailing: { army: Army; plan: VoyagePlan }[];
   there: Army[];
   stuck: { army: Army; why: string }[];
+  /** Border garrisons, which stay at their posts. */
+  posted: Army[];
 }
 
 export function gatherPlan(w: WorldState, c: string, target: string): GatherPlan {
-  const plan: GatherPlan = { going: [], sailing: [], there: [], stuck: [] };
+  const plan: GatherPlan = { going: [], sailing: [], there: [], stuck: [], posted: [] };
   for (const a of armiesOf(w, c)) {
     if (a.rebel || a.status === 'embarked' || a.status === 'retreating') continue;
+    if (a.garrison && a.garrison !== target) { plan.posted.push(a); continue; }
     if (a.location === target) { plan.there.push(a); continue; }
     const path = findPath(w, c, a.location, target);
     const land = path ? pathMonths(w, a, path) : Infinity;
