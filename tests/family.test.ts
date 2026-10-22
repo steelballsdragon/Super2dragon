@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyAction } from '../src/game/actions';
 import { interpretCommand } from '../src/game/advisor';
 import { performDiplomacy } from '../src/game/diplomacy';
-import { bearChild, consortOf, household, processHousehold, relationTo } from '../src/game/family';
+import { bearChild, consortOf, consortsOf, household, processHousehold, relationTo } from '../src/game/family';
 import { deserialize, serialize } from '../src/game/save';
 import { succeed } from '../src/game/society';
 import { addOpinion, hasRulingHouse, hasTreaty } from '../src/game/state';
@@ -18,12 +18,12 @@ describe('the royal household', () => {
     expect(relationTo(w, 'great_britain', prince)).toBe('Son');
     const mustafa = w.characters[w.countries.ottoman.heirId!];
     expect(relationTo(w, 'ottoman', mustafa)).toBe('Kinsman');
-    expect(w.countries.usa.consortId).toBeUndefined();
+    expect(w.countries.usa.consorts).toHaveLength(0);
   });
 
   it('gives an unmarried sovereign a consort from the house they marry into', () => {
     const w = makePeaceful(world('sikh_misls'));
-    w.countries.sikh_misls.consortId = undefined;
+    w.countries.sikh_misls.consorts = [];
     addOpinion(w, 'patiala', 'sikh_misls', 200);
     const r = performDiplomacy(w, 'sikh_misls', 'patiala', 'marriage');
     expect(r.ok).toBe(true);
@@ -35,11 +35,14 @@ describe('the royal household', () => {
 
   it('lets the sovereign marry at home when there is no foreign match', () => {
     const w = world('sikh_misls');
-    w.countries.sikh_misls.consortId = undefined;
+    w.countries.sikh_misls.consorts = [];
     const res = applyAction(w, 'sikh_misls', { type: 'court', kind: 'findConsort' });
     expect(res.ok).toBe(true);
     expect(consortOf(w, 'sikh_misls')).toBeDefined();
-    expect(applyAction(w, 'sikh_misls', { type: 'court', kind: 'findConsort' }).ok).toBe(false);
+    // A Christian court keeps one consort at a time.
+    const a = world('austria');
+    expect(consortsOf(a, 'austria')).toHaveLength(1);
+    expect(applyAction(a, 'austria', { type: 'court', kind: 'findConsort' }).ok).toBe(false);
   });
 
   it('bears children who join the line of succession, and lets the sovereign choose among them', () => {
@@ -84,7 +87,7 @@ describe('the royal household', () => {
     const sibling = heir === a ? b : a;
     succeed(w, 'sikh_misls', 'has died');
     expect(c.rulerId).toBe(heir.id);
-    expect(c.consortId).toBeUndefined();
+    expect(c.consorts).toHaveLength(0);
     expect(c.heirId).toBe(sibling.id);
     expect(relationTo(w, 'sikh_misls', sibling)).toBe(sibling.female ? 'Sister' : 'Brother');
   });
@@ -104,9 +107,9 @@ describe('the royal household', () => {
     const raw = JSON.parse(serialize(w));
     raw.schemaVersion = 2;
     delete raw.flags.familySeeded;
-    for (const c of Object.values(raw.countries) as Record<string, unknown>[]) { delete c.family; delete c.consortId; }
+    for (const c of Object.values(raw.countries) as Record<string, unknown>[]) { delete c.family; delete c.consorts; }
     const back = deserialize(JSON.stringify(raw));
-    expect(back.schemaVersion).toBe(3);
+    expect(back.schemaVersion).toBe(4);
     expect(consortOf(back, 'sikh_misls')?.origin).toBe('patiala');
     expect(hasTreaty(back, 'marriage', 'sikh_misls', 'patiala')).toBe(true);
     expect(Object.values(back.countries).every((c) => Array.isArray(c.family))).toBe(true);
@@ -122,7 +125,7 @@ describe('the royal household', () => {
     const plan = interpretCommand(w, 'sikh_misls', `Make ${other.name} my heir`);
     expect(plan.intent).toContain('heir');
     expect(plan.steps.some((s) => s.action.type === 'court' && s.action.kind === 'chooseHeir' && s.action.character === other.id && s.preview.valid)).toBe(true);
-    w.countries.sikh_misls.consortId = undefined;
+    w.countries.sikh_misls.consorts = [];
     const wed = interpretCommand(w, 'sikh_misls', 'Find the sovereign a wife');
     expect(wed.steps.some((s) => s.action.type === 'court' && s.action.kind === 'findConsort')).toBe(true);
   });

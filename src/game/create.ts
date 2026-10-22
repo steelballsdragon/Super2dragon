@@ -177,7 +177,7 @@ export function createWorld(opts: NewGameOptions): WorldState {
       tariff: laws.economy === 'free_trade' ? 0.04 : laws.economy === 'mercantilism' ? 0.12 : 0.08,
       budget: { research: 1, espionage: 0.5, administration: 1 },
       stability: p.stability, legitimacy: p.legitimacy, prestige: p.prestige, corruption: p.corruption, warExhaustion: 0, manpower: 0,
-      rulerId: '', family: [], ministers: {}, techs, research: { tech: null, progress: 0 }, laws, factions: initialFactions(p, laws),
+      rulerId: '', family: [], consorts: [], ministers: {}, techs, research: { tech: null, progress: 0 }, laws, factions: initialFactions(p, laws),
       overlord: p.overlord, subjectType: p.subjectType, liberty: p.subjectType ? SUBJECT_TYPES[p.subjectType].liberty : 0,
       capital: p.capital, foodStock: 3, cycle: 0, spy: {}, counterIntel: 10, envoys: [], rivals: [...p.rivals], infamy: 0, claims: [],
       revenueMod: 1, modifiers: [], last: emptyLedger(), ai: { nextWarCheck: randInt(w, 6, 30), stance: 'consolidate', lastPeaceOffer: -99 },

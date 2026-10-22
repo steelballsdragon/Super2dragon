@@ -76,6 +76,15 @@ export const MIGRATIONS: Record<number, Migration> = {
     for (const c of Object.values(countries)) if (!Array.isArray(c.family)) c.family = [];
     return { ...s, schemaVersion: 3, countries };
   },
+  // Several consorts: the single consort becomes the first of a list.
+  3: (s) => {
+    const countries = (s.countries ?? {}) as Record<string, Record<string, unknown>>;
+    for (const c of Object.values(countries)) {
+      if (!Array.isArray(c.consorts)) c.consorts = typeof c.consortId === 'string' ? [c.consortId] : [];
+      delete c.consortId;
+    }
+    return { ...s, schemaVersion: 4, countries };
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): Record<string, unknown> {

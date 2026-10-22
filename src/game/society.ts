@@ -243,7 +243,7 @@ export function succeed(w: WorldState, c: string, cause: string): void {
     onSuccession(w, c, heir);
     if (!ensureHeir(w, c) && hasRulingHouse(w, c) && chance(w, 0.7)) country.heirId = generateHeir(w, c, chance(w, 0.3)).id;
   } else {
-    country.consortId = undefined;
+    country.consorts = [];
     const n = generateName(w, d.cultureGroup, false) ?? 'New Council';
     const a = randInt(w, 1, 8), dp = randInt(w, 1, 8), m = randInt(w, 1, 8);
     newRuler = makeCharacter(w, { country: c, role: 'ruler', name: n, born: year(w) - randInt(w, 25, 55), adm: a, dip: dp, mil: m, traits: rulerTraits(a, dp, m), loyalty: 100 });

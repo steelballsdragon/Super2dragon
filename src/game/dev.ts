@@ -3,7 +3,7 @@
 import { TECHNOLOGIES } from '../data/technologies';
 import { EVENT_BY_ID } from './events/defs';
 import { resolveEvent } from './events/engine';
-import { bearChild, celebrateMarriage, consortOf, rulerOf, wedRuler } from './family';
+import { bearChild, celebrateMarriage, consortBlocker, rulerOf, wedRuler } from './family';
 import { removeArmy } from './military';
 import { pick, weightedPick } from './rng';
 import { succeed } from './society';
@@ -49,11 +49,10 @@ export function devSetStat(w: WorldState, c: string, stat: DevStat, value: numbe
   return mark(w, `${s.label} of ${countryName(w, c)} set to ${v}`);
 }
 
+/** Adds a consort within the court's custom (one at a time for Christian courts, more elsewhere). */
 export function devAddConsort(w: WorldState, c: string, from?: string): string {
-  const old = consortOf(w, c);
-  if (old) { old.alive = false; w.countries[c].consortId = undefined; }
   const consort = wedRuler(w, c, from);
-  if (!consort) throw new Error('This sovereign cannot marry (no ruling house, or not of age).');
+  if (!consort) throw new Error(consortBlocker(w, c) ?? 'This sovereign cannot marry now.');
   return mark(w, `${rulerOf(w, c)!.name} weds ${consort.name}${from ? ` of ${countryName(w, from)}` : ''}`);
 }
 

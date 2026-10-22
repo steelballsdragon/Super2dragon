@@ -1,7 +1,7 @@
 import { Portrait } from '../art/Portrait';
 import { previewAction } from '../game/actions';
 import { age, MINISTER_TITLES, PERSONALITIES } from '../game/characters';
-import { consortOf, consortOrigin, household, relationTo } from '../game/family';
+import { consortCustom, consortHome, consortOrigin, consortsOf, household, maxConsorts, otherParent, relationTo } from '../game/family';
 import { def, hasRulingHouse } from '../game/state';
 import type { Character, FactionId, MinisterRole } from '../game/types';
 import { useGame } from '../store/game';
@@ -18,14 +18,15 @@ export function CourtPanel() {
   const d = def(me);
   const ruler = w.characters[c.rulerId];
   const heir = c.heirId ? w.characters[c.heirId] : undefined;
-  const consort = consortOf(w, me);
+  const consorts = consortsOf(w, me);
+  const consort = consorts[0];
+  const maxWives = maxConsorts(w, me);
   const family = household(w, me);
   const dynastic = hasRulingHouse(w, me);
   const acts: { kind: 'festival' | 'anticorruption' | 'designateHeir' | 'findConsort'; label: string }[] = [
     { kind: 'festival', label: 'Hold festivities' },
     { kind: 'anticorruption', label: 'Purge corrupt officials' },
     ...(!heir?.alive && !family.length ? [{ kind: 'designateHeir' as const, label: 'Designate an heir' }] : []),
-    ...(dynastic && !consort ? [{ kind: 'findConsort' as const, label: 'Marry among our nobility' }] : []),
   ];
   const nameHeir = (ch: Character) => {
     const pv = previewAction(w, me, { type: 'court', kind: 'chooseHeir', character: ch.id });
@@ -39,9 +40,8 @@ export function CourtPanel() {
         <div className="grid grid-cols-3 gap-2">
           <Person label="Sovereign" ch={ruler} style={d.portrait} />
           <Person label="Heir" ch={heir} style={d.portrait} sub={heir?.alive ? relationTo(w, me, heir) : undefined} />
-          <Person label="Consort" ch={consort} style={consort?.origin ? def(consort.origin).portrait : d.portrait} sub={consort ? consortOrigin(w, consort) : undefined} />
+          <Person label={consorts.length > 1 ? 'Chief consort' : 'Consort'} ch={consort} style={consort?.origin ? def(consort.origin).portrait : d.portrait} sub={consort ? consortOrigin(w, consort) : undefined} />
         </div>
-        {dynastic && !consort ? <p className="mt-2 text-[12px] text-muted">The sovereign is unmarried. Propose a royal marriage in Diplomacy to take a consort from a foreign house, or marry among our own nobility.</p> : null}
         <div className="mt-3 flex flex-wrap gap-1.5">
           {acts.map((a) => {
             const pv = previewAction(w, me, { type: 'court', kind: a.kind });
@@ -55,6 +55,38 @@ export function CourtPanel() {
       </Section>
 
       {dynastic ? (
+        <Section title={`Consorts${consorts.length ? ` (${consorts.length}${maxWives > 1 ? ` of up to ${maxWives}` : ''})` : ''}`}>
+          {consorts.length ? (
+            <div className="space-y-1.5">
+              {consorts.map((co, i) => {
+                const home = consortHome(w, co);
+                const kids = family.filter((ch) => ch.consortParent === co.id).length;
+                return (
+                  <div key={co.id} className="card flex items-center gap-3 p-2">
+                    <Portrait style={co.origin ? def(co.origin).portrait : d.portrait} seed={co.portraitSeed} female={co.female} age={age(w, co)} size={42} />
+                    <div className="min-w-0 flex-1 text-[13px]">
+                      <div className="flex items-center gap-1.5 text-parchment">{co.name}{i === 0 && consorts.length > 1 ? <Badge tone="muted">chief</Badge> : null}</div>
+                      <div className="text-[12px] text-parchment-dim">{home.from === 'our own nobility' ? 'Of our own nobility' : home.from.startsWith('House of') ? `Of the ${home.from}` : `From ${home.from}`} · {home.region}</div>
+                      <div className="text-[11px] text-muted">{age(w, co)} yrs · {kids ? `${kids} living ${kids === 1 ? 'child' : 'children'}` : 'no living children'}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : <p className="text-[12px] italic text-muted">The sovereign is unmarried.</p>}
+          <p className="mt-2 text-[11px] text-muted">{consortCustom(w, me)} A royal marriage proposed in Diplomacy brings a consort from that house; or marry among our own nobility.</p>
+          {(() => {
+            const pv = previewAction(w, me, { type: 'court', kind: 'findConsort' });
+            return (
+              <button className="btn btn-ghost mt-2 !min-h-8 !py-1" disabled={!pv.valid} title={pv.valid ? pv.consequences.join(', ') : pv.errors.join(' ')} onClick={() => s.dispatch({ type: 'court', kind: 'findConsort' })}>
+                {consorts.length ? 'Take another consort from our nobility' : 'Marry among our nobility'}{pv.cost.treasury ? ` · ${money(pv.cost.treasury)}` : ''}
+              </button>
+            );
+          })()}
+        </Section>
+      ) : null}
+
+      {dynastic ? (
         <Section title="The royal family">
           {family.length ? (
             <div className="space-y-1.5">
@@ -66,7 +98,7 @@ export function CourtPanel() {
                     <Portrait style={d.portrait} seed={ch.portraitSeed} female={ch.female} age={age(w, ch)} size={42} />
                     <div className="min-w-0 flex-1 text-[13px]">
                       <div className="flex items-center gap-1.5 text-parchment">{ch.name}{isHeir ? <Badge>heir</Badge> : null}</div>
-                      <div className="text-[12px] text-parchment-dim">{relationTo(w, me, ch)} · {age(w, ch) < 1 ? 'infant' : `${age(w, ch)} yrs`}</div>
+                      <div className="text-[12px] text-parchment-dim">{relationTo(w, me, ch)} · {age(w, ch) < 1 ? 'infant' : `${age(w, ch)} yrs`}{(() => { const op = otherParent(w, ch); return op ? ` · by ${op.name} (${consortHome(w, op).from === 'our own nobility' ? 'our nobility' : consortHome(w, op).from})` : ''; })()}</div>
                       <div className="text-[11px] text-muted">Adm {ch.adm} · Dip {ch.dip} · Mil {ch.mil}{ch.traits.length && age(w, ch) >= 16 ? ` · ${ch.traits.join(', ')}` : ''}</div>
                     </div>
                     {pv ? <button className="btn btn-ghost !min-h-8 shrink-0 !px-3 !py-1" disabled={!pv.valid} title={pv.valid ? pv.consequences.join(', ') : pv.errors.join(' ')} onClick={() => nameHeir(ch)}>Make heir</button> : null}

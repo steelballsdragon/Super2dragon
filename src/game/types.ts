@@ -276,7 +276,8 @@ export interface CountryState {
   manpower: number; // thousands of men
   rulerId: string;
   heirId?: string;
-  consortId?: string;
+  /** The sovereign's consorts in order of marriage (the living are listed; the first is the chief consort). */
+  consorts: string[];
   /** Living princes and princesses of the ruling house, other than the sovereign. */
   family: string[];
   ministers: Partial<Record<MinisterRole, string>>;
@@ -335,6 +336,10 @@ export interface Character {
   parentId?: string;
   /** Polity a consort was born in, when they married in from abroad. */
   origin?: string;
+  /** For a sovereign's child: the consort who is its other parent. */
+  consortParent?: string;
+  /** For a mother: the month she last gave birth. */
+  lastBirth?: number;
   office?: MinisterRole;
   born: number;
   female: boolean;

@@ -7,7 +7,7 @@ import { appointCouncil, generateGeneral, generateMinister, MINISTER_TITLES } fr
 import { buildBlocker, buildingQuote, cancelConstruction, startConstruction } from './construction';
 import { answerOffer, diploBlocker, DIPLO_LABELS, evaluateProposal, performDiplomacy, type DiploKind } from './diplomacy';
 import { creditAvailable, loanRate, refreshLedgers, repayLoan, takeLoan } from './economy';
-import { consortOf, ensureHeir, heirBlocker, household, rulerOf, setHeir, wedRuler } from './family';
+import { consortBlocker, consortOf, ensureHeir, heirBlocker, household, rulerOf, setHeir, wedRuler } from './family';
 import { runSpyOp, spyOpBlocker, spyOpChance, SPY_OPS, type SpyOp } from './espionage';
 import { resolveEvent } from './events/engine';
 import { canRecruitIn, establishment, findPath, gatherPlan, orderMove, pathMonths, recruitCost, removeArmy, shipCost, supplyLimit, UNIT_TYPES } from './military';
@@ -15,8 +15,8 @@ import { orderFleet, findSeaPath } from './naval';
 import { planVoyage, startVoyage } from './voyage';
 import { generateHeir, lawBlocker, lawReformCost } from './society';
 import {
-  addOpinion, armiesAt, armyRegiments, atWar, chronicle, clamp, countryName, def, hasRulingHouse, newId, notify, provinceName, sideOf, touch,
-  forcesChanged, year,
+  addOpinion, armiesAt, armyRegiments, atWar, chronicle, clamp, countryName, def, newId, notify, provinceName, sideOf, touch,
+  forcesChanged,
 } from './state';
 import { SEA_DEFS, coastalSeas } from './static';
 import { techBlocker, techCost } from './tech';
@@ -283,11 +283,9 @@ export function previewAction(w: WorldState, c: string, a: GameAction): ActionPr
         return prev(label, { cost: { stability: 2 }, consequences: [`${current.name} is passed over`, 'Legitimacy −5', 'Nobility loyalty −5'], risks: ['A disinherited heir makes enemies at court'] });
       }
       if (a.kind === 'findConsort') {
-        const r = rulerOf(w, c);
-        const label = 'Seek a consort among our own nobility';
-        if (!hasRulingHouse(w, c)) return invalid(label, 'Only a ruling house takes a royal consort.');
-        if (consortOf(w, c)) return invalid(label, `${r?.name ?? 'The sovereign'} is already married.`);
-        if (!r?.alive || year(w) - r.born < 16) return invalid(label, 'The sovereign is not yet of age to marry.');
+        const label = consortOf(w, c) ? 'Take another consort from our own nobility' : 'Seek a consort among our own nobility';
+        const err = consortBlocker(w, c);
+        if (err) return invalid(label, err);
         if (country.treasury < inc) return invalid(label, `The wedding costs ${money(inc)}.`);
         return prev(label, { cost: { treasury: inc }, consequences: ['The sovereign marries', 'Legitimacy +3', 'No foreign alliance (propose a royal marriage in Diplomacy for that)'] });
       }

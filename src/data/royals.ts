@@ -10,7 +10,8 @@ export interface ConsortDef {
   house?: string;
 }
 
-export const CONSORTS_1800: Record<string, ConsortDef> = {
+/** Consorts of reigning sovereigns on 1 January 1800 (several where the court's custom allowed it). */
+export const CONSORTS_1800: Record<string, ConsortDef | ConsortDef[]> = {
   great_britain: { name: 'Charlotte', born: 1744, house: 'Mecklenburg-Strelitz' },
   hanover: { name: 'Charlotte', born: 1744, house: 'Mecklenburg-Strelitz' },
   austria: { name: 'Maria Theresa', born: 1772, origin: 'naples', house: 'Bourbon' },
@@ -25,7 +26,7 @@ export const CONSORTS_1800: Record<string, ConsortDef> = {
   wurttemberg: { name: 'Charlotte, Princess Royal', born: 1766, origin: 'great_britain', house: 'Hanover' },
   russia: { name: 'Maria Feodorovna', born: 1759, origin: 'wurttemberg', house: 'Württemberg' },
   parma: { name: 'Maria Amalia', born: 1746, origin: 'austria', house: 'Habsburg-Lorraine' },
-  sikh_misls: { name: 'Mehtab Kaur', born: 1782, house: 'Kanhaiya' },
+  sikh_misls: [{ name: 'Mehtab Kaur', born: 1782, house: 'Kanhaiya' }, { name: 'Datar Kaur', born: 1784, house: 'Nakai' }],
   joseon: { name: 'Queen Hyoui', born: 1754, house: 'Cheongpung Kim' },
   tokugawa: { name: 'Konoe Hiroko', born: 1773, house: 'Shimazu' },
   siam: { name: 'Queen Amarindra', born: 1737 },

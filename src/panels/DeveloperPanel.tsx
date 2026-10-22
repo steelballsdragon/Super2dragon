@@ -5,7 +5,7 @@ import {
 } from '../game/dev';
 import { EVENTS } from '../game/events/defs';
 import { refreshLedgers } from '../game/economy';
-import { consortOf, rulerOf } from '../game/family';
+import { consortsOf, rulerOf } from '../game/family';
 import { serialize } from '../game/save';
 import { countryName, hasRulingHouse, opinion, provinceName, provincesOf } from '../game/state';
 import type { TreatyType, WorldState } from '../game/types';
@@ -81,10 +81,10 @@ export function DeveloperPanel() {
       </Section>
 
       <Section title="Royal family">
-        <p className="mb-2 text-[12px] text-parchment-dim">{rulerOf(w, realm)?.name ?? 'No ruler'}{consortOf(w, realm) ? `, married to ${consortOf(w, realm)!.name}` : ', unmarried'}.</p>
+        <p className="mb-2 text-[12px] text-parchment-dim">{rulerOf(w, realm)?.name ?? 'No ruler'}{consortsOf(w, realm).length ? `, married to ${consortsOf(w, realm).map((x) => x.name).join(', ')}` : ', unmarried'}.</p>
         <div className="flex gap-2">
           <RealmSelect value={house} onChange={setHouse} list={houses} placeholder="Our own nobility" />
-          <button className="btn btn-ghost shrink-0 !min-h-8 !py-1" onClick={() => run((w) => devAddConsort(w, realm, house || undefined))}>{consortOf(w, realm) ? 'Replace consort' : 'Add consort'}</button>
+          <button className="btn btn-ghost shrink-0 !min-h-8 !py-1" onClick={() => run((w) => devAddConsort(w, realm, house || undefined))}>Add consort</button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           <button className="btn btn-ghost !min-h-8 !py-1" onClick={() => run((w) => devAddChild(w, realm, 'son'))}>Add a son</button>

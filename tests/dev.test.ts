@@ -4,7 +4,7 @@ import {
   devRaiseArmy, devResolvePendingEvents, devSetRelation, devSetStat, devTriggerEvent,
 } from '../src/game/dev';
 import { EVENTS } from '../src/game/events/defs';
-import { consortOf, household } from '../src/game/family';
+import { consortsOf, household } from '../src/game/family';
 import { armiesOf, hasTreaty, opinion, provincesOf, warsOf } from '../src/game/state';
 import { advanceMonths } from '../src/game/turn';
 import { world } from './helpers';
@@ -24,7 +24,7 @@ describe('developer tools', () => {
   it('builds a royal household', () => {
     const w = world('sikh_misls');
     devAddConsort(w, 'sikh_misls', 'patiala');
-    expect(consortOf(w, 'sikh_misls')?.origin).toBe('patiala');
+    expect(consortsOf(w, 'sikh_misls').map((x) => x.origin)).toContain('patiala');
     devAddChild(w, 'sikh_misls', 'son');
     devAddChild(w, 'sikh_misls', 'daughter');
     const kids = household(w, 'sikh_misls');

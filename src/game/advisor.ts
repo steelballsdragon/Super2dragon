@@ -11,7 +11,7 @@ import { MINISTER_TITLES, PERSONALITIES } from './characters';
 import { buildBlocker } from './construction';
 import { evaluateProposal, maxEnvoys } from './diplomacy';
 import { creditAvailable, totalDebt } from './economy';
-import { consortOf, household, relationTo } from './family';
+import { consortBlocker, household, relationTo } from './family';
 import { SPY_OPS, type SpyOp } from './espionage';
 import { recruitCost } from './military';
 import { lawBlocker } from './society';
@@ -547,7 +547,7 @@ const INTENTS: Intent[] = [
     test: (t) => /\b(marriage|marry|wed|wedding|betroth|wife|husband|bride|consort)\b/.test(t),
     plan: (w, c, t, pl, raw) => {
       const target = matchCountries(w, raw, c)[0];
-      if (!target && !consortOf(w, c)) {
+      if (!target && !consortBlocker(w, c)) {
         pl.add({ type: 'court', kind: 'findConsort' });
         return 'A match among our own nobility would see the sovereign wed without delay. To bind a foreign house, name it.';
       }
