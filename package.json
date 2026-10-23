@@ -1,0 +1,36 @@
+{
+  "name": "localcode-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LocalCode AI - a fully local, tool-using coding agent powered by open-weight models",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "workspaces": [
+    "packages/core",
+    "apps/cli",
+    "apps/desktop"
+  ],
+  "scripts": {
+    "build": "npm run build -w @localcode/core && npm run build -w @localcode/cli && npm run build -w @localcode/desktop",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "test:integration": "LOCALCODE_INTEGRATION=1 vitest run --project integration",
+    "test:e2e": "npm run build && playwright test",
+    "localcode": "node apps/cli/dist/localcode.mjs",
+    "dev:server": "node apps/cli/dist/localcode.mjs serve --port 4317 --token dev --ui apps/desktop/dist",
+    "dev:ui": "npm run dev -w @localcode/desktop",
+    "desktop:dev": "npm run tauri -w @localcode/desktop -- dev",
+    "desktop:build": "npm run build && npm run tauri -w @localcode/desktop -- build",
+    "doctor": "node apps/cli/dist/localcode.mjs doctor"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^22.15.0",
+    "esbuild": "^0.28.2",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.5"
+  }
+}

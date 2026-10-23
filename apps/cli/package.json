@@ -1,0 +1,21 @@
+{
+  "name": "@localcode/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "LocalCode AI command-line interface and local server",
+  "bin": {
+    "localcode": "dist/localcode.mjs"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@localcode/core": "0.1.0",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.2"
+  }
+}

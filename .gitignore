@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- LocalCode AI (Node / Tauri) ---
+node_modules/
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/binaries/
+apps/desktop/src-tauri/resources/
+*.tsbuildinfo
+.localcode/
+test-results/
+playwright-report/
+.vite/
