@@ -41,6 +41,18 @@ server you configure (by default `127.0.0.1`).
   side-by-side diff viewer, activity log, plan view, approval prompts, stop/retry/resume/undo,
   settings and a first-run wizard. The same engine also powers a full **CLI**.
 
+## Screenshots
+
+| Approval prompt (strict mode) | Report built from real results |
+|---|---|
+| ![Approval](docs/images/approval.png) | ![Task report and activity log](docs/images/activity.png) |
+| **Model manager** (capabilities, memory fit, probe, benchmark) | **First-run wizard** (dependency and hardware checks) |
+| ![Models](docs/images/models.png) | ![Wizard](docs/images/first-run-wizard.png) |
+
+These screenshots come from the Playwright end-to-end test and the real app running against
+a local `qwen3.5:4b` model on a CPU-only machine; `docs/images/desktop-tauri.png` shows the
+native Tauri window.
+
 ## Requirements
 
 | | Minimum | Recommended |

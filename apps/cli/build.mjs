@@ -37,4 +37,11 @@ cpSync(wasmDir, path.join(out, 'tree-sitter'), { recursive: true, filter: (f) =>
 const ui = path.join(here, '..', 'desktop', 'dist');
 if (existsSync(path.join(ui, 'index.html'))) cpSync(ui, path.join(out, 'ui'), { recursive: true });
 
+// Stage the engine for the desktop app (Tauri bundles it as a resource; `cargo build` needs it to exist).
+const engineDir = path.join(here, '..', 'desktop', 'src-tauri', 'resources', 'engine');
+rmSync(engineDir, { recursive: true, force: true });
+mkdirSync(engineDir, { recursive: true });
+cpSync(path.join(out, 'localcode.mjs'), path.join(engineDir, 'localcode.mjs'));
+cpSync(path.join(out, 'tree-sitter'), path.join(engineDir, 'tree-sitter'), { recursive: true });
+
 console.log(`Built ${path.relative(process.cwd(), path.join(out, 'localcode.mjs'))}`);

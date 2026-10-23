@@ -310,7 +310,7 @@ export const actions = {
       activeTaskId: running?.id,
       plan: lastTask?.plan ?? [],
       diffTaskId: lastTask?.id,
-      activity: events.map(eventToActivity).filter((a): a is ActivityEntry => !!a),
+      activity: events.map((ev) => eventToActivity(ev, true)).filter((a): a is ActivityEntry => !!a),
     });
   },
 
@@ -410,10 +410,11 @@ function updateTool(callId: string, fn: (t: Extract<TimelineItem, { kind: 'tool'
   setState((s) => ({ timeline: s.timeline.map((i) => (i.kind === 'tool' && i.id === callId ? fn(i) : i)) }));
 }
 
-function eventToActivity(e: StoredEvent | (ServerEvent & { createdAt?: string })): ActivityEntry | undefined {
-  const d = ('data' in e && e.data ? e.data : e) as Record<string, unknown>;
+/** Stored events wrap the original event in `data`; live events are the event itself (and may carry their own `data`). */
+function eventToActivity(e: StoredEvent | ServerEvent, stored = false): ActivityEntry | undefined {
+  const d = (stored ? (e as StoredEvent).data : e) as Record<string, unknown>;
   const type = e.type;
-  const time = ('createdAt' in e && e.createdAt) || new Date().toISOString();
+  const time = (stored && (e as StoredEvent).createdAt) || new Date().toISOString();
   const base = { id: `${type}-${String(d.callId ?? d.taskId ?? '')}-${time}-${Math.random()}`, time, type };
   switch (type) {
     case 'task.started':

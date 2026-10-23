@@ -59,6 +59,8 @@ test('runs a real task from the UI with an approval in strict mode', async ({ pa
   await expect(page.locator('.term-out')).toContainText('fail 1');
   await page.getByRole('button', { name: 'Activity' }).first().click();
   await expect(page.locator('.activity-list')).toContainText('Approval granted');
+  await expect(page.locator('.activity-list')).not.toContainText('undefined');
+  await expect(page.locator('.activity-list')).toContainText('run_tests (');
   await page.screenshot({ path: 'test-results/e2e/activity.png' });
 
   // Nothing was modified.
