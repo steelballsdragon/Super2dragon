@@ -245,7 +245,7 @@ async function cmdProbe(engine: Engine, args: Args) {
   const ref = await pickModel(engine, args._[1]);
   if (!ref) throw new Error('Usage: localcode probe <model>');
   console.log(c.gray(`Probing ${ref.model} (native tool calls, then the prompted fallback)...`));
-  const r = await engine.probeModel(ref);
+  const r = await engine.probeModel(ref, undefined, (m) => console.log(c.gray(m)));
   const show = (label: string, p?: { callOk: boolean; roundTripOk: boolean; salvaged: boolean; latencyMs: number; error?: string; detail?: string }) => {
     if (!p) return;
     console.log(`  ${label.padEnd(9)} call: ${p.callOk ? c.green('ok') : c.red('fail')}  use result: ${p.roundTripOk ? c.green('ok') : c.red('fail')}${p.salvaged ? c.yellow('  (recovered from text)') : ''}  ${c.gray(`${(p.latencyMs / 1000).toFixed(1)}s`)}`);

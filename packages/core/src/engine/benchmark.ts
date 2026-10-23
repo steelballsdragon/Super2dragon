@@ -104,7 +104,7 @@ export async function runBenchmark(
   const started = Date.now();
   const say = opts.onProgress ?? (() => {});
   say(`Probing tool calling for ${ref.model}...`);
-  const probe = await engine.probeModel(ref, opts.signal);
+  const probe = await engine.probeModel(ref, opts.signal, say);
   say(`Probe: ${probe.recommended} - ${probe.explanation}`);
   const { Engine: EngineClass } = await import('./engine.js');
   const results: BenchmarkTaskResult[] = [];

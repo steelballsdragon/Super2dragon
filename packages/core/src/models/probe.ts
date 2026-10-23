@@ -1,4 +1,4 @@
-import { errorMessage } from '../util/errors.js';
+import { LocalCodeError, errorMessage } from '../util/errors.js';
 import { ModelClient, type ToolMode } from './adapter.js';
 import type { ChatMessage, GenerationOptions, ModelProvider, ToolSpec } from './types.js';
 
@@ -100,6 +100,12 @@ export async function probeToolCalling(
   const native = await probeMode(provider, model, capabilities, generation, 'native', signal);
   if (native.callOk && native.roundTripOk && !native.salvaged) {
     return { native, recommended: 'native', explanation: 'Native tool calling works (structured calls and tool-result round trip).', testedAt };
+  }
+  if (native.error && !native.callOk) {
+    // A server/transport failure says nothing about the model's abilities: report it instead of recording "none".
+    if (/^(Cannot reach|Server error 5\d\d|Request to|No response|Model server stalled)/.test(native.error)) {
+      throw new LocalCodeError('unreachable', `Could not probe ${model}: ${native.error}`, { retryable: true });
+    }
   }
   const prompted = await probeMode(provider, model, capabilities, generation, 'prompted', signal);
   const score = (p: ModeProbe) => (p.callOk ? 2 : 0) + (p.roundTripOk ? 1 : 0) + (p.salvaged ? 0 : 0.5);

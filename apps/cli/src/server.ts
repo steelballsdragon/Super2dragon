@@ -89,7 +89,10 @@ export async function startServer(engine: Engine, opts: ServerOptions): Promise<
     'settings.get': () => engine.settings(),
     'settings.update': (p) => engine.updateSettings((p.patch ?? {}) as Partial<Settings>),
     'models.list': () => engine.listModels(),
-    'models.probe': (p, ctx) => engine.probeModel({ providerId: str(p, 'providerId'), model: str(p, 'model') }, ctx.opSignal(optStr(p, 'opId'))),
+    'models.probe': (p, ctx) =>
+      engine.probeModel({ providerId: str(p, 'providerId'), model: str(p, 'model') }, ctx.opSignal(optStr(p, 'opId')), (message) =>
+        broadcast({ type: 'log', level: 'info', message } as EngineEvent),
+      ),
     'models.downloadInfo': (p) => ollamaDownloadInfo(str(p, 'model')),
     'models.pull': async (p, ctx) => {
       await engine.pullModel(str(p, 'providerId'), str(p, 'model'), ctx.opSignal(optStr(p, 'opId')));

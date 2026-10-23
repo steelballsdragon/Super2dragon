@@ -39,6 +39,14 @@ export class OpenAICompatProvider implements ModelProvider {
     const t = Date.now();
     try {
       await httpJson(`${this.base}/models`, { signal, timeoutMs: 4000, headers: this.headers() });
+      // llama.cpp answers /v1/models while still loading weights; /health tells the truth (503 while loading).
+      try {
+        await httpJson(`${this.root}/health`, { timeoutMs: 2000, headers: this.headers() });
+      } catch (err) {
+        if (err instanceof LocalCodeError && (err.details as { status?: number } | undefined)?.status === 503) {
+          return { ok: false, error: 'Server is still loading the model; try again shortly.', latencyMs: Date.now() - t };
+        }
+      }
       let version: string | undefined;
       try {
         const props = await httpJson<{ build_info?: string }>(`${this.root}/props`, { timeoutMs: 2000, headers: this.headers() });

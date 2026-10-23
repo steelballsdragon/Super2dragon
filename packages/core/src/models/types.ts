@@ -142,6 +142,8 @@ export interface ModelProvider {
   deleteModel?(name: string): Promise<void>;
   embed?(model: string, input: string[], signal?: AbortSignal): Promise<number[][]>;
   unload?(name: string): Promise<void>;
+  /** Load the model into memory ahead of use (can take minutes on slow disks). */
+  preload?(name: string, opts: { keepAlive?: string; numCtx?: number; numGpu?: number; signal?: AbortSignal }): Promise<void>;
 }
 
 export interface ModelRef {

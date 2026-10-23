@@ -266,6 +266,18 @@ export class OllamaProvider implements ModelProvider {
     return r.embeddings;
   }
 
+  async preload(name: string, opts: { keepAlive?: string; numCtx?: number; numGpu?: number; signal?: AbortSignal }): Promise<void> {
+    const options: Record<string, unknown> = {};
+    if (opts.numCtx) options.num_ctx = opts.numCtx;
+    if (opts.numGpu !== undefined) options.num_gpu = opts.numGpu;
+    // An empty generate request loads the model and returns once it is ready.
+    await httpJson(this.url('/api/generate'), {
+      body: { model: name, keep_alive: opts.keepAlive ?? '30m', options, stream: false },
+      signal: opts.signal,
+      timeoutMs: 30 * 60_000,
+    });
+  }
+
   async unload(name: string): Promise<void> {
     await httpJson(this.url('/api/generate'), { body: { model: name, keep_alive: 0 }, timeoutMs: 15_000 });
   }

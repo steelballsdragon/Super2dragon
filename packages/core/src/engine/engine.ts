@@ -269,9 +269,27 @@ export class Engine extends EventEmitter {
     });
   }
 
-  async probeModel(ref: ModelRef, signal?: AbortSignal): Promise<ProbeResult> {
+  /**
+   * Make sure a model is loaded before use, reporting progress. Cold loads of
+   * multi-GB weights can take minutes; load failures (e.g. out of memory)
+   * surface here with a clear message instead of as a stalled request.
+   */
+  async ensureLoaded(ref: ModelRef, opts: { signal?: AbortSignal; onStatus?: (msg: string) => void; numCtx?: number } = {}): Promise<void> {
+    const provider = this.provider(ref.providerId);
+    if (!provider.preload) return;
+    const loaded = (await provider.listLoaded?.().catch(() => [] as LoadedModel[])) ?? [];
+    if (loaded.some((m) => m.name === ref.model)) return;
+    const s = this.settings();
+    const t0 = Date.now();
+    opts.onStatus?.(`Loading ${ref.model} into memory (the first load can take several minutes on slow disks)…`);
+    await provider.preload(ref.model, { keepAlive: s.generation.keepAlive, numCtx: opts.numCtx, numGpu: s.generation.numGpu ?? undefined, signal: opts.signal });
+    opts.onStatus?.(`${ref.model} loaded in ${((Date.now() - t0) / 1000).toFixed(0)}s.`);
+  }
+
+  async probeModel(ref: ModelRef, signal?: AbortSignal, onStatus?: (msg: string) => void): Promise<ProbeResult> {
     const details = await this.modelDetails(ref, true);
     const s = this.settings();
+    await this.ensureLoaded(ref, { signal, onStatus, numCtx: Math.min(4096, details.contextLength ?? 4096) });
     const result = await probeToolCalling(
       this.provider(ref.providerId),
       ref.model,
@@ -395,6 +413,11 @@ export class Engine extends EventEmitter {
       try {
         const client = await this.createClient(ref);
         const s = this.settings();
+        await this.ensureLoaded(ref, {
+          signal: controller.signal,
+          numCtx: client.generation.numCtx,
+          onStatus: (message) => this.publish({ type: 'log', taskId: task.id, level: 'info', message, workspaceId: task.workspaceId } as EngineEvent),
+        });
         const planningClient = s.models.planning && !sameRef(s.models.planning, ref) ? await this.createClient(s.models.planning).catch(() => undefined) : undefined;
         const lightClient = s.models.light && !sameRef(s.models.light, ref) ? await this.createClient(s.models.light).catch(() => undefined) : undefined;
         const embedding = s.models.embedding;
