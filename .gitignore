@@ -229,3 +229,5 @@ apps/desktop/src-tauri/resources/
 test-results/
 playwright-report/
 .vite/
+# The Python template above ignores any env/ folder; this one is source code.
+!packages/core/src/env/

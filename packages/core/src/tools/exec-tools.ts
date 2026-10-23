@@ -50,7 +50,7 @@ export const runCommandTool = defineTool({
     return level !== 'read';
   },
   assess: (a, ctx) => {
-    const r = assessCommand(a.command, ctx.guard.root);
+    const r = assessCommand(a.command, ctx.guard.root, (n) => ctx.index.packageScript(n));
     return {
       risk: r.level,
       summary: `${a.background ? 'Start background process' : 'Run'}: ${a.command}`,
@@ -124,9 +124,13 @@ export const runTestsTool = defineTool({
   }),
   mutates: false,
   assess: (a, ctx) => {
-    const cmd = a.command ?? '(detected test command)';
-    const r = a.command ? assessCommand(a.command, ctx.guard.root) : { level: 'build' as const, reasons: [], prefix: 'run_tests', blocked: undefined };
-    return { risk: r.level, summary: `Run tests: ${cmd}${a.filter ? ` (${a.filter})` : ''}`, reasons: r.reasons, ruleKey: r.prefix, blocked: r.blocked };
+    const detected = ctx.index.cachedProject?.testCommand;
+    const cmd = a.command ?? detected;
+    if (!cmd) return { risk: 'build', summary: 'Run tests (no test command detected yet)', reasons: [], ruleKey: 'run_tests' };
+    const r = assessCommand(cmd, ctx.guard.root, (n) => ctx.index.packageScript(n));
+    // Detected commands are standard test runners, but their scripts come from the repository: keep the script's risk.
+    const level = a.command ? r.level : r.level === 'read' ? 'build' : r.level;
+    return { risk: level, summary: `Run tests: ${cmd}${a.filter ? ` (${a.filter})` : ''}`, reasons: r.reasons, ruleKey: r.prefix || 'run_tests', blocked: r.blocked };
   },
   async execute(a, ctx) {
     const project = await ctx.index.project();
@@ -170,8 +174,14 @@ export const inspectErrorsTool = defineTool({
   }),
   mutates: false,
   assess: (a, ctx) => {
-    if (!a.command) return { risk: 'build', summary: 'Inspect errors (project checks / last failure)', reasons: [], ruleKey: 'inspect_errors' };
-    const r = assessCommand(a.command, ctx.guard.root);
+    const p = ctx.index.cachedProject;
+    const detected = p?.checkCommands[0] ?? p?.buildCommand;
+    if (!a.command) {
+      if (!detected) return { risk: 'build', summary: 'Inspect errors (last failed command)', reasons: [], ruleKey: 'inspect_errors' };
+      const d = assessCommand(detected, ctx.guard.root, (n) => ctx.index.packageScript(n));
+      return { risk: d.level === 'read' ? 'build' : d.level, summary: `Inspect errors: ${detected}`, reasons: d.reasons, ruleKey: d.prefix || 'inspect_errors', blocked: d.blocked };
+    }
+    const r = assessCommand(a.command, ctx.guard.root, (n) => ctx.index.packageScript(n));
     return { risk: r.level, summary: `Inspect errors: ${a.command}`, reasons: r.reasons, ruleKey: r.prefix, blocked: r.blocked };
   },
   async execute(a, ctx) {

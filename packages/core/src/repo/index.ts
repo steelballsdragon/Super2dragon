@@ -79,6 +79,22 @@ export class RepoIndex extends EventEmitter {
     this.dirty = true;
   }
 
+  /** Last detected project info without waiting for a refresh (for synchronous risk checks). */
+  get cachedProject(): ProjectInfo | undefined {
+    return this.projectValue;
+  }
+
+  /** Look up a package.json script body (used to assess `npm test`, `pnpm build`...). */
+  packageScript(name: string): string | undefined {
+    try {
+      const pkg = JSON.parse(readFileSync(path.join(this.root, 'package.json'), 'utf8')) as { scripts?: Record<string, string> };
+      const v = pkg.scripts?.[name];
+      return typeof v === 'string' ? v : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async project(): Promise<ProjectInfo> {
     await this.ensureFresh();
     return this.projectValue!;

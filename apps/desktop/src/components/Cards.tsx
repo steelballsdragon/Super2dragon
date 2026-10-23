@@ -81,6 +81,8 @@ export function ApprovalCard({ item }: { item: Extract<TimelineItem, { kind: 'ap
   const preview =
     typeof r.args.command === 'string'
       ? r.args.command
+      : Object.keys(r.args).length === 0
+        ? r.summary
       : r.tool === 'write_file'
         ? `${r.args.path}\n\n${String(r.args.content ?? '').slice(0, 1500)}`
         : JSON.stringify(r.args, null, 2).slice(0, 2000);

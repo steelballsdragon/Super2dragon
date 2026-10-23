@@ -314,6 +314,7 @@ function classifySegment(argv: string[]): { level: RiskLevel; reason?: string; p
       return args.length > 1 && prog === 'export' ? { level: 'write', prefix } : { level: 'execute', reason: 'prints environment variables', prefix };
   }
 
+  if ((prog === 'node' || prog === 'bun' || prog === 'deno') && args.includes('--test')) return { level: 'build', prefix: `${prog} --test` };
   if (READ_ONLY.has(prog)) return { level: 'read', prefix };
   if (BUILD_TOOLS.has(prog) || BUILD_TOOLS.has(args[0])) return { level: 'build', prefix };
   if (WRITE.has(prog)) return { level: 'write', prefix };
@@ -336,7 +337,28 @@ const BLOCKLIST: { re: RegExp; why: string }[] = [
  * unknown programs are 'execute', and any dangerous keyword anywhere (including
  * inside substitutions) raises the level.
  */
-export function assessCommand(command: string, workspaceRoot?: string): CommandAssessment {
+/** Package-manager scripts are defined by the repository, so their bodies are assessed too. */
+export type ScriptResolver = (name: string) => string | undefined;
+
+const PM_BUILTINS = new Set(['install', 'i', 'ci', 'add', 'remove', 'uninstall', 'update', 'upgrade', 'publish', 'exec', 'dlx', 'create', 'init', 'link', 'ls', 'list', 'view', 'info', 'why', 'config', 'audit', 'outdated', 'pkg', 'x', 'help']);
+
+function scriptNames(argv: string[]): string[] {
+  let i = 0;
+  while (i < argv.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(argv[i])) i++;
+  const prog = base(argv[i] ?? '');
+  if (!['npm', 'pnpm', 'yarn', 'bun'].includes(prog)) return [];
+  const args = argv.slice(i + 1).filter((a) => !a.startsWith('-'));
+  const sub = args[0];
+  if (!sub) return [];
+  let name: string | undefined;
+  if (sub === 'test' || sub === 't') name = 'test';
+  else if (sub === 'run' || sub === 'run-script') name = args[1];
+  else if (sub === 'start' || sub === 'stop' || sub === 'restart') name = sub;
+  else if (prog !== 'npm' && !PM_BUILTINS.has(sub)) name = sub; // `pnpm build`, `yarn lint`
+  return name ? [`pre${name}`, name, `post${name}`] : [];
+}
+
+export function assessCommand(command: string, workspaceRoot?: string, resolveScript?: ScriptResolver, depth = 0): CommandAssessment {
   const reasons: string[] = [];
   for (const b of BLOCKLIST) {
     if (b.re.test(command)) {
@@ -388,6 +410,21 @@ export function assessCommand(command: string, workspaceRoot?: string): CommandA
   } else if (/(bash|sh|zsh|pwsh|powershell|cmd)(\.exe)?\s+(-c|\/c|-command)\b/i.test(command)) {
     if (words.some((w) => DESTRUCTIVE.has(w))) level = maxRisk(level, 'destructive');
     else if (words.some((w) => NETWORK.has(w))) level = maxRisk(level, 'network');
+  }
+  if (resolveScript && depth < 3) {
+    for (const seg of segments) {
+      for (const name of scriptNames(seg)) {
+        const body = resolveScript(name);
+        if (!body) continue;
+        const inner = assessCommand(body, workspaceRoot, resolveScript, depth + 1);
+        if (inner.blocked) return { ...inner, reasons: [`script "${name}" runs: ${body}`, ...inner.reasons], prefix, segments };
+        // Ordinary build/test scripts run programs ('execute'); only escalate for network, destructive or privileged bodies.
+        if (RISK_LEVELS.indexOf(inner.level) >= RISK_LEVELS.indexOf('network') && RISK_LEVELS.indexOf(inner.level) > RISK_LEVELS.indexOf(level)) {
+          level = inner.level;
+          reasons.push(`script "${name}" runs: ${body.slice(0, 120)}`, ...inner.reasons);
+        }
+      }
+    }
   }
   return { level, reasons: [...new Set(reasons)], prefix, segments };
 }
