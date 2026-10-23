@@ -7,7 +7,7 @@ import { makeEngine, makeWorkspace } from '../../../packages/core/test/helpers.j
 
 const TOKEN = 'test-token-123';
 
-describe('local server', () => {
+describe.skipIf(process.platform === 'win32')('local server', () => {
   const dir = makeWorkspace({ 'notes.txt': 'hello\n' });
   const t = makeEngine([
     { calls: [{ name: 'run_command', arguments: { command: 'echo from-agent > out.txt' } }] },

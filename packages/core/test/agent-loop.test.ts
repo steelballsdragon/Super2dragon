@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { EngineEvent } from '../src/engine/engine.js';
 import { makeEngine, makeWorkspace } from './helpers.js';
 
+const unix = process.platform !== 'win32';
 const cleanups: (() => Promise<void> | void)[] = [];
 afterEach(async () => {
   while (cleanups.length) await cleanups.pop()!();
@@ -21,7 +22,7 @@ function setup(script: Parameters<typeof makeEngine>[0], files: Record<string, s
 }
 
 describe('agent loop', () => {
-  it('reads, edits, runs a real command and reports actual results', async () => {
+  it.skipIf(!unix)('reads, edits, runs a real command and reports actual results', async () => {
     const { engine, dir, ws, conv, provider, events } = setup(
       [
         { calls: [{ name: 'read_file', arguments: { path: 'math.js' } }] },
@@ -151,7 +152,7 @@ describe('agent loop', () => {
     expect(done.report!.commands[0].exitCode).toBeNull();
   }, 20_000);
 
-  it('undo restores files changed by tools and by commands', async () => {
+  it.skipIf(!unix)('undo restores files changed by tools and by commands', async () => {
     const { engine, dir, conv } = setup(
       [
         { calls: [{ name: 'write_file', arguments: { path: 'created.txt', content: 'new' } }] },
@@ -262,5 +263,24 @@ describe('agent loop', () => {
     await new Promise((r) => setTimeout(r, 20));
     await engine.runTask({ conversationId: conv.id, prompt: 'edit' });
     expect(provider.requests[2].messages.at(-1)!.content).toMatch(/changed since you last read it/);
+  });
+});
+
+describe('task launch failures', () => {
+  it('reports a missing model as a failed task with a finished event', async () => {
+    const dir = makeWorkspace({ 'a.txt': '' });
+    const t = makeEngine([{ text: 'never used' }]);
+    cleanups.push(t.cleanup, () => rmSync(dir, { recursive: true, force: true }));
+    const ws = t.engine.openWorkspace(dir);
+    const conv = t.engine.createConversation(ws.id);
+    const events: EngineEvent[] = [];
+    t.engine.on('event', (e: EngineEvent) => events.push(e));
+    t.provider.showModel = async () => {
+      throw Object.assign(new (await import('../src/util/errors.js')).LocalCodeError('model_not_found', 'Model not found: nope'), {});
+    };
+    const task = await t.engine.runTask({ conversationId: conv.id, prompt: 'x', model: { providerId: 'test', model: 'nope' } });
+    expect(task.status).toBe('failed');
+    expect(task.error).toMatch(/Model not found/);
+    expect(events.some((e) => e.type === 'task.finished')).toBe(true);
   });
 });

@@ -64,8 +64,8 @@ Measured on the development machine (4 CPU threads, 16 GB RAM, **no GPU**):
 
 | Model | Size | Tool calling (probe) | Benchmark | Notes |
 |---|---|---|---|---|
-| `qwen3.5:4b` | 3.3 GB | native ✓ | see [docs/BENCHMARKS.md](docs/BENCHMARKS.md) | fixed the sample bug end-to-end; ~5–6 tok/s on CPU |
-| `qwen2.5-coder:1.5b` | 1.0 GB | prompted fallback (native calls echo the schema) | 18/100 | too small for agent work; useful for chat |
+| `qwen3.5:4b` | 3.3 GB | native ✓ | **100/100** (3/3 tasks verified) | fixed the sample bug end-to-end; ~5–6 tok/s on CPU |
+| `qwen2.5-coder:1.5b` | 1.0 GB | prompted fallback (native calls echo the schema) | 18/100 (0/3) | claims success but fails verification; chat only in practice |
 
 Good choices by hardware: **≥24 GB VRAM/RAM** `qwen3-coder:30b`, `qwen2.5-coder:32b` ·
 **12–16 GB** `qwen2.5-coder:14b`, `qwen3:14b` · **8 GB** `qwen2.5-coder:7b`, `qwen3:8b`,

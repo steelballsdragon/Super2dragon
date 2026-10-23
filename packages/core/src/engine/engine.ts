@@ -280,7 +280,8 @@ export class Engine extends EventEmitter {
     const provider = this.provider(ref.providerId);
     if (!provider.preload) return;
     const loaded = (await provider.listLoaded?.().catch(() => [] as LoadedModel[])) ?? [];
-    if (loaded.some((m) => m.name === ref.model)) return;
+    // Ollama reloads a model when the requested context differs from the loaded one.
+    if (loaded.some((m) => m.name === ref.model && (!opts.numCtx || !m.contextLength || m.contextLength === opts.numCtx))) return;
     const s = this.settings();
     const t0 = Date.now();
     opts.onStatus?.(`Loading ${ref.model} into memory (the first load can take several minutes on slow disks)…`);
@@ -411,6 +412,7 @@ export class Engine extends EventEmitter {
   private launch(task: TaskRecord, ref: ModelRef, resumeReason?: string): void {
     const controller = new AbortController();
     const session = this.session(task.workspaceId);
+    const startedAt = Date.now();
     const promise = (async () => {
       try {
         const client = await this.createClient(ref);
@@ -441,9 +443,26 @@ export class Engine extends EventEmitter {
         });
         return await runner.run(task.id, { signal: controller.signal, resumeReason });
       } catch (err) {
-        const error = errorMessage(err);
-        this.store.updateTask(task.id, { status: 'failed', error, finishedAt: new Date().toISOString() });
-        this.publish({ type: 'task.status', taskId: task.id, status: 'failed', error, workspaceId: task.workspaceId });
+        // Failed before or outside the agent loop (model missing, load error, cancelled while loading).
+        const status: TaskStatus = controller.signal.aborted ? 'cancelled' : 'failed';
+        const error = status === 'cancelled' ? undefined : errorMessage(err);
+        const current = this.store.getTask(task.id) ?? task;
+        const report = {
+          status,
+          summary: '',
+          filesChanged: [],
+          commands: [],
+          tests: [],
+          plan: current.plan,
+          steps: 0,
+          durationMs: Date.now() - startedAt,
+          usage: current.usage,
+          warnings: [],
+          checkpointBefore: current.checkpointBefore,
+        };
+        this.store.updateTask(task.id, { status, error: error ?? null, report, finishedAt: new Date().toISOString() });
+        this.publish({ type: 'task.status', taskId: task.id, status, ...(error ? { error } : {}), workspaceId: task.workspaceId });
+        this.publish({ type: 'task.finished', taskId: task.id, status, report, workspaceId: task.workspaceId });
         return this.store.getTask(task.id)!;
       } finally {
         this.running.delete(task.id);

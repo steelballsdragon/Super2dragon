@@ -559,11 +559,14 @@ function handleEvent(e: ServerEvent) {
         setState((s) => ({ timeline: [...s.timeline, { kind: 'note', id: `log-${Date.now()}-${Math.random()}`, text: String(e.message), level: e.level as 'warn' }] }));
       }
       break;
-    case 'task.status':
+    case 'task.status': {
+      const ended = !['running', 'awaiting_approval'].includes(String(e.status));
       setState((s) => ({
-        tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status: e.status as TaskRecord['status'], error: e.error as string | undefined } : t)),
+        tasks: s.tasks.map((t) => (t.id === taskId ? { ...t, status: e.status as TaskRecord['status'], error: e.error as string | undefined, running: !ended } : t)),
+        activeTaskId: ended && s.activeTaskId === taskId ? undefined : s.activeTaskId,
       }));
       break;
+    }
     case 'task.finished': {
       const report = e.report as TaskReport;
       setState((s) => ({

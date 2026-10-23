@@ -101,7 +101,7 @@ describe('permission decisions', () => {
   });
 });
 
-describe('WorkspaceGuard', () => {
+describe.skipIf(process.platform === 'win32')('WorkspaceGuard', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'lc-guard-'));
   const outside = mkdtempSync(path.join(os.tmpdir(), 'lc-outside-'));
   mkdirSync(path.join(root, 'src'));

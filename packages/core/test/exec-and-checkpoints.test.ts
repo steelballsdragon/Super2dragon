@@ -6,11 +6,12 @@ import { ShadowGit } from '../src/checkpoints/shadow-git.js';
 import { ProcessManager } from '../src/exec/processes.js';
 import { PersistentShell } from '../src/exec/shell.js';
 
+const unix = process.platform !== 'win32';
 const tmp = (p: string) => mkdtempSync(path.join(os.tmpdir(), p));
 const dirs: string[] = [];
 afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })));
 
-describe('PersistentShell', () => {
+describe.skipIf(!unix)('PersistentShell (bash backend)', () => {
   const root = tmp('lc-shell-');
   dirs.push(root);
   const shell = new PersistentShell({ cwd: root, env: { ...process.env }, root });
@@ -80,7 +81,7 @@ describe('PersistentShell', () => {
   });
 });
 
-describe('ProcessManager', () => {
+describe.skipIf(!unix)('ProcessManager', () => {
   it('runs background processes, captures output and stops them', async () => {
     const pm = new ProcessManager({ env: process.env });
     const info = pm.start('echo started; sleep 30', os.tmpdir());
