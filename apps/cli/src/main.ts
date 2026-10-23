@@ -72,6 +72,7 @@ ${c.bold('Usage')}
   localcode resume <taskId>  Resume an interrupted/failed/blocked task
   localcode undo             Restore files from a checkpoint (--task <id> | --checkpoint <id>)
   localcode checkpoints      List checkpoints for the workspace
+  localcode config show      Print all settings as JSON (config import <file> | config set <path> <json>)
 
 ${c.bold('Options')}
   -w, --workspace <dir>      Workspace folder (default: current directory)
@@ -319,6 +320,44 @@ async function cmdCheckpoints(engine: Engine, args: Args) {
   }
 }
 
+async function cmdConfig(engine: Engine, args: Args) {
+  const sub = args._[1] ?? 'show';
+  if (sub === 'show') {
+    console.log(JSON.stringify(engine.settings(), null, 2));
+    return;
+  }
+  if (sub === 'import') {
+    const file = args._[2];
+    if (!file) throw new Error('Usage: localcode config import <settings.json>');
+    const { readFileSync } = await import('node:fs');
+    const patch = JSON.parse(readFileSync(file, 'utf8'));
+    engine.updateSettings(patch);
+    console.log(c.green(`Imported settings from ${file}.`));
+    return;
+  }
+  if (sub === 'set') {
+    const [key, raw] = [args._[2], args._.slice(3).join(' ')];
+    if (!key || !raw) throw new Error('Usage: localcode config set <dotted.path> <json value>   e.g. config set generation.numCtx 8192');
+    let value: unknown;
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      value = raw;
+    }
+    const patch: Record<string, unknown> = {};
+    const parts = key.split('.');
+    let cur = patch;
+    parts.forEach((p, i) => {
+      if (i === parts.length - 1) cur[p] = value;
+      else cur = (cur[p] = {}) as Record<string, unknown>;
+    });
+    engine.updateSettings(patch);
+    console.log(c.green(`${key} = ${JSON.stringify(value)}`));
+    return;
+  }
+  throw new Error('Usage: localcode config show | import <file> | set <path> <value>');
+}
+
 function defaultUiDir(): string | undefined {
   const here = path.dirname(fileURLToPath(import.meta.url));
   for (const candidate of [path.join(here, 'ui'), path.join(here, '..', '..', 'desktop', 'dist'), path.resolve('apps/desktop/dist')]) {
@@ -405,6 +444,9 @@ export async function main(argv = process.argv.slice(2)): Promise<void> {
         break;
       case 'checkpoints':
         await cmdCheckpoints(engine, args);
+        break;
+      case 'config':
+        await cmdConfig(engine, args);
         break;
       default:
         console.error(`Unknown command "${cmd}".\n`);

@@ -103,10 +103,12 @@ export class Engine extends EventEmitter {
   // ---- events -----------------------------------------------------------------
 
   private publish(e: EngineEvent): void {
-    if (!TRANSIENT_EVENTS.has(e.type as AgentEvent['type']) && 'taskId' in e && e.taskId) {
-      const task = this.store.getTask(e.taskId);
+    const any = e as { taskId?: string; request?: { taskId?: string }; checkpoint?: { taskId?: string } };
+    const taskId = any.taskId ?? any.request?.taskId ?? any.checkpoint?.taskId;
+    if (!TRANSIENT_EVENTS.has(e.type as AgentEvent['type']) && taskId) {
+      const task = this.store.getTask(taskId);
       try {
-        this.store.appendEvent({ taskId: e.taskId, conversationId: task?.conversationId, type: e.type, data: e as unknown as Record<string, unknown> });
+        this.store.appendEvent({ taskId, conversationId: task?.conversationId, type: e.type, data: e as unknown as Record<string, unknown> });
       } catch {
         /* activity log is best-effort */
       }

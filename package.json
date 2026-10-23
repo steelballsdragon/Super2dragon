@@ -14,15 +14,15 @@
     "apps/desktop"
   ],
   "scripts": {
-    "build": "npm run build -w @localcode/core && npm run build -w @localcode/cli && npm run build -w @localcode/desktop",
+    "build": "npm run build -w @localcode/core && npm run build -w @localcode/desktop && npm run build -w @localcode/cli",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "vitest run",
+    "test": "vitest run --project unit",
     "test:integration": "LOCALCODE_INTEGRATION=1 vitest run --project integration",
     "test:e2e": "npm run build && playwright test",
     "localcode": "node apps/cli/dist/localcode.mjs",
     "dev:server": "node apps/cli/dist/localcode.mjs serve --port 4317 --token dev --ui apps/desktop/dist",
     "dev:ui": "npm run dev -w @localcode/desktop",
-    "desktop:dev": "npm run tauri -w @localcode/desktop -- dev",
+    "desktop:dev": "npm run build -w @localcode/cli && npm run tauri -w @localcode/desktop -- dev",
     "desktop:build": "npm run build && npm run tauri -w @localcode/desktop -- build",
     "doctor": "node apps/cli/dist/localcode.mjs doctor"
   },
